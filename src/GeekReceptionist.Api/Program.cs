@@ -15,7 +15,9 @@ builder.Services.AddSingleton(sp => ReceptionistOptions.FromConfiguration(sp.Get
 builder.Services.AddSingleton<ITwilioRestClient>(sp =>
 {
     var o = sp.GetRequiredService<ReceptionistOptions>();
-    return new TwilioRestClient(o.TwilioAccountSid, o.TwilioAuthToken);
+    // Outbound REST calls authenticate with the API key, scoped to the account (or client subaccount).
+    // The auth token is reserved for verifying inbound webhook signatures.
+    return new TwilioRestClient(o.TwilioApiKeySid, o.TwilioApiKeySecret, accountSid: o.TwilioAccountSid);
 });
 builder.Services.AddSingleton<ISmsSender, TwilioSmsSender>();
 builder.Services.AddSingleton(TimeProvider.System);

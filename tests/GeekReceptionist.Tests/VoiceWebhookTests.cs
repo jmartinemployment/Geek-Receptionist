@@ -57,6 +57,8 @@ public sealed class App(Dictionary<string, string?>? overrides = null) : WebAppl
         {
             ["TWILIO_ACCOUNT_SID"] = "ACtest",
             ["TWILIO_AUTH_TOKEN"] = Settings.Token,
+            ["TWILIO_API_KEY_SID"] = "SKtest",
+            ["TWILIO_API_KEY_SECRET"] = "test-api-key-secret",
             ["TWILIO_NUMBER"] = Settings.TwilioNumber,
             ["OWNER_CELL"] = Settings.Owner,
             ["COMPANY_NAME"] = "Dag Plumbing",
@@ -265,11 +267,17 @@ public class VoiceWebhookTests
     [Fact]
     public void Missing_configuration_fails_at_startup_with_every_problem_listed()
     {
-        using var app = new App(new() { ["OWNER_CELL"] = "561-555-0100", ["COMPANY_NAME"] = "", ["CALL_MODE"] = "Sometimes" });
+        using var app = new App(new()
+        {
+            ["OWNER_CELL"] = "561-555-0100", ["COMPANY_NAME"] = "", ["CALL_MODE"] = "Sometimes",
+            ["TWILIO_API_KEY_SID"] = "ACwrong", ["TWILIO_API_KEY_SECRET"] = "",
+        });
         var ex = Assert.ThrowsAny<Exception>(() => app.CreateClient());
         var message = ex.ToString();
         Assert.Contains("OWNER_CELL must be E.164", message);
         Assert.Contains("COMPANY_NAME is required", message);
         Assert.Contains("CALL_MODE must be one of", message);
+        Assert.Contains("TWILIO_API_KEY_SID must start with 'SK'", message);
+        Assert.Contains("TWILIO_API_KEY_SECRET is required", message);
     }
 }

@@ -74,6 +74,7 @@ Twilio handles `STOP` / `HELP` opt-out keywords automatically.
    - Approval usually takes 1–3 weeks. Calls and voicemail work in the meantime; texts will fail and the owner is told.
 3. **Upgrade from trial** before recording a demo. Trial accounts can only text verified numbers and prefix every message with "Sent from your Twilio trial account".
 4. **Lock texting to the US/Canada** at the account level too: Messaging → Settings → Geo permissions.
+5. **Create a Standard API key** (Console → Account → API keys & tokens → Create API key, type *Standard*). Copy the SID and secret; the secret is shown only once. The service calls Twilio with this key, and uses the auth token only to verify incoming webhooks. If the key leaks, revoke it and create a new one without touching the auth token.
 
 ### 2. Deploy to Railway
 
@@ -108,7 +109,9 @@ If the number is in a Messaging Service, set the incoming-message webhook on the
 | Variable | Required | Default | Description |
 |----------|:--------:|---------|-------------|
 | `TWILIO_ACCOUNT_SID` | ✓ | | Account (or client subaccount) SID |
-| `TWILIO_AUTH_TOKEN` | ✓ | | Auth token; also used to verify webhook signatures |
+| `TWILIO_AUTH_TOKEN` | ✓ | | Auth token. Used **only** to verify `X-Twilio-Signature` on incoming webhooks; never used to call Twilio |
+| `TWILIO_API_KEY_SID` | ✓ | | Standard API key SID (`SK…`), created in the same account or subaccount. Used for every outbound call to Twilio |
+| `TWILIO_API_KEY_SECRET` | ✓ | | Secret for that API key (shown once at creation) |
 | `TWILIO_NUMBER` | ✓ | | The Twilio number callers reach and texts come from (E.164, e.g. `+15615550199`) |
 | `OWNER_CELL` | ✓ | | Owner's cell (E.164): rung in Dial mode, receives all notifications |
 | `COMPANY_NAME` | ✓ | | Used in the caller text, screening prompt and notifications |
@@ -129,7 +132,7 @@ Each client gets their own Twilio **subaccount** and their own Railway service (
 
 1. **Collect at signup:** legal business name, EIN, business address, website, owner's name, email and cell.
 2. **Twilio:** create a subaccount named for the client → buy a local number in it → register their **Secondary Customer Profile, Brand and Campaign** in that subaccount. Start this the day they sign; it's the longest step.
-3. **Railway:** duplicate the service; set the subaccount's SID, auth token and number, `COMPANY_NAME`, `OWNER_CELL`, and `CALL_MODE=Forwarded`.
+3. **Railway:** duplicate the service; set the subaccount's SID, auth token, a Standard API key created **in that subaccount**, and its number, `COMPANY_NAME`, `OWNER_CELL`, and `CALL_MODE=Forwarded`.
 4. **Twilio number webhooks:** as in [step 3](#3-point-the-twilio-number-at-the-service), with the client's service URL.
 5. **Their phone:** turn on **conditional call forwarding (no answer)** from their existing line to their Twilio number. Codes vary by carrier; do this on-site and test before you leave.
 6. **Customize** `CALLER_TEXT` with their wording (and a booking link if they have one).

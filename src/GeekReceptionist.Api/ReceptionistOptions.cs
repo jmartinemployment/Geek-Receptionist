@@ -23,7 +23,11 @@ public enum CallMode
 public sealed record ReceptionistOptions
 {
     public required string TwilioAccountSid { get; init; }
+    /// <summary>Used only to verify X-Twilio-Signature on incoming webhooks. Never used to call Twilio.</summary>
     public required string TwilioAuthToken { get; init; }
+    /// <summary>Standard API key (SK...) used for every outbound call to Twilio's REST API.</summary>
+    public required string TwilioApiKeySid { get; init; }
+    public required string TwilioApiKeySecret { get; init; }
     /// <summary>The Twilio number callers reach and texts are sent from (E.164).</summary>
     public required string TwilioNumber { get; init; }
     /// <summary>Owner's cell (E.164): rung in Dial mode, notified of every missed call.</summary>
@@ -67,6 +71,14 @@ public sealed record ReceptionistOptions
             return value.Trim();
         }
 
+        string Prefixed(string key, string prefix)
+        {
+            var value = Required(key);
+            if (value.Length > 0 && !value.StartsWith(prefix, StringComparison.Ordinal))
+                errors.Add($"{key} must start with '{prefix}' (got '{value[..Math.Min(4, value.Length)]}...')");
+            return value;
+        }
+
         string Phone(string key)
         {
             var value = Required(key);
@@ -77,8 +89,10 @@ public sealed record ReceptionistOptions
 
         var options = new ReceptionistOptions
         {
-            TwilioAccountSid = Required("TWILIO_ACCOUNT_SID"),
+            TwilioAccountSid = Prefixed("TWILIO_ACCOUNT_SID", "AC"),
             TwilioAuthToken = Required("TWILIO_AUTH_TOKEN"),
+            TwilioApiKeySid = Prefixed("TWILIO_API_KEY_SID", "SK"),
+            TwilioApiKeySecret = Required("TWILIO_API_KEY_SECRET"),
             TwilioNumber = Phone("TWILIO_NUMBER"),
             OwnerCell = Phone("OWNER_CELL"),
             CompanyName = Required("COMPANY_NAME"),

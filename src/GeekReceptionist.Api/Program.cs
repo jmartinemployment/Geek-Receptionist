@@ -20,6 +20,8 @@ builder.Services.AddSingleton<ITwilioRestClient>(sp =>
 builder.Services.AddSingleton<ISmsSender, TwilioSmsSender>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<MissedCallService>();
+builder.Services.AddSingleton<IMediaDeleter, TwilioMediaDeleter>();
+builder.Services.AddSingleton<InboundSmsService>();
 builder.Services.AddSingleton<TwilioSignatureFilter>();
 
 var app = builder.Build();
@@ -120,6 +122,14 @@ voice.MapPost("/voicemail-complete", async (HttpRequest req, MissedCallService m
     response.Hangup();
     return Twiml(response);
 });
+
+// 6. A text arrives at the business number (usually a reply to the missed-call text).
+app.MapPost("/twilio/sms/incoming", async (HttpRequest req, InboundSmsService inbound, CancellationToken ct) =>
+{
+    await inbound.HandleAsync(await req.ReadFormAsync(ct), ct);
+    // Empty response: no automatic reply. Twilio itself handles STOP/HELP keywords.
+    return Results.Content(new Twilio.TwiML.MessagingResponse().ToString(), "application/xml");
+}).AddEndpointFilter<TwilioSignatureFilter>();
 
 app.Run();
 

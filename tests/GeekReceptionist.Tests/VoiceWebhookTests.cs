@@ -26,6 +26,17 @@ public sealed class FakeSms : ISmsSender
     public List<(string To, string Body)> To(string number) => Sent.Where(m => m.To == number).ToList();
 }
 
+public sealed class FakeMediaDeleter : IMediaDeleter
+{
+    public ConcurrentQueue<(string MessageSid, string Url)> Deleted { get; } = new();
+
+    public Task DeleteAsync(string messageSid, string mediaUrl, CancellationToken ct)
+    {
+        Deleted.Enqueue((messageSid, mediaUrl));
+        return Task.CompletedTask;
+    }
+}
+
 public static class Settings
 {
     public const string Token = "test-auth-token";
@@ -38,6 +49,7 @@ public static class Settings
 public sealed class App(Dictionary<string, string?>? overrides = null) : WebApplicationFactory<Program>
 {
     public FakeSms Sms { get; } = new();
+    public FakeMediaDeleter Media { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -55,7 +67,11 @@ public sealed class App(Dictionary<string, string?>? overrides = null) : WebAppl
         foreach (var (k, v) in overrides ?? new()) settings[k] = v;
         foreach (var (k, v) in settings) builder.UseSetting(k, v);
 
-        builder.ConfigureServices(s => s.Replace(ServiceDescriptor.Singleton<ISmsSender>(Sms)));
+        builder.ConfigureServices(s =>
+        {
+            s.Replace(ServiceDescriptor.Singleton<ISmsSender>(Sms));
+            s.Replace(ServiceDescriptor.Singleton<IMediaDeleter>(Media));
+        });
     }
 
     /// <summary>POSTs a form signed exactly the way Twilio signs webhooks.</summary>

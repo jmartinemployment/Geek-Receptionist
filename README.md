@@ -10,7 +10,7 @@ AI receptionist for small businesses. Missed calls get an instant text back in t
 
 A plumber is under a sink when the phone rings. Normally the caller hits voicemail and calls the next company on Google. With Geek-Receptionist:
 
-1. **Within seconds the caller gets a text** in the business's name: *"Hi, this is Dag Plumbing. Sorry we missed your call - we're on a job right now. We'll call you back shortly. Feel free to reply here with what you need."*
+1. **Within seconds the caller gets a text** in the business's name: *"Hi, this is Dag Plumbing. Sorry we missed your call - we're on a job right now. We'll call you back shortly. Feel free to reply here with what you need. Reply STOP to opt out."*
 2. **The owner gets a text** saying who called and that the auto-reply went out.
 3. **The caller can leave a voicemail**, and the owner is texted the recording link.
 4. **When the caller replies** ("leak under the kitchen sink, 123 Main St"), the reply is forwarded to the owner's cell.

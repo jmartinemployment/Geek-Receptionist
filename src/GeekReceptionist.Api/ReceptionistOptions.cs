@@ -48,7 +48,7 @@ public sealed record ReceptionistOptions
 
     public const string DefaultCallerText =
         "Hi, this is {company}. Sorry we missed your call - we're on a job right now. " +
-        "We'll call you back shortly. Feel free to reply here with what you need.";
+        "We'll call you back shortly. Feel free to reply here with what you need. Reply STOP to opt out.";
 
     public string CallerText => CallerTextTemplate.Replace("{company}", CompanyName, StringComparison.Ordinal);
 

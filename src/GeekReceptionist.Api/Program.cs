@@ -47,8 +47,8 @@ voice.MapPost("/incoming", async (HttpRequest req, ReceptionistOptions o, Missed
     if (o.Mode == CallMode.Forwarded)
     {
         // The client's own line already rang and went unanswered before forwarding here.
-        await missed.HandleMissedCallAsync(callSid, form["From"], ct);
-        return Twiml(VoicemailPrompt(o));
+        var outcome = await missed.HandleMissedCallAsync(callSid, form["From"], ct);
+        return Twiml(VoicemailPrompt(o, outcome));
     }
 
     var response = new VoiceResponse();
@@ -107,8 +107,8 @@ voice.MapPost("/dial-complete", async (HttpRequest req, ReceptionistOptions o, M
         return Twiml(done);
     }
 
-    await missed.HandleMissedCallAsync(callSid, form["From"], ct);
-    return Twiml(VoicemailPrompt(o));
+    var outcome = await missed.HandleMissedCallAsync(callSid, form["From"], ct);
+    return Twiml(VoicemailPrompt(o, outcome));
 });
 
 // 5. Voicemail recorded: send the owner the recording link.
@@ -135,10 +135,10 @@ app.MapPost("/twilio/sms/incoming", async (HttpRequest req, InboundSmsService in
 
 app.Run();
 
-static VoiceResponse VoicemailPrompt(ReceptionistOptions o)
+static VoiceResponse VoicemailPrompt(ReceptionistOptions o, MissedCallOutcome outcome)
 {
     var response = new VoiceResponse();
-    response.Say($"Sorry we missed you. {o.CompanyName} just sent you a text message. You can also leave a message after the tone.");
+    response.Say(GreetingText(o.CompanyName, outcome));
     response.Record(
         action: Url(o, "/twilio/voice/voicemail-complete"),
         method: HttpMethod.Post,
@@ -147,6 +147,14 @@ static VoiceResponse VoicemailPrompt(ReceptionistOptions o)
         finishOnKey: "#");
     return response;
 }
+
+// The texted wording is the verbal consent disclosure registered with the A2P 10DLC campaign.
+// Keep it identical to the campaign's Message flow text; change both together.
+static string GreetingText(string company, MissedCallOutcome outcome) => outcome == MissedCallOutcome.Texted
+    ? $"Sorry we missed you. {company} is texting you at this number about your call. " +
+      "Message and data rates may apply. Reply STOP to opt out. " +
+      "You can also leave a message after the tone."
+    : "Sorry we missed you. Please leave a message after the tone.";
 
 static Uri Url(ReceptionistOptions o, string pathAndQuery) => new(o.PublicBaseUrl + pathAndQuery);
 

@@ -195,6 +195,28 @@ public class VoiceWebhookTests
     }
 
     [Fact]
+    public async Task Texted_caller_hears_the_registered_consent_disclosure()
+    {
+        using var app = new App(new() { ["CALL_MODE"] = "Forwarded" });
+        var (_, xml) = await app.PostTwilio("/twilio/voice/incoming", Call());
+
+        Assert.Contains("Dag Plumbing is texting you at this number about your call.", xml);
+        Assert.Contains("Message and data rates may apply. Reply STOP to opt out.", xml);
+    }
+
+    [Fact]
+    public async Task Caller_not_texted_hears_no_texting_claim()
+    {
+        using var app = new App(new() { ["CALL_MODE"] = "Forwarded" });
+        await app.PostTwilio("/twilio/voice/incoming", Call("CA1"));
+        var (_, xml) = await app.PostTwilio("/twilio/voice/incoming", Call("CA2"));
+
+        Assert.DoesNotContain("texting you", xml);
+        Assert.Contains("Please leave a message after the tone.", xml);
+        Assert.Contains("<Record", xml);
+    }
+
+    [Fact]
     public async Task Blocked_caller_id_notifies_owner_only()
     {
         using var app = new App();

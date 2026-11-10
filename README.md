@@ -1,5 +1,7 @@
 # Geek-Receptionist
 
+> **Moved (2026-11-10):** this service now runs inside **GeekAPI** in the [GeekBackend](https://github.com/jmartinemployment/GeekBackend) repo, under `/api/receptionist/twilio/*` on `api.geekatyourspot.com`. Code: `GeekAPI/Services/Receptionist/`. Docs: [`docs/RECEPTIONIST.md`](https://github.com/jmartinemployment/GeekBackend/blob/main/docs/RECEPTIONIST.md). This repo is kept as history only; do not deploy it or change code here.
+
 AI receptionist for small businesses. Missed calls get an instant text back in the business's name, owners get notified, callers can leave voicemail. .NET 10 + Twilio, deployed on Railway.
 
 > **Status:** v0, missed-call text-back. AI voice answering is next on the [roadmap](#roadmap).

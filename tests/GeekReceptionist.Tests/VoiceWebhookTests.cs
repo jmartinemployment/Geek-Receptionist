@@ -187,6 +187,16 @@ public class VoiceWebhookTests
     }
 
     [Fact]
+    public async Task International_caller_is_not_texted()
+    {
+        using var app = new App();
+        await app.PostTwilio("/twilio/voice/dial-complete", Call(from: "+447700900123", dialStatus: "no-answer"));
+
+        Assert.Empty(app.Sms.To("+447700900123"));
+        Assert.Contains("international", Assert.Single(app.Sms.To(Settings.Owner)).Body);
+    }
+
+    [Fact]
     public async Task Failed_text_is_reported_to_owner_not_hidden()
     {
         using var app = new App();

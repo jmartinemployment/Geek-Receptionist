@@ -44,6 +44,15 @@ public sealed class MissedCallService(
             return MissedCallOutcome.SkippedNoCallerId;
         }
 
+        if (!caller.StartsWith("+1", StringComparison.Ordinal))
+        {
+            // Only text US/Canada numbers. Blocks SMS-pumping fraud (bots calling from premium
+            // international numbers to trigger paid texts) and keeps us inside A2P 10DLC scope.
+            log.LogWarning("Missed call {CallSid} from non-NANP number {Caller}; not texting", callSid, caller);
+            await NotifyOwnerAsync($"{options.CompanyName}: missed call from international number {caller}. No auto-text sent.", ct);
+            return MissedCallOutcome.SkippedNoCallerId;
+        }
+
         var now = clock.GetUtcNow();
         if (_lastTexted.TryGetValue(caller, out var last) && now - last < options.RepeatTextWindow)
         {

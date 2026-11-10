@@ -16,6 +16,12 @@ public sealed class TwilioMediaDeleter(ITwilioRestClient client, ILogger<TwilioM
     {
         // Media URLs end in .../Messages/{MessageSid}/Media/{MediaSid}
         var mediaSid = mediaUrl.TrimEnd('/').Split('/')[^1];
+        if (!System.Text.RegularExpressions.Regex.IsMatch(mediaSid, "^ME[0-9a-fA-F]{32}$"))
+        {
+            // Twilio retains media until deleted, so an unparseable URL means media is left behind: log loudly.
+            log.LogError("Cannot delete inbound media on {MessageSid}: unexpected media URL format", messageSid);
+            return;
+        }
         try
         {
             await MediaResource.DeleteAsync(pathMessageSid: messageSid, pathSid: mediaSid, client: client);

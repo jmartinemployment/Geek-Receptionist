@@ -92,7 +92,11 @@ Console → Phone Numbers → your number:
 | **Voice** | A call comes in → Webhook, HTTP POST | `https://<PUBLIC_BASE_URL>/twilio/voice/incoming` |
 | **Messaging** | A message comes in → Webhook, HTTP POST | `https://<PUBLIC_BASE_URL>/twilio/sms/incoming` |
 
-If the number is in a Messaging Service, set the incoming-message webhook on the **Messaging Service** (Integration → "Send a webhook") instead.
+**If the number is in a Messaging Service (required for A2P), the Service decides where incoming texts go, not the number.** In the Messaging Service → **Integration → Incoming Messages**, choose **"Defer to sender's webhook"** so the number's Messaging webhook above is used. If the Service is set to drop incoming messages, caller replies are discarded without being logged and never reach the owner.
+
+In the same Messaging Service, turn on **Smart Encoding** (Content settings) so curly quotes and long dashes don't double the cost of a text.
+
+> ⚠️ **Never delete the Messaging Service.** Deleting it deletes the A2P 10DLC Campaign and immediately stops all texting; re-registering takes days. Remove numbers from it instead.
 
 ### 4. Test it
 
@@ -133,7 +137,7 @@ Each client gets their own Twilio **subaccount** and their own Railway service (
 1. **Collect at signup:** legal business name, EIN, business address, website, owner's name, email and cell.
 2. **Twilio:** create a subaccount named for the client → buy a local number in it → register their **Secondary Customer Profile, Brand and Campaign** in that subaccount. Start this the day they sign; it's the longest step.
 3. **Railway:** duplicate the service; set the subaccount's SID, auth token, a Standard API key created **in that subaccount**, and its number, `COMPANY_NAME`, `OWNER_CELL`, and `CALL_MODE=Forwarded`.
-4. **Twilio number webhooks:** as in [step 3](#3-point-the-twilio-number-at-the-service), with the client's service URL.
+4. **Twilio number webhooks:** as in [step 3](#3-point-the-twilio-number-at-the-service), with the client's service URL; the client's Messaging Service must be set to **Defer to sender's webhook**.
 5. **Their phone:** turn on **conditional call forwarding (no answer)** from their existing line to their Twilio number. Codes vary by carrier; do this on-site and test before you leave.
 6. **Customize** `CALLER_TEXT` with their wording (and a booking link if they have one).
 

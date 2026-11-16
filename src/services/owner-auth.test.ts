@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
-import { readSession, refreshSession, sessionEnded, signIn, signOut, visitorIpFrom } from "./owner-auth";
-import { accessCookieSeconds } from "@/lib/auth/cookies";
+import { clearSessionCookies, readSession, refreshSession, sessionEnded, setSessionCookies, signIn, signOut, visitorIpFrom } from "./owner-auth";
+import { ACCESS_COOKIE, DEVICE_COOKIE, REFRESH_COOKIE, accessCookieSeconds } from "@/lib/auth/cookies";
 import { loginMessage } from "@/lib/auth/login-messages";
 import { cameFromThisSite } from "@/lib/auth/same-origin";
 
@@ -12,6 +12,8 @@ const session = {
   refreshTokenExpiresAt: "2026-12-16T00:00:00Z",
   tenantId: "5b1f6f0e-7d0a-4c1e-9d55-3a8f2c9e1b44",
   email: "owner@example.com",
+  deviceToken: "d.e.f",
+  deviceTokenExpiresAt: "2027-02-14T00:00:00Z",
 };
 
 type Seen = { url: string; headers: Record<string, string>; body: unknown };
@@ -44,6 +46,17 @@ describe("owner sign-in against GeekAPI", () => {
     assert.equal(seen[0].headers["x-api-key"], "test-key");
     assert.equal(seen[0].headers["x-visitor-ip"], "203.0.113.9");
     assert.deepEqual(seen[0].body, { email: "owner@example.com", password: "pw" });
+  });
+
+  it("sends the device token this browser kept, and leaves it out when there is none", async () => {
+    answer(200, session);
+    await signIn("owner@example.com", "pw", null, "d.e.f");
+    assert.deepEqual(seen[0].body, { email: "owner@example.com", password: "pw", deviceToken: "d.e.f" });
+  });
+
+  it("refuses a session without a device token or with an unreadable device date", async () => {
+    assert.equal(readSession({ ...session, deviceToken: "" }), null);
+    assert.equal(readSession({ ...session, deviceTokenExpiresAt: "never" }), null);
   });
 
   it("passes GeekAPI's code on for a refusal", async () => {
@@ -96,6 +109,17 @@ describe("owner sign-in against GeekAPI", () => {
 });
 
 describe("helpers", () => {
+  it("sets the device cookie with the session and keeps it when the session is cleared", () => {
+    const written = new Map<string, string>();
+    const jar = { set: (name: string, value: string) => written.set(name, value) };
+    setSessionCookies(jar, session);
+    assert.equal(written.get(DEVICE_COOKIE), "d.e.f");
+    clearSessionCookies(jar);
+    assert.equal(written.get(ACCESS_COOKIE), "");
+    assert.equal(written.get(REFRESH_COOKIE), "");
+    assert.equal(written.get(DEVICE_COOKIE), "d.e.f");
+  });
+
   it("drops the access cookie a minute early, never under 30 seconds, and leaves none for a bad date", () => {
     const now = Date.parse("2026-11-16T00:00:00Z");
     assert.equal(accessCookieSeconds("2026-11-16T00:15:00Z", now), 840);
@@ -111,6 +135,7 @@ describe("helpers", () => {
 
   it("shows only fixed sentences on the login page", () => {
     assert.equal(loginMessage("invalid_credentials"), "That email and password do not match a login.");
+    assert.match(loginMessage("too_many_failed_sign_ins")!, /Too many failed sign-ins for this email/);
     assert.equal(loginMessage("odd_code"), "Sign-in failed (odd_code).");
     assert.equal(loginMessage("<script>alert(1)</script>"), "Sign-in failed.");
     assert.equal(loginMessage("constructor"), "Sign-in failed (constructor).");

@@ -1,7 +1,7 @@
 import { apiConfig, geekApiKey } from "@/lib/config";
-import { ACCESS_COOKIE, REFRESH_COOKIE, accessCookieSeconds, cookieOpts } from "@/lib/auth/cookies";
+import { ACCESS_COOKIE, DEVICE_COOKIE, REFRESH_COOKIE, accessCookieSeconds, cookieOpts } from "@/lib/auth/cookies";
 
-/** What GeekAPI's sign-in and refresh answer. Both tokens go into httpOnly cookies and are never sent to the browser's page. */
+/** What GeekAPI's sign-in and refresh answer. Every token goes into an httpOnly cookie and is never sent to the browser's page. */
 export type OwnerSession = {
   accessToken: string;
   accessTokenExpiresAt: string;
@@ -9,6 +9,8 @@ export type OwnerSession = {
   refreshTokenExpiresAt: string;
   tenantId: string;
   email: string;
+  deviceToken: string;
+  deviceTokenExpiresAt: string;
 };
 
 export type Refusal = { ok: false; status: number; code: string; error: string };
@@ -21,8 +23,9 @@ export function sessionEnded(outcome: SessionOutcome): boolean {
   return !outcome.ok && outcome.status === 401 && ENDED_CODES.has(outcome.code);
 }
 
-export function signIn(email: string, password: string, visitorIp: string | null): Promise<SessionOutcome> {
-  return post("/api/v1/owner-auth/sign-in", { email, password }, visitorIp);
+/** The device token is the one this browser kept from an earlier sign-in, when it has one; it lets the owner past the per-email cap. */
+export function signIn(email: string, password: string, visitorIp: string | null, deviceToken: string | null = null): Promise<SessionOutcome> {
+  return post("/api/v1/owner-auth/sign-in", deviceToken ? { email, password, deviceToken } : { email, password }, visitorIp);
 }
 
 export function refreshSession(refreshToken: string): Promise<SessionOutcome> {
@@ -37,15 +40,17 @@ export async function signOut(refreshToken: string): Promise<{ ok: true } | Refu
   return refusal(result.status, result.body);
 }
 
-/** Writes both cookies from a session. Anything with a cookies.set of this shape: a NextResponse's cookies or next/headers cookies(). */
+/** Writes the session's cookies. Anything with a cookies.set of this shape: a NextResponse's cookies or next/headers cookies(). */
 export function setSessionCookies(
   jar: { set: (name: string, value: string, options: Record<string, unknown>) => unknown },
   session: OwnerSession,
 ): void {
   jar.set(REFRESH_COOKIE, session.refreshToken, cookieOpts.until(session.refreshTokenExpiresAt));
   jar.set(ACCESS_COOKIE, session.accessToken, { ...cookieOpts.until(session.accessTokenExpiresAt), maxAge: accessCookieSeconds(session.accessTokenExpiresAt) });
+  jar.set(DEVICE_COOKIE, session.deviceToken, cookieOpts.until(session.deviceTokenExpiresAt));
 }
 
+/** Clears the sign-in. The device cookie stays: it signs nobody in, and it keeps this browser past the per-email cap next time. */
 export function clearSessionCookies(jar: { set: (name: string, value: string, options: Record<string, unknown>) => unknown }): void {
   jar.set(REFRESH_COOKIE, "", cookieOpts.clear);
   jar.set(ACCESS_COOKIE, "", cookieOpts.clear);
@@ -109,10 +114,11 @@ function refusal(status: number, body: unknown): Refusal {
 export function readSession(body: unknown): OwnerSession | null {
   if (typeof body !== "object" || body === null) return null;
   const b = body as Record<string, unknown>;
-  const fields = ["accessToken", "accessTokenExpiresAt", "refreshToken", "refreshTokenExpiresAt", "tenantId", "email"] as const;
+  const fields = ["accessToken", "accessTokenExpiresAt", "refreshToken", "refreshTokenExpiresAt", "tenantId", "email", "deviceToken", "deviceTokenExpiresAt"] as const;
   for (const field of fields) if (typeof b[field] !== "string" || (b[field] as string).length === 0) return null;
   // A date that cannot be read would give a cookie no life at all, so the answer is refused rather than half-used.
-  if (Number.isNaN(Date.parse(b.accessTokenExpiresAt as string)) || Number.isNaN(Date.parse(b.refreshTokenExpiresAt as string))) return null;
+  for (const field of ["accessTokenExpiresAt", "refreshTokenExpiresAt", "deviceTokenExpiresAt"] as const)
+    if (Number.isNaN(Date.parse(b[field] as string))) return null;
   return {
     accessToken: b.accessToken as string,
     accessTokenExpiresAt: b.accessTokenExpiresAt as string,
@@ -120,6 +126,8 @@ export function readSession(body: unknown): OwnerSession | null {
     refreshTokenExpiresAt: b.refreshTokenExpiresAt as string,
     tenantId: b.tenantId as string,
     email: b.email as string,
+    deviceToken: b.deviceToken as string,
+    deviceTokenExpiresAt: b.deviceTokenExpiresAt as string,
   };
 }
 

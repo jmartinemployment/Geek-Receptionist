@@ -1,6 +1,12 @@
 export const REFRESH_COOKIE = "rp_refresh";
 export const ACCESS_COOKIE = "rp_access";
 
+/**
+ * The device token GeekAPI gives each sign-in: proof this browser signed in as that owner before, so GeekAPI's cap on failed sign-ins
+ * per email does not keep the owner out of this browser. It outlives a sign-out on purpose, and it signs nobody in.
+ */
+export const DEVICE_COOKIE = "rp_device";
+
 /** The request header proxy.ts sets when it could not refresh the sign-in for a reason other than the sign-in having ended. */
 export const AUTH_ERROR_HEADER = "x-rp-auth-error";
 

@@ -1,21 +1,13 @@
 /**
- * True when a form POST came from a page of this site. A browser always sends Origin on a cross-site POST, so a POST whose Origin is a
- * different site is refused: another site cannot sign a visitor into an account of its choosing or sign them out. A POST with no Origin
- * at all is refused too, because every browser this site supports sends one on a form POST.
+ * The origin the visitor's browser used, from the request's headers. Behind Vercel the request can carry the deployment's own host, so
+ * the forwarded host and protocol, which Vercel sets, are preferred; on this machine there are none and the Host header is used.
+ *
+ * Cross-site requests are not checked here: every form is a Server Action, and Next.js refuses a Server Action whose Origin is not this
+ * site's host before it runs.
  */
-export function cameFromThisSite(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return false;
-  return origin === publicOrigin(request);
-}
-
-/**
- * The origin the visitor's browser used. Behind Vercel the request URL can carry the deployment's own host, so the forwarded host and
- * protocol, which Vercel sets, are preferred.
- */
-export function publicOrigin(request: Request): string {
-  const url = new URL(request.url);
-  const host = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() || url.host;
-  const proto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || url.protocol.replace(/:$/, "");
+export function publicOrigin(headers: Headers): string {
+  const host = headers.get("x-forwarded-host")?.split(",")[0]?.trim() || headers.get("host") || "localhost:3010";
+  const forwarded = headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const proto = forwarded || (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) ? "http" : "https");
   return `${proto}://${host}`;
 }

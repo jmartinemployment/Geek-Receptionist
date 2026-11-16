@@ -64,9 +64,8 @@ export function dollars(amount: number): string {
   return amount.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-/** The words shown when a payment did not complete. GeekAPI's codes in plain words; an unknown code shows GeekAPI's own message. */
-export function describePaymentFailure(status: number, code: string | null, message: string | null): string {
-  if (status === 401) return "Your sign-in ended before the payment was recorded. Sign in again; if PayPal took the payment, it will show as paid.";
+/** The words shown when a payment did not complete. GeekAPI's codes in plain words; the page shows only fixed sentences, never text from the address bar. */
+export function describePaymentFailure(code: string | null): string {
   switch (code) {
     case "charge_not_owed":
       return "This overage is already paid.";
@@ -74,7 +73,11 @@ export function describePaymentFailure(status: number, code: string | null, mess
       return "PayPal did not complete the payment, so nothing was taken. Try again from your dashboard.";
     case "billing_unavailable":
       return "PayPal could not be reached. Nothing is recorded as paid yet; try again shortly.";
+    case "store_unavailable":
+      return "The payment went through and could not be recorded yet. It has been logged and will be put right; do not pay again.";
+    case "payment_unreadable":
+      return "PayPal's answer could not be read, so nothing was recorded. If PayPal took the payment, it will show as paid within the hour.";
     default:
-      return message ?? `The payment could not be completed (status ${status}).`;
+      return code ? `The payment could not be completed (${code}).` : "The payment could not be completed.";
   }
 }

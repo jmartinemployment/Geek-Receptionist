@@ -28,9 +28,9 @@ test("a refusal shows GeekAPI's message and code", () => {
   assert.equal(describeBilling(502, null).kind, "problem");
 });
 
-test("each payment failure has its own words", () => {
-  assert.match(describePaymentFailure(409, "charge_not_owed", null), /already paid/);
-  assert.match(describePaymentFailure(402, "payment_not_completed", null), /nothing was taken/);
-  assert.match(describePaymentFailure(401, null, null), /Sign in again/);
-  assert.equal(describePaymentFailure(500, "other", "GeekAPI's words"), "GeekAPI's words");
+test("each payment failure has its own words, and an unknown code shows only the code", () => {
+  assert.match(describePaymentFailure("charge_not_owed"), /already paid/);
+  assert.match(describePaymentFailure("payment_not_completed"), /nothing was taken/);
+  assert.match(describePaymentFailure("store_unavailable"), /do not pay again/);
+  assert.equal(describePaymentFailure("other_code"), "The payment could not be completed (other_code).");
 });

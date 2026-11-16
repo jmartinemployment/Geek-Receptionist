@@ -1,65 +1,39 @@
-:root {
-  --ink: #17202a;
-  --muted: #5b6672;
-  --line: #d8dee4;
-  --paper: #ffffff;
-  --wash: #f5f7f9;
-  --accent: #1a5fb4;
-  --ok: #1e7a46;
-  --warn: #9a5b00;
-  --bad: #b3261e;
+@import "tailwindcss";
+
+/* The portal's colours. Utilities read these variables, so the dark values below apply everywhere without a dark: variant. */
+@theme {
+  --color-ink: #17202a;
+  --color-muted: #5b6672;
+  --color-line: #d8dee4;
+  --color-paper: #ffffff;
+  --color-wash: #f5f7f9;
+  --color-accent: #1a5fb4;
+  --color-ok: #1e7a46;
+  --color-warn: #9a5b00;
+  --color-bad: #b3261e;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ink: #e8edf2;
-    --muted: #a3aeb9;
-    --line: #34404c;
-    --paper: #141b22;
-    --wash: #0e1319;
-    --accent: #7db2f5;
-    --ok: #62c58c;
-    --warn: #e0a64a;
-    --bad: #f2877f;
+    --color-ink: #e8edf2;
+    --color-muted: #a3aeb9;
+    --color-line: #34404c;
+    --color-paper: #141b22;
+    --color-wash: #0e1319;
+    --color-accent: #7db2f5;
+    --color-ok: #62c58c;
+    --color-warn: #e0a64a;
+    --color-bad: #f2877f;
   }
 }
 
-* { box-sizing: border-box; }
+:root { color-scheme: light dark; }
 
 body {
-  margin: 0;
-  background: var(--wash);
-  color: var(--ink);
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  @apply bg-wash text-ink font-sans antialiased;
 }
 
-main { max-width: 40rem; margin: 0 auto; padding: 2.5rem 1rem; }
-h1 { font-size: 1.6rem; margin: 0 0 1rem; }
-h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
-p { margin: 0 0 1rem; }
-.muted { color: var(--muted); }
-
-.card { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
-.status { font-weight: 600; }
-.status.ok { color: var(--ok); }
-.status.warn { color: var(--warn); }
-.status.bad { color: var(--bad); }
-
-.button {
-  display: inline-block; border: 0; border-radius: 6px; padding: 0.6rem 1rem; cursor: pointer;
-  background: var(--accent); color: #fff; font: inherit; font-weight: 600; text-decoration: none;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
-.button.quiet { background: transparent; color: var(--accent); border: 1px solid var(--line); }
-.button:disabled { opacity: 0.6; cursor: wait; }
-.button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-a { color: var(--accent); }
-.row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; }
-.center { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.75rem; padding: 1rem; }
-
-.form { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; max-width: 22rem; text-align: left; }
-.form label { font-weight: 600; }
-.form input {
-  font: inherit; padding: 0.55rem 0.7rem; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink);
-}
-.form input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
-.form .button { margin-top: 0.5rem; }

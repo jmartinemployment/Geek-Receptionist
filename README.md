@@ -2,34 +2,49 @@
 
 Where a Geek-Receptionist tenant's owner signs in and manages their receptionist. Plan: GeekBackend `docs/Geek-Receptionist.md`.
 
-Next.js 16 (App Router). Geek-Receptionist has its own login; no other Geek service is used. The owner signs in with email and password
-on `/login`; this server sends them to GeekAPI `POST /api/v1/owner-auth/sign-in` with `X-API-Key`, and keeps the access token (15
-minutes) and the refresh token (30 days) in httpOnly cookies, so the browser's page never holds either. `proxy.ts` renews the access token
-with `POST /api/v1/owner-auth/refresh` before a page renders; GeekAPI spends each refresh token once, and only its answer that the token
-is unknown, expired or already used, or that the account's subscription is cancelled (`403 account_cancelled`), signs the owner out. Each sign-in also gives this browser a device token (90 days, httpOnly cookie
-`rp_device`), sent with the next sign-in so GeekAPI's cap of 10 failed sign-ins per email per hour never keeps the owner out of a browser
-they have signed in from; it signs nobody in. Sign-out calls `POST /api/v1/owner-auth/sign-out` and clears the two session cookies, not
-the device cookie. The
-sign-in and sign-out POSTs are refused unless they come from a page of this site (Origin check). This app talks only to GeekAPI.
+Next.js 16 (App Router), TypeScript and Tailwind CSS 4, rendered on the server first. Geek-Receptionist has its own login; no other
+Geek service is used, and this app talks only to GeekAPI.
+
+## How it is built
+
+- **Pages are Server Components.** Every page fetches from GeekAPI on the server, so the first answer is complete HTML. Only four small
+  components run in the browser: the login form, the one-button form (`ActionButton`), and the one-time notice.
+- **No full-page posts.** Every form is a Server Action run through `useActionState`: sign in, sign out, Connect Google Calendar and Pay
+  now. The page never reloads; a failure stays on screen under the button, and success moves on with `redirect()`. Next.js refuses a
+  Server Action whose Origin is not this site, so another site cannot sign a visitor in or out. A charge is bound to its Pay now button on
+  the server (`.bind`), never put in a hidden field.
+- **Streaming.** `/dashboard` sends its heading at once and each card (Subscription, Google Calendar) streams in under its own
+  `Suspense` boundary as GeekAPI answers; `loading.tsx` shows the card skeletons while the page starts. Links are `next/link`.
+- **Return trips are done on the server.** Google and PayPal send the owner back to Route Handlers
+  (`/oauth/mcp/google_calendar/callback`, `/billing/paid`) that hand the one-time code or order to GeekAPI before anything is drawn, then
+  send the owner to `/dashboard?notice=...` (or `calendar_error=` / `payment_error=`), which shows a fixed sentence for that code in a
+  notice and takes the code out of the address bar. Nothing typed or sent by another site is ever shown as text.
+- **No optimistic display of payments.** A payment shows as paid only after GeekAPI says PayPal completed it.
+
+## Sign-in
+
+The owner signs in with email and password on `/login`; the Server Action sends them to GeekAPI `POST /api/v1/owner-auth/sign-in` with
+`X-API-Key`, and keeps the access token (15 minutes) and the refresh token (30 days) in httpOnly cookies, so the browser's page never holds
+either. `proxy.ts` renews the access token with `POST /api/v1/owner-auth/refresh` before a page renders, and sends a visitor with no
+sign-in from `/dashboard` to `/login` before anything streams; GeekAPI spends each refresh token once, and only its answer that the token
+is unknown, expired or already used, or that the account's subscription is cancelled (`403 account_cancelled`), signs the owner out. Each
+sign-in also gives this browser a device token (90 days, httpOnly cookie `rp_device`), sent with the next sign-in so GeekAPI's cap of 10
+failed sign-ins per email per hour never keeps the owner out of a browser they have signed in from; it signs nobody in. Sign-out calls
+`POST /api/v1/owner-auth/sign-out` and clears the two session cookies, not the device cookie.
 
 ## What exists
 
-- `/login`, `/` and `/signed-out`: sign in. The login page shows a fixed sentence for each refusal code, never text from the address bar.
-- `/dashboard`: the owner's Google Calendar status, from GeekAPI `GET /api/v1/tenants/{tenantId}/calendar/check`, and a button that starts
-  the connection (`GET .../oauth/mcp/google_calendar/authorize`).
-- `/dashboard` also shows the subscription, from GeekAPI `GET /api/v1/tenants/{tenantId}/billing`: active with its month's end, or
-  suspended with the day the receptionist stops answering, a note when PayPal could not take the monthly payment, and each unpaid
-  overage with a Pay now button (`POST /api/billing/pay`, which asks GeekAPI for a PayPal order and sends the owner to PayPal).
-- `/billing/paid`: where PayPal sends the owner after approving. It reads the charge and PayPal's order (`token`), removes them from the
-  address bar, and sends them once to GeekAPI `POST .../billing/overage-charges/{chargeId}/complete` through `/api/billing/complete`.
-- `/oauth/mcp/google_calendar/callback`: where Google sends the owner back. It reads the one-time code, the sealed state and any error,
-  removes them from the address bar and history, and sends them once to GeekAPI `POST .../oauth/mcp/google_calendar/complete`.
+- `/login`, `/` and `/signed-out`: sign in. A refusal shows one of the login page's fixed sentences, and the email typed stays.
+- `/dashboard`: the subscription, from GeekAPI `GET /api/v1/tenants/{tenantId}/billing` (active with its month's end, or suspended with
+  the day the receptionist stops answering, a note when PayPal could not take the monthly payment, and each unpaid overage with Pay now),
+  and the Google Calendar status, from `GET .../calendar/check`, with Connect Google Calendar.
+- `/billing/paid` and `/oauth/mcp/google_calendar/callback`: the return trips above.
 - The tenant is always taken from the owner's own `tenant_id` claim on the server, never from the browser's request.
 
 ## What does not exist
 
-The `/signup` wizard (eligibility, PayPal, area code, owner account), the rest of the dashboard (live calls, appointments, knowledge,
-settings, billing), and a Vercel project. Nothing has run against a real owner's login yet.
+The `/signup` wizard (eligibility, PayPal, area code, owner account), and the rest of the dashboard (live calls, appointments, knowledge,
+settings). Nothing has run against a real owner's login yet: no tenant is active.
 
 ## Variables
 

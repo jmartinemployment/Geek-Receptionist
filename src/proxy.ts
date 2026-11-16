@@ -14,13 +14,14 @@ import { clearSessionCookies, refreshSession, sessionEnded, setSessionCookies } 
 export async function proxy(request: NextRequest) {
   const hasAccess = Boolean(request.cookies.get(ACCESS_COOKIE)?.value);
   const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
-  if (hasAccess || !refresh) return withoutAuthError(request);
+  if (hasAccess) return withoutAuthError(request);
+  if (!refresh) return signedOut(request);
 
   const outcome = await refreshSession(refresh);
 
   if (!outcome.ok) {
     if (sessionEnded(outcome)) {
-      const ended = withoutAuthError(request, (jar) => {
+      const ended = signedOut(request, (jar) => {
         jar.delete(ACCESS_COOKIE);
         jar.delete(REFRESH_COOKIE);
       });
@@ -42,6 +43,15 @@ export async function proxy(request: NextRequest) {
 }
 
 /**
+ * The dashboard streams, so once it starts rendering a redirect can only happen in the browser: a visitor with no sign-in is sent to
+ * /login here instead, before anything renders. Every other path passes on; its page or route decides what a missing sign-in means.
+ */
+function signedOut(request: NextRequest, change?: (jar: NextRequest["cookies"]) => void): NextResponse {
+  if (request.nextUrl.pathname.startsWith("/dashboard")) return NextResponse.redirect(new URL("/login", request.url), 303);
+  return withoutAuthError(request, change);
+}
+
+/**
  * Passes the request on with the auth-error header removed, so a browser can never send one of its own, and with the request's cookies
  * changed by <paramref name="change"/> so this same request sees a fresh token without a round trip.
  */
@@ -56,7 +66,7 @@ function withoutAuthError(request: NextRequest, change?: (jar: NextRequest["cook
 }
 
 export const config = {
-  // Only paths that need a session. The sign-in and sign-out routes and the login and signed-out pages set or clear these cookies
-  // themselves and must not trigger a refresh.
-  matcher: ["/", "/dashboard/:path*", "/oauth/:path*", "/api/calendar/:path*", "/billing/:path*", "/api/billing/:path*"],
+  // Only paths that need a session, including the dashboard's Server Actions, which post to /dashboard. The login page's sign-in
+  // action and the signed-out page set or clear these cookies themselves and must not trigger a refresh.
+  matcher: ["/", "/dashboard/:path*", "/oauth/:path*", "/billing/:path*"],
 };

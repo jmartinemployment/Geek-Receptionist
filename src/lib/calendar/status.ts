@@ -24,6 +24,8 @@ export function describeCalendarCheck(status: number, body: { error?: unknown; c
 /** The words shown when finishing the connection failed. GeekAPI's codes, each in plain words; an unknown code shows GeekAPI's own message. */
 export function describeCompleteFailure(code: string | null, message: string | null): string {
   switch (code) {
+    case "no_approval":
+      return "Google sent no approval. Start the connection again.";
     case "state_expired":
       return "That approval took too long. Start the connection again.";
     case "state_invalid":

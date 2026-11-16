@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { clearSessionCookies, readSession, refreshSession, sessionEnded, setSessionCookies, signIn, signOut, visitorIpFrom } from "./owner-auth";
 import { ACCESS_COOKIE, DEVICE_COOKIE, REFRESH_COOKIE, accessCookieSeconds } from "@/lib/auth/cookies";
 import { loginMessage } from "@/lib/auth/login-messages";
-import { cameFromThisSite } from "@/lib/auth/same-origin";
+import { publicOrigin } from "@/lib/auth/same-origin";
 
 const session = {
   accessToken: "a.b.c",
@@ -146,11 +146,9 @@ describe("helpers", () => {
     assert.equal(loginMessage(null), null);
   });
 
-  it("accepts a form POST from this site only", () => {
-    const post = (origin: string | null) =>
-      new Request("https://receptionist.geekatyourspot.com/api/auth/sign-in", { method: "POST", headers: origin ? { origin } : {} });
-    assert.equal(cameFromThisSite(post("https://receptionist.geekatyourspot.com")), true);
-    assert.equal(cameFromThisSite(post("https://evil.example")), false);
-    assert.equal(cameFromThisSite(post(null)), false);
+  it("builds return addresses from the visitor's own origin, preferring Vercel's forwarded host", () => {
+    assert.equal(publicOrigin(new Headers({ host: "x.vercel.app", "x-forwarded-host": "receptionist.geekatyourspot.com", "x-forwarded-proto": "https" })), "https://receptionist.geekatyourspot.com");
+    assert.equal(publicOrigin(new Headers({ host: "localhost:3010" })), "http://localhost:3010");
+    assert.equal(publicOrigin(new Headers({ host: "receptionist.geekatyourspot.com" })), "https://receptionist.geekatyourspot.com");
   });
 });

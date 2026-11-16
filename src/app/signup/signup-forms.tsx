@@ -51,6 +51,14 @@ export function BusinessForm({ activities }: { activities: BusinessActivity[] })
         ))}
       </select>
       <p className={`${ui.muted} text-sm`}>The code on your tax return (line B of Schedule C), from the IRS&rsquo;s 2025 list.</p>
+      <label htmlFor="countryCode" className={label}>Country</label>
+      <select id="countryCode" name="countryCode" required autoComplete="country" defaultValue={value("countryCode")} className={field}>
+        <option value="" disabled>
+          Choose the business&rsquo;s country
+        </option>
+        <option value="US">United States</option>
+        <option value="OTHER">Another country</option>
+      </select>
       <label htmlFor="stateCode" className={label}>State</label>
       <input id="stateCode" name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} w-24 uppercase`} />
       <label htmlFor="contactEmail" className={label}>Email</label>

@@ -22,6 +22,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   const fields = {
     businessName: text(form, "businessName"),
     businessActivityCode: text(form, "businessActivityCode"),
+    countryCode: text(form, "countryCode"),
     stateCode: text(form, "stateCode").toUpperCase(),
     contactEmail: text(form, "contactEmail"),
     contactPhone: text(form, "contactPhone"),
@@ -31,7 +32,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
     businessName: fields.businessName,
     businessActivityCode: fields.businessActivityCode,
-    countryCode: "US",
+    countryCode: fields.countryCode,
     stateCode: fields.stateCode,
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone,

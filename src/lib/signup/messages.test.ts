@@ -4,6 +4,7 @@ import { refusalOf, signupMessage } from "./messages";
 
 test("a known code shows its fixed sentence", () => {
   assert.match(signupMessage("industry_excluded"), /healthcare/);
+  assert.match(signupMessage("business_activity_unknown"), /list/);
   assert.match(signupMessage("paypal_cancelled"), /Nothing was charged/);
 });
 

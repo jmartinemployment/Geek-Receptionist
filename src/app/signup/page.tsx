@@ -4,6 +4,7 @@ import { readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
 import { choosePlanAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { getBusinessActivities } from "@/services/onboarding";
 import { BusinessForm, LoginForm, NumberForm } from "./signup-forms";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const index = STEPS.findIndex((s) => s.step === step);
   const { error } = await searchParams;
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
+  const activities = step === "business" ? await getBusinessActivities() : null;
 
   return (
     <main className={ui.page}>
@@ -54,7 +56,13 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           </p>
         ) : null}
 
-        {step === "business" && <BusinessForm />}
+        {step === "business" && activities && (activities.ok ? (
+          <BusinessForm activities={activities.activities} />
+        ) : (
+          <p className={ui.status.bad} role="alert">
+            {signupMessage(activities.code)}
+          </p>
+        ))}
 
         {step === "plan" && (
           <>

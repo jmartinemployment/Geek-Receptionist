@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { ui } from "@/lib/ui";
+import type { BusinessActivity } from "@/services/onboarding";
 import { activateAction, businessAction, createLoginAction, type SignupFormState } from "./actions";
 
 const field =
@@ -18,7 +19,14 @@ function Refusal({ error }: { error: string | null }) {
 
 const start = (fields: Record<string, string> = {}): SignupFormState => ({ error: null, fields });
 
-export function BusinessForm() {
+/** The chart's sectors in its own order, each with its codes, for the list's groups. */
+function bySector(activities: BusinessActivity[]): [string, BusinessActivity[]][] {
+  const sectors = new Map<string, BusinessActivity[]>();
+  for (const activity of activities) sectors.set(activity.sector, [...(sectors.get(activity.sector) ?? []), activity]);
+  return [...sectors.entries()];
+}
+
+export function BusinessForm({ activities }: { activities: BusinessActivity[] }) {
   const [state, action, pending] = useActionState(businessAction, start());
   const value = (name: string) => state.fields[name] ?? "";
 
@@ -27,8 +35,22 @@ export function BusinessForm() {
       <Refusal error={state.error} />
       <label htmlFor="businessName" className={label}>Business name</label>
       <input id="businessName" name="businessName" required autoComplete="organization" defaultValue={value("businessName")} className={field} />
-      <label htmlFor="industryVertical" className={label}>What the business does</label>
-      <input id="industryVertical" name="industryVertical" required placeholder="Plumbing, landscaping, HVAC…" defaultValue={value("industryVertical")} className={field} />
+      <label htmlFor="businessActivityCode" className={label}>What the business does</label>
+      <select id="businessActivityCode" name="businessActivityCode" required defaultValue={value("businessActivityCode")} className={field}>
+        <option value="" disabled>
+          Choose its IRS business activity code
+        </option>
+        {bySector(activities).map(([sector, codes]) => (
+          <optgroup key={sector} label={sector}>
+            {codes.map((a) => (
+              <option key={a.code} value={a.code}>
+                {a.code} {a.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      <p className={`${ui.muted} text-sm`}>The code on your tax return (line B of Schedule C), from the IRS&rsquo;s 2025 list.</p>
       <div className="grid grid-cols-[6rem_1fr] gap-2">
         <label htmlFor="stateCode" className={label}>State</label>
         <label htmlFor="county" className={label}>County</label>

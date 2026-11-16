@@ -21,7 +21,7 @@ const text = (form: FormData, name: string) => {
 export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
     businessName: text(form, "businessName"),
-    industryVertical: text(form, "industryVertical"),
+    businessActivityCode: text(form, "businessActivityCode"),
     stateCode: text(form, "stateCode").toUpperCase(),
     county: text(form, "county"),
     contactEmail: text(form, "contactEmail"),
@@ -31,7 +31,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
 
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
     businessName: fields.businessName,
-    industryVertical: fields.industryVertical,
+    businessActivityCode: fields.businessActivityCode,
     countryCode: "US",
     stateCode: fields.stateCode,
     county: fields.county || null,

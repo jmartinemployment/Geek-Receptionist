@@ -56,8 +56,7 @@ export function BusinessForm({ activities }: { activities: BusinessActivity[] })
       <label htmlFor="contactEmail" className={label}>Email</label>
       <input id="contactEmail" name="contactEmail" type="email" required autoComplete="email" defaultValue={value("contactEmail")} className={field} />
       <label htmlFor="contactPhone" className={label}>Business phone</label>
-      <input id="contactPhone" name="contactPhone" type="tel" required autoComplete="tel" placeholder="+15615550101" defaultValue={value("contactPhone")} className={field} />
-      <p className={`${ui.muted} text-sm`}>With the country code, as +1 and ten digits.</p>
+      <input id="contactPhone" name="contactPhone" type="tel" required autoComplete="tel-national" placeholder="(561) 555-0101" defaultValue={value("contactPhone")} className={field} />
       <label className="mt-2 flex items-start gap-2">
         <input type="checkbox" name="complianceAttested" required className="mt-1.5" />
         <span>

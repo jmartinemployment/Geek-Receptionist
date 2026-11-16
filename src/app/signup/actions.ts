@@ -23,7 +23,6 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     businessName: text(form, "businessName"),
     businessActivityCode: text(form, "businessActivityCode"),
     stateCode: text(form, "stateCode").toUpperCase(),
-    county: text(form, "county"),
     contactEmail: text(form, "contactEmail"),
     contactPhone: text(form, "contactPhone"),
   };
@@ -34,7 +33,6 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     businessActivityCode: fields.businessActivityCode,
     countryCode: "US",
     stateCode: fields.stateCode,
-    county: fields.county || null,
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone,
     complianceAttested: attested,

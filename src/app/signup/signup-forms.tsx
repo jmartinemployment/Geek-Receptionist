@@ -51,12 +51,8 @@ export function BusinessForm({ activities }: { activities: BusinessActivity[] })
         ))}
       </select>
       <p className={`${ui.muted} text-sm`}>The code on your tax return (line B of Schedule C), from the IRS&rsquo;s 2025 list.</p>
-      <div className="grid grid-cols-[6rem_1fr] gap-2">
-        <label htmlFor="stateCode" className={label}>State</label>
-        <label htmlFor="county" className={label}>County</label>
-        <input id="stateCode" name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} uppercase`} />
-        <input id="county" name="county" placeholder="Palm Beach" defaultValue={value("county")} className={field} />
-      </div>
+      <label htmlFor="stateCode" className={label}>State</label>
+      <input id="stateCode" name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} w-24 uppercase`} />
       <label htmlFor="contactEmail" className={label}>Email</label>
       <input id="contactEmail" name="contactEmail" type="email" required autoComplete="email" defaultValue={value("contactEmail")} className={field} />
       <label htmlFor="contactPhone" className={label}>Business phone</label>

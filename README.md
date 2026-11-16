@@ -41,10 +41,21 @@ failed sign-ins per email per hour never keeps the owner out of a browser they h
 - `/billing/paid` and `/oauth/mcp/google_calendar/callback`: the return trips above.
 - The tenant is always taken from the owner's own `tenant_id` claim on the server, never from the browser's request.
 
+- `/signup`: self-service signup, five steps, each a Server Action. (1) The business and the compliance statement go to GeekAPI
+  `POST /api/v1/onboarding/validate-eligibility`, which makes the tenant. (2) A plan: GeekAPI `POST .../onboarding/paypal/subscription`
+  starts a PayPal subscription to that tier's plan, the visitor approves it in PayPal and comes back to `/signup/paypal/subscribed`.
+  (3) Saving the PayPal account for overage minutes: `POST .../onboarding/paypal/vault`, approved in PayPal, back to
+  `/signup/paypal/saved`, which calls `.../paypal/vault/complete`. (4) The area code: `POST .../onboarding/activate-subscription` checks
+  both with PayPal, then buys the number and sets up the receptionist; this is the step that spends money. (5) The owner's login:
+  `POST .../onboarding/create-owner-login`, then sign-in and the dashboard. Every onboarding call carries GeekAPI's key, the visitor's
+  address (`X-Visitor-Ip`) and Vercel's country for it (`X-Visitor-Country`, from `x-vercel-ip-country`), which GeekAPI requires;
+  signup therefore cannot pass its first step on this machine. Progress between steps and across the PayPal trips is an httpOnly cookie
+  (`rp_signup`, one day) holding ids only, never a password.
+
 ## What does not exist
 
-The `/signup` wizard (eligibility, PayPal, area code, owner account), and the rest of the dashboard (live calls, appointments, knowledge,
-settings). Nothing has run against a real owner's login yet: no tenant is active.
+Guided trade setup after signup, and the rest of the dashboard (live calls, appointments, knowledge, settings). Nothing has run against
+a real owner's login yet: no tenant is active.
 
 ## Variables
 
@@ -56,6 +67,11 @@ settings). Nothing has run against a real owner's login yet: no tenant is active
 Google's redirect address, registered on the OAuth client in project `geek-oauth-04-11-2026`, is
 `https://receptionist.geekatyourspot.com/oauth/mcp/google_calendar/callback`, and GeekAPI's `PORTAL_BASE_URL` is
 `https://receptionist.geekatyourspot.com`.
+
+## Repository and hosting
+
+GitHub: `jmartinemployment/Geek-Receptionist-Portal`, branch `main`. Hosting: Vercel, at `https://receptionist.geekatyourspot.com`
+(not set up yet). Licence: MIT (`LICENSE`).
 
 ## Commands
 

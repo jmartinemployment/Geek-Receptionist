@@ -1,4 +1,4 @@
-# Geek-Receptionist-Portal
+# Geek-Receptionist
 
 Where a Geek-Receptionist tenant's owner signs in and manages their receptionist. Plan: GeekBackend `docs/Geek-Receptionist.md`.
 
@@ -70,7 +70,7 @@ Google's redirect address, registered on the OAuth client in project `geek-oauth
 
 ## Repository and hosting
 
-GitHub: `jmartinemployment/Geek-Receptionist`, branch `main` (renamed from Geek-Receptionist-Portal on 2026-11-16; the old v0 .NET service is now `Geek-Receptionist-v0`). Hosting: Vercel, at `https://receptionist.geekatyourspot.com`
+GitHub: `jmartinemployment/Geek-Receptionist`, branch `main`. Hosting: Vercel, at `https://receptionist.geekatyourspot.com`
 (not set up yet). Licence: MIT (`LICENSE`).
 
 ## Commands

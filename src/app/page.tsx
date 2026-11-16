@@ -8,7 +8,7 @@ export default async function Home() {
     <main className="center">
       <h1>Geek-Receptionist</h1>
       <p className="muted">Sign in to manage your receptionist and connect your calendar.</p>
-      <a className="button" href="/api/auth/start">
+      <a className="button" href="/login">
         Sign in
       </a>
     </main>

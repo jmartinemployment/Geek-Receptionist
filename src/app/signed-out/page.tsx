@@ -1,8 +1,16 @@
-export default function SignedOut() {
+export default async function SignedOut({ searchParams }: { searchParams: Promise<{ notice?: string | string[] }> }) {
+  const { notice } = await searchParams;
+
   return (
     <main className="center">
       <h1>You are signed out</h1>
-      <a className="button" href="/api/auth/start">
+      {notice === "not_ended" ? (
+        <p className="status warn" role="alert">
+          This browser is signed out, but GeekAPI could not be reached to end the sign-in itself. It ends on its own within 30 days, or
+          the next time it is used after you sign in again.
+        </p>
+      ) : null}
+      <a className="button" href="/login">
         Sign in again
       </a>
     </main>

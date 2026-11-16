@@ -77,7 +77,7 @@ export function CalendarCallbackClient() {
       <p className="muted" role="alert">
         {shown.message}
       </p>
-      <a className="button" href={shown.signedOut ? "/api/auth/start" : "/dashboard"}>
+      <a className="button" href={shown.signedOut ? "/login" : "/dashboard"}>
         {shown.signedOut ? "Sign in" : "Back to your dashboard"}
       </a>
     </main>

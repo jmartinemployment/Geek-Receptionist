@@ -2,13 +2,16 @@
 
 Where a Geek-Receptionist tenant's owner signs in and manages their receptionist. Plan: GeekBackend `docs/Geek-Receptionist.md`.
 
-Next.js 16 (App Router). Sign-in is GeekOAuth Authorization Code + PKCE, client `geek-receptionist`, with the same cookie and refresh
-arrangement as geek-social. The owner's tokens stay in httpOnly cookies; the browser never holds one. This app talks only to GeekOAuth and
-GeekAPI.
+Next.js 16 (App Router). Geek-Receptionist has its own login; no other Geek service is used. The owner signs in with email and password
+on `/login`; this server sends them to GeekAPI `POST /api/v1/owner-auth/sign-in` with `X-API-Key`, and keeps the access token (15
+minutes) and the refresh token (30 days) in httpOnly cookies, so the browser's page never holds either. `proxy.ts` renews the access token
+with `POST /api/v1/owner-auth/refresh` before a page renders; GeekAPI spends each refresh token once, and only its answer that the token
+is unknown, expired or already used signs the owner out. Sign-out calls `POST /api/v1/owner-auth/sign-out` and clears both cookies. The
+sign-in and sign-out POSTs are refused unless they come from a page of this site (Origin check). This app talks only to GeekAPI.
 
 ## What exists
 
-- `/` and `/signed-out`: sign in.
+- `/login`, `/` and `/signed-out`: sign in. The login page shows a fixed sentence for each refusal code, never text from the address bar.
 - `/dashboard`: the owner's Google Calendar status, from GeekAPI `GET /api/v1/tenants/{tenantId}/calendar/check`, and a button that starts
   the connection (`GET .../oauth/mcp/google_calendar/authorize`).
 - `/oauth/mcp/google_calendar/callback`: where Google sends the owner back. It reads the one-time code, the sealed state and any error,
@@ -24,13 +27,10 @@ settings, billing), and a Vercel project. Nothing has run against a real owner's
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_AUTH_URL` | `https://auth.geekatyourspot.com` | GeekOAuth |
-| `NEXT_PUBLIC_GEEK_API_URL` | `https://api.geekatyourspot.com` | GeekAPI |
-| `NEXT_PUBLIC_APP_URL` | the Vercel production host, else `http://localhost:3010` | Builds the redirect address registered at GeekOAuth |
-| `NEXT_PUBLIC_OAUTH_CLIENT_ID` | `geek-receptionist` | The GeekOAuth client |
+| `GEEK_API_URL` | `https://api.geekatyourspot.com` | GeekAPI |
+| `GEEK_BACKEND_API_KEY` | none | GeekAPI's key, server-only; unset, sign-in is refused (`portal_not_configured`) without calling GeekAPI |
 
-Registered redirect addresses (GeekOAuth `OidcPublicClientSeeds`): `https://receptionist.geekatyourspot.com/auth/callback` and
-`http://localhost:3010/auth/callback`. Google's redirect address, registered on the OAuth client in project `geek-oauth-04-11-2026`, is
+Google's redirect address, registered on the OAuth client in project `geek-oauth-04-11-2026`, is
 `https://receptionist.geekatyourspot.com/oauth/mcp/google_calendar/callback`, and GeekAPI's `PORTAL_BASE_URL` is
 `https://receptionist.geekatyourspot.com`.
 

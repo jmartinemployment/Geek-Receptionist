@@ -1,49 +1,19 @@
 import { cache } from "react";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { ACCESS_COOKIE, REFRESH_COOKIE, cookieOpts } from "@/lib/auth/cookies";
-import { accessCookieMaxAge, isSessionDeadError, refreshAccessToken } from "@/services/auth-tokens";
+import { cookies, headers } from "next/headers";
+import { ACCESS_COOKIE, AUTH_ERROR_HEADER } from "@/lib/auth/cookies";
 
 /**
- * Read-only session lookup, safe in Server Components. Cookies cannot be written while a Server Component renders, so the refresh
- * happens in proxy.ts ahead of the render.
+ * The owner's access token for this request, or null when there is none. Read-only, safe in Server Components and Route Handlers: the
+ * refresh happens once, in proxy.ts, before either runs, because only there can the replacement cookies be written, and refreshing in
+ * two places would spend one refresh token twice and end the sign-in.
  */
 export const getAccessToken = cache(async (): Promise<string | null> => {
   const jar = await cookies();
   return jar.get(ACCESS_COOKIE)?.value ?? null;
 });
 
-/**
- * The refreshing variant, for Route Handlers only, where writing cookies is allowed. Returns null only when there is no session to use:
- * no refresh cookie, or GeekOAuth refused it as spent or revoked. Any other refresh failure (GeekOAuth unreachable, a 5xx) is thrown,
- * so the caller reports it instead of reading it as "signed out".
- */
-export async function getAccessTokenWithRefresh(): Promise<string | null> {
-  const jar = await cookies();
-  const existing = jar.get(ACCESS_COOKIE)?.value;
-  if (existing) return existing;
-
-  const refresh = jar.get(REFRESH_COOKIE)?.value;
-  if (!refresh) return null;
-
-  try {
-    const tokens = await refreshAccessToken(refresh);
-    // GeekOAuth rotates refresh tokens: persist the replacement or the stored one is revoked.
-    if (tokens.refresh_token) jar.set(REFRESH_COOKIE, tokens.refresh_token, cookieOpts.refresh);
-    jar.set(ACCESS_COOKIE, tokens.access_token, { ...cookieOpts.access, maxAge: accessCookieMaxAge(tokens.expires_in) });
-    return tokens.access_token;
-  } catch (error) {
-    if (isSessionDeadError(error)) {
-      jar.set(REFRESH_COOKIE, "", cookieOpts.clear);
-      jar.set(ACCESS_COOKIE, "", cookieOpts.clear);
-      return null;
-    }
-    throw error;
-  }
-}
-
-export async function requireAccessToken(): Promise<string> {
-  const token = await getAccessToken();
-  if (!token) redirect("/api/auth/start");
-  return token;
-}
+/** Why proxy.ts could not refresh the sign-in (GeekAPI unreachable or refusing), or null when it did not try or succeeded. */
+export const getAuthError = cache(async (): Promise<string | null> => {
+  const all = await headers();
+  return all.get(AUTH_ERROR_HEADER);
+});

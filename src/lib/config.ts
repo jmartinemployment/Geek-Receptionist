@@ -1,5 +1,6 @@
 /**
- * Geek-Receptionist portal -> GeekOAuth (sign-in) -> GeekAPI (api/v1/tenants/*). Never call GeekRepository or GeekMcpGateway from here.
+ * Geek-Receptionist portal -> GeekAPI only (sign-in at /api/v1/owner-auth/*, the owner's tenant at /api/v1/tenants/*). Never call
+ * GeekRepository or GeekMcpGateway from here, and no other Geek service is used: Geek-Receptionist has its own login.
  */
 
 /**
@@ -11,28 +12,15 @@ function envOrDefault(value: string | undefined, fallback: string): string {
   return (trimmed.length > 0 ? trimmed : fallback).replace(/\/$/, "");
 }
 
-const authUrl = envOrDefault(process.env.NEXT_PUBLIC_AUTH_URL, "https://auth.geekatyourspot.com");
-// appUrl feeds redirectUri, so a wrong value is a redirect_uri mismatch at GeekOAuth rather than a visible error. When it is absent,
-// prefer the host Vercel reports over the localhost default.
-const vercelProductionUrl = (process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "").trim();
-const appUrl = envOrDefault(
-  process.env.NEXT_PUBLIC_APP_URL,
-  vercelProductionUrl.length > 0 ? `https://${vercelProductionUrl}` : "http://localhost:3010",
-);
-
-export const authConfig = {
-  authUrl,
-  authorizeUrl: `${authUrl}/connect/authorize`,
-  tokenUrl: `${authUrl}/connect/token`,
-  // GeekOAuth registers one public client per app; this app is "geek-receptionist".
-  clientId: process.env.NEXT_PUBLIC_OAUTH_CLIENT_ID?.trim() || "geek-receptionist",
-  redirectUri: `${appUrl}/auth/callback`,
-  postLogoutRedirectUri: `${appUrl}/signed-out`,
-  // No custom scope: GeekAPI takes the tenant from the tenant_id claim on the owner's login, not from a scope.
-  scope: "openid profile email offline_access",
-  appUrl,
-};
-
 export const apiConfig = {
-  baseUrl: envOrDefault(process.env.NEXT_PUBLIC_GEEK_API_URL, "https://api.geekatyourspot.com"),
+  baseUrl: envOrDefault(process.env.GEEK_API_URL, "https://api.geekatyourspot.com"),
 };
+
+/**
+ * GeekAPI's key for the calls a signed-out visitor needs (sign-in, refresh, sign-out). Server-only: it has no NEXT_PUBLIC_ prefix, so
+ * Next.js never puts it in the page. Null when unset, and the caller refuses rather than calling GeekAPI without it.
+ */
+export function geekApiKey(): string | null {
+  const key = (process.env.GEEK_BACKEND_API_KEY ?? "").trim();
+  return key.length > 0 ? key : null;
+}

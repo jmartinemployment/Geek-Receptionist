@@ -1,4 +1,4 @@
-import { getAccessTokenWithRefresh } from "@/lib/auth/session";
+import { getAccessToken, getAuthError } from "@/lib/auth/session";
 import { apiConfig } from "@/lib/config";
 import { tenantIdFromAccessToken } from "@/lib/session-claims";
 
@@ -6,20 +6,20 @@ export type TenantCall = { status: number; body: { error?: unknown; code?: unkno
 
 /**
  * One call to a GeekAPI route of the signed-in owner's own tenant. The tenant comes from the owner's token and never from the browser's
- * request, and the owner's own Bearer is the only credential sent; when GeekAPI refuses it, no other is tried. Answers 401 when there is
- * no session, 403 when the sign-in carries no tenant, 502 when GeekAPI cannot be reached, and otherwise GeekAPI's own status and body.
+ * request, and the owner's own Bearer is the only credential sent; when GeekAPI refuses it, no other is tried. Answers 502 when the
+ * sign-in could not be renewed because GeekAPI was unreachable or refused for another reason, 401 when there is no session, 403 when
+ * the sign-in carries no tenant, 502 when GeekAPI cannot be reached, and otherwise GeekAPI's own status and body.
  */
 export async function callOwnerTenant(
   route: (tenantId: string) => string,
   init: { method: "GET" | "POST"; body?: unknown },
 ): Promise<TenantCall> {
-  let token: string | null;
-  try {
-    token = await getAccessTokenWithRefresh();
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    return { status: 502, body: { error: `Could not refresh the sign-in with GeekOAuth: ${detail}`, code: "auth_unavailable" } };
+  const authError = await getAuthError();
+  if (authError) {
+    return { status: 502, body: { error: "Your sign-in could not be renewed with GeekAPI. Try again shortly.", code: authError } };
   }
+
+  const token = await getAccessToken();
   if (!token) return { status: 401, body: { error: "Your sign-in has ended. Sign in again.", code: "signed_out" } };
 
   const tenantId = tenantIdFromAccessToken(token);

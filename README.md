@@ -6,7 +6,7 @@ Next.js 16 (App Router). Geek-Receptionist has its own login; no other Geek serv
 on `/login`; this server sends them to GeekAPI `POST /api/v1/owner-auth/sign-in` with `X-API-Key`, and keeps the access token (15
 minutes) and the refresh token (30 days) in httpOnly cookies, so the browser's page never holds either. `proxy.ts` renews the access token
 with `POST /api/v1/owner-auth/refresh` before a page renders; GeekAPI spends each refresh token once, and only its answer that the token
-is unknown, expired or already used signs the owner out. Each sign-in also gives this browser a device token (90 days, httpOnly cookie
+is unknown, expired or already used, or that the account's subscription is cancelled (`403 account_cancelled`), signs the owner out. Each sign-in also gives this browser a device token (90 days, httpOnly cookie
 `rp_device`), sent with the next sign-in so GeekAPI's cap of 10 failed sign-ins per email per hour never keeps the owner out of a browser
 they have signed in from; it signs nobody in. Sign-out calls `POST /api/v1/owner-auth/sign-out` and clears the two session cookies, not
 the device cookie. The

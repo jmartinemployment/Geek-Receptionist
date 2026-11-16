@@ -83,7 +83,7 @@ describe("owner sign-in against GeekAPI", () => {
     assert.equal(sessionEnded(outcome), false);
   });
 
-  it("ends the session only for an unknown, expired or reused refresh token", async () => {
+  it("ends the session only for an unknown, expired or reused refresh token, or a cancelled account", async () => {
     answer(401, { error: "x", code: "refresh_token_reused" });
     assert.equal(sessionEnded(await refreshSession("r1")), true);
     answer(401, { error: "x", code: "refresh_token_invalid" });
@@ -91,6 +91,10 @@ describe("owner sign-in against GeekAPI", () => {
     answer(503, { error: "x", code: "owner_auth_not_configured" });
     assert.equal(sessionEnded(await refreshSession("r1")), false);
     answer(401, { error: "x", code: "something_else" });
+    assert.equal(sessionEnded(await refreshSession("r1")), false);
+    answer(403, { error: "x", code: "account_cancelled" });
+    assert.equal(sessionEnded(await refreshSession("r1")), true);
+    answer(403, { error: "x", code: "something_else" });
     assert.equal(sessionEnded(await refreshSession("r1")), false);
   });
 

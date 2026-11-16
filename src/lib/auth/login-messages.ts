@@ -7,6 +7,7 @@ const MESSAGES: Record<string, string> = {
   invalid_credentials: "That email and password do not match a login.",
   invalid_request: "Enter your email and your password.",
   rate_limited: "Too many attempts from this address. Try again later.",
+  account_cancelled: "This account's subscription is cancelled, so it can no longer sign in. Contact us to start it again.",
   too_many_failed_sign_ins: "Too many failed sign-ins for this email. Try again in an hour, or sign in from a browser you have signed in from before.",
   cross_site: "That sign-in did not come from this site. Sign in here.",
   owner_auth_not_configured: "Sign-in is not available right now. GeekAPI has no signing key set.",

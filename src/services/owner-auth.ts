@@ -19,8 +19,12 @@ export type SessionOutcome = { ok: true; session: OwnerSession } | Refusal;
 /** The codes with which GeekAPI says a refresh token can never be used again. Only these end a session; nothing else is proof. */
 const ENDED_CODES = new Set(["refresh_token_invalid", "refresh_token_reused"]);
 
+/** GeekAPI's answer to a renewal for an account whose subscription is cancelled; it has ended that sign-in. */
+const CANCELLED_CODE = "account_cancelled";
+
 export function sessionEnded(outcome: SessionOutcome): boolean {
-  return !outcome.ok && outcome.status === 401 && ENDED_CODES.has(outcome.code);
+  if (outcome.ok) return false;
+  return (outcome.status === 401 && ENDED_CODES.has(outcome.code)) || (outcome.status === 403 && outcome.code === CANCELLED_CODE);
 }
 
 /** The device token is the one this browser kept from an earlier sign-in, when it has one; it lets the owner past the per-email cap. */

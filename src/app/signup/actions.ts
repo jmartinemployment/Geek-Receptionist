@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
 import { clearSignup, readSignup, writeSignup } from "@/lib/signup/state";
+import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
 import { postOnboarding } from "@/services/onboarding";
 import { setSessionCookies, signIn, visitorIpFrom } from "@/services/owner-auth";
@@ -17,7 +18,7 @@ const text = (form: FormData, name: string) => {
   return typeof value === "string" ? value.trim() : "";
 };
 
-/** Step 1: the business and the compliance statement. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
+/** Step 1: the business and the compliance statement, behind the robot check. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
 export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
     businessName: text(form, "businessName"),
@@ -29,6 +30,10 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   };
   const attested = form.get("complianceAttested") === "on";
 
+  const visitor = await headers();
+  const captcha = await verifyCaptcha(form.get("g-recaptcha-response"), visitorIpFrom(visitor));
+  if (captcha !== "ok") return { error: signupMessage(captcha), fields };
+
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
     businessName: fields.businessName,
     businessActivityCode: fields.businessActivityCode,
@@ -38,7 +43,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     contactPhone: fields.contactPhone,
     complianceAttested: attested,
     addendumSigned: false,
-  }, await headers());
+  }, visitor);
 
   const tenantId = answer.body?.tenantId;
   if (answer.status !== 200 || typeof tenantId !== "string") return { error: refusalOf(answer.body, answer.status), fields };

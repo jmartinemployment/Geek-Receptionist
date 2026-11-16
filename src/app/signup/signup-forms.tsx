@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { ui } from "@/lib/ui";
+import { Captcha } from "@/components/captcha";
 import type { BusinessActivity } from "@/services/onboarding";
 import { activateAction, businessAction, createLoginAction, type SignupFormState } from "./actions";
 
@@ -26,7 +27,7 @@ function bySector(activities: BusinessActivity[]): [string, BusinessActivity[]][
   return [...sectors.entries()];
 }
 
-export function BusinessForm({ activities }: { activities: BusinessActivity[] }) {
+export function BusinessForm({ activities, captchaSiteKey }: { activities: BusinessActivity[]; captchaSiteKey: string }) {
   const [state, action, pending] = useActionState(businessAction, start());
   const value = (name: string) => state.fields[name] ?? "";
 
@@ -72,6 +73,7 @@ export function BusinessForm({ activities }: { activities: BusinessActivity[] })
           receptionist that tells callers so.
         </span>
       </label>
+      <Captcha siteKey={captchaSiteKey} answered={state} />
       <button className={`${ui.button} mt-3`} type="submit" disabled={pending}>
         {pending ? "Checking…" : "Continue"}
       </button>

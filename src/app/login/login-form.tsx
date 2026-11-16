@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Captcha } from "@/components/captcha";
 import { ui } from "@/lib/ui";
 import { signInAction, type SignInState } from "./actions";
 
@@ -9,7 +10,7 @@ const start: SignInState = { error: null, email: "" };
 const field =
   "rounded-md border border-line bg-paper px-3 py-2 text-ink focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-accent";
 
-export function LoginForm() {
+export function LoginForm({ captchaSiteKey }: { captchaSiteKey: string }) {
   const [state, action, pending] = useActionState(signInAction, start);
 
   return (
@@ -27,6 +28,7 @@ export function LoginForm() {
         Password
       </label>
       <input id="password" name="password" type="password" autoComplete="current-password" required className={field} />
+      <Captcha siteKey={captchaSiteKey} answered={state} />
       <button className={`${ui.button} mt-2`} type="submit" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </button>

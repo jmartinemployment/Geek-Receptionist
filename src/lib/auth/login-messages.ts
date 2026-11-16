@@ -4,6 +4,9 @@
  * so a refusal is never shown as nothing.
  */
 const MESSAGES: Record<string, string> = {
+  captcha_failed: "Tick “I’m not a robot” and try again.",
+  captcha_not_configured: "Sign-in is not available right now. This site has no reCAPTCHA key set.",
+  captcha_unavailable: "Google’s robot check could not be reached. Try again shortly.",
   invalid_credentials: "That email and password do not match a login.",
   invalid_request: "Enter your email and your password.",
   rate_limited: "Too many attempts from this address. Try again later.",

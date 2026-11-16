@@ -4,6 +4,7 @@ import { readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
 import { choosePlanAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { captchaSiteKey } from "@/lib/captcha";
 import { getBusinessActivities } from "@/services/onboarding";
 import { BusinessForm, LoginForm, NumberForm } from "./signup-forms";
 
@@ -34,6 +35,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const { error } = await searchParams;
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
   const activities = step === "business" ? await getBusinessActivities() : null;
+  const siteKey = captchaSiteKey();
 
   return (
     <main className={ui.page}>
@@ -56,8 +58,12 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           </p>
         ) : null}
 
-        {step === "business" && activities && (activities.ok ? (
-          <BusinessForm activities={activities.activities} />
+        {step === "business" && activities && (!siteKey ? (
+          <p className={ui.status.bad} role="alert">
+            {signupMessage("captcha_not_configured")}
+          </p>
+        ) : activities.ok ? (
+          <BusinessForm activities={activities.activities} captchaSiteKey={siteKey} />
         ) : (
           <p className={ui.status.bad} role="alert">
             {signupMessage(activities.code)}

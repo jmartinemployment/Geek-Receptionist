@@ -3,7 +3,7 @@ import { callOwnerTenant } from "@/lib/geekapi";
 import { describeCalendarCheck } from "@/lib/calendar/status";
 import { ui } from "@/lib/ui";
 import { connectCalendarAction } from "./actions";
-import { ActionButton } from "./action-button";
+import { ActionButton } from "@/components/action-button";
 
 /** The Google Calendar card, read from GeekAPI on the server while the page streams. */
 export async function CalendarSection() {

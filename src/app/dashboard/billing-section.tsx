@@ -3,7 +3,7 @@ import { callOwnerTenant } from "@/lib/geekapi";
 import { day, describeBilling, dollars } from "@/lib/billing/status";
 import { ui } from "@/lib/ui";
 import { payOverageAction } from "./actions";
-import { ActionButton } from "./action-button";
+import { ActionButton } from "@/components/action-button";
 
 /** The Subscription card, read from GeekAPI on the server while the page streams. */
 export async function BillingSection() {

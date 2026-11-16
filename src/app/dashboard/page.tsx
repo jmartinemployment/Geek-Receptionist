@@ -4,7 +4,7 @@ import { getAccessToken, getAuthError } from "@/lib/auth/session";
 import { noticeFrom, type NoticeParams } from "@/lib/notices";
 import { ui } from "@/lib/ui";
 import { signOutAction } from "./actions";
-import { ActionButton } from "./action-button";
+import { ActionButton } from "@/components/action-button";
 import { BillingSection } from "./billing-section";
 import { CalendarSection } from "./calendar-section";
 import { CardSkeleton } from "./card-skeleton";

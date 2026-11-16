@@ -10,9 +10,14 @@ export default async function Home() {
     <main className={ui.center}>
       <h1 className={ui.h1}>Geek-Receptionist</h1>
       <p className={ui.muted}>Sign in to manage your receptionist and connect your calendar.</p>
-      <Link className={ui.button} href="/login">
-        Sign in
-      </Link>
+      <div className="flex flex-wrap justify-center gap-3">
+        <Link className={ui.button} href="/signup">
+          Set up a receptionist
+        </Link>
+        <Link className={ui.quietButton} href="/login">
+          Sign in
+        </Link>
+      </div>
     </main>
   );
 }

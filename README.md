@@ -65,12 +65,12 @@ a real owner's login yet: no tenant is active.
 | `GEEK_BACKEND_API_KEY` | none | GeekAPI's key, server-only; unset, sign-in is refused (`portal_not_configured`) without calling GeekAPI |
 
 Google's redirect address, registered on the OAuth client in project `geek-oauth-04-11-2026`, is
-`https://receptionist.geekatyourspot.com/oauth/mcp/google_calendar/callback`, and GeekAPI's `PORTAL_BASE_URL` is
-`https://receptionist.geekatyourspot.com`.
+`https://geek-receptionist.geekatyourspot.com/oauth/mcp/google_calendar/callback`, and GeekAPI's `PORTAL_BASE_URL` is
+`https://geek-receptionist.geekatyourspot.com`.
 
 ## Repository and hosting
 
-GitHub: `jmartinemployment/Geek-Receptionist`, branch `main`. Hosting: Vercel, at `https://receptionist.geekatyourspot.com`
+GitHub: `jmartinemployment/Geek-Receptionist`, branch `main`. Hosting: Vercel, at `https://geek-receptionist.geekatyourspot.com`
 (not set up yet). Licence: MIT (`LICENSE`).
 
 ## Commands

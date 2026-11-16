@@ -58,5 +58,5 @@ function withoutAuthError(request: NextRequest, change?: (jar: NextRequest["cook
 export const config = {
   // Only paths that need a session. The sign-in and sign-out routes and the login and signed-out pages set or clear these cookies
   // themselves and must not trigger a refresh.
-  matcher: ["/", "/dashboard/:path*", "/oauth/:path*", "/api/calendar/:path*"],
+  matcher: ["/", "/dashboard/:path*", "/oauth/:path*", "/api/calendar/:path*", "/billing/:path*", "/api/billing/:path*"],
 };

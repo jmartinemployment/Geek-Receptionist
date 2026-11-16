@@ -3,6 +3,8 @@ import { getAccessToken, getAuthError } from "@/lib/auth/session";
 import { callOwnerTenant } from "@/lib/geekapi";
 import { describeCalendarCheck } from "@/lib/calendar/status";
 import { CalendarCard } from "./calendar-card";
+import { describeBilling } from "@/lib/billing/status";
+import { BillingCard } from "./billing-card";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +22,11 @@ export default async function Dashboard() {
   }
   if (!(await getAccessToken())) redirect("/login");
 
-  const check = await callOwnerTenant((tenantId) => `/api/v1/tenants/${tenantId}/calendar/check`, { method: "GET" });
-  if (check.status === 401) redirect("/login");
+  const [check, billing] = await Promise.all([
+    callOwnerTenant((tenantId) => `/api/v1/tenants/${tenantId}/calendar/check`, { method: "GET" }),
+    callOwnerTenant((tenantId) => `/api/v1/tenants/${tenantId}/billing`, { method: "GET" }),
+  ]);
+  if (check.status === 401 || billing.status === 401) redirect("/login");
   const state = describeCalendarCheck(check.status, check.body);
 
   return (
@@ -34,6 +39,7 @@ export default async function Dashboard() {
           </button>
         </form>
       </div>
+      <BillingCard state={describeBilling(billing.status, billing.body)} />
       <CalendarCard state={state} />
     </main>
   );

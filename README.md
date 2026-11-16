@@ -17,6 +17,11 @@ sign-in and sign-out POSTs are refused unless they come from a page of this site
 - `/login`, `/` and `/signed-out`: sign in. The login page shows a fixed sentence for each refusal code, never text from the address bar.
 - `/dashboard`: the owner's Google Calendar status, from GeekAPI `GET /api/v1/tenants/{tenantId}/calendar/check`, and a button that starts
   the connection (`GET .../oauth/mcp/google_calendar/authorize`).
+- `/dashboard` also shows the subscription, from GeekAPI `GET /api/v1/tenants/{tenantId}/billing`: active with its month's end, or
+  suspended with the day the receptionist stops answering, a note when PayPal could not take the monthly payment, and each unpaid
+  overage with a Pay now button (`POST /api/billing/pay`, which asks GeekAPI for a PayPal order and sends the owner to PayPal).
+- `/billing/paid`: where PayPal sends the owner after approving. It reads the charge and PayPal's order (`token`), removes them from the
+  address bar, and sends them once to GeekAPI `POST .../billing/overage-charges/{chargeId}/complete` through `/api/billing/complete`.
 - `/oauth/mcp/google_calendar/callback`: where Google sends the owner back. It reads the one-time code, the sealed state and any error,
   removes them from the address bar and history, and sends them once to GeekAPI `POST .../oauth/mcp/google_calendar/complete`.
 - The tenant is always taken from the owner's own `tenant_id` claim on the server, never from the browser's request.

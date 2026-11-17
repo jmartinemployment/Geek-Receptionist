@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, Sora } from "next/font/google";
 import type { ReactNode } from "react";
-import { Footer } from "@/components/footer";
+import Footer from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import "./globals.css";
 

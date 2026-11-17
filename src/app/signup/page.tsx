@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
 import HeroSection from "@/components/shared/shared-hero-section";
 import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
@@ -30,15 +31,19 @@ const PLANS = [
 const CODE = /^[a-z0-9_]{1,64}$/;
 
 /** Self-service signup, rendered on the server from where this browser's signup stands. Each step is a Server Action; no step reloads the page. */
-export default async function Signup({ searchParams }: { searchParams: Promise<{ error?: string | string[] }> }) {
+export default async function Signup({ searchParams }: { searchParams: Promise<{ error?: string | string[]; start?: string | string[] }> }) {
   const state = await readSignup();
   const gateStep = stepOf(state, await readGates());
   const siteKey = captchaSiteKey();
   const title = "Set up your receptionist";
   const summary = "Answer a few questions, choose a plan and get a phone number for your receptionist.";
 
-  // Before the robot check is passed the page is only the hero: the robot beside the text, and Continue, which opens the check.
-  if (gateStep === "captcha") {
+  const { error, start } = await searchParams;
+
+  // Every visit opens on the hero: the robot beside the text and the orange Continue. Continue opens the robot check when it has not been
+  // passed, and takes the visitor on to the first question when it has. Once a business exists the visitor is already past it.
+  const started = state !== null || (start === "1" && gateStep !== "captcha");
+  if (!started) {
     return (
       <HeroSection
         title={title}
@@ -46,7 +51,11 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         image="/images/home-hero.avif"
         imgAlt="A Geek @ Your Spot LLC robot action figure in its package, holding a laptop with a rising chart, beside icons for chat, automation, reporting and a small business storefront."
         action={
-          siteKey ? (
+          gateStep !== "captcha" ? (
+            <Link href="/signup?start=1" className={ui.button}>
+              Continue
+            </Link>
+          ) : siteKey ? (
             <RobotCheckButton captchaSiteKey={siteKey} />
           ) : (
             <p className={ui.status.bad} role="alert">
@@ -58,9 +67,8 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
     );
   }
 
-  const step = gateStep;
+  const step = gateStep === "captcha" ? "country" : gateStep;
   const index = STEPS.findIndex((s) => s.step === step);
-  const { error } = await searchParams;
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
   const activities = step === "business" ? await getBusinessActivities() : null;
 

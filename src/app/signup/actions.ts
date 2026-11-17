@@ -23,7 +23,7 @@ export async function captchaAction(_previous: SignupFormState, form: FormData):
   const outcome = await verifyCaptcha(form.get("g-recaptcha-response"), visitorIpFrom(await headers()));
   if (outcome !== "ok") return { error: signupMessage(outcome), fields: {} };
   await passGate("captcha");
-  redirect("/signup");
+  redirect("/signup?start=1");
 }
 
 /** Step 1: is the business in the United States. A yes is remembered and the form goes on; a no is the end of it, said at once. */
@@ -31,7 +31,7 @@ export async function countryAction(inUnitedStates: boolean): Promise<{ error: s
   if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired") };
   if (!inUnitedStates) return { error: signupMessage("country_not_supported") };
   await passGate("country");
-  redirect("/signup");
+  redirect("/signup?start=1");
 }
 
 /** Step 2: is the business a healthcare or veterinary business. A no is remembered; a yes is the end of it, said at once. */
@@ -39,7 +39,7 @@ export async function healthcareAction(isHealthcare: boolean): Promise<{ error: 
   if (!(await readGates()).has("country")) return { error: signupMessage("signup_expired") };
   if (isHealthcare) return { error: signupMessage("industry_excluded") };
   await passGate("healthcare");
-  redirect("/signup");
+  redirect("/signup?start=1");
 }
 
 /** Step 3: the business and the compliance statement, once the robot check and the first two questions are passed. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */

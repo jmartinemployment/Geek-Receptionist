@@ -28,21 +28,21 @@ function bySector(activities: BusinessActivity[]): [string, BusinessActivity[]][
   return [...sectors.entries()];
 }
 
-/** The robot check form. Ticking the box sends it; there is no second click. */
+/** The robot check form, for the white dialog: dark text and the light box. Ticking the box sends it; there is no second click. */
 function RobotForm({ captchaSiteKey }: { captchaSiteKey: string }) {
   const [state, action, pending] = useActionState(captchaAction, start());
   const form = useRef<HTMLFormElement>(null);
 
   return (
     <form ref={form} action={action} className="flex flex-col gap-2">
-      <Refusal error={state.error} />
-      <p className={ui.muted}>Confirm you&rsquo;re not a robot to start.</p>
-      <Captcha siteKey={captchaSiteKey} answered={state} onSolved={() => form.current?.requestSubmit()} />
-      {pending ? (
-        <p className={ui.muted} role="status">
-          Checking…
+      {state.error ? (
+        <p className="font-semibold text-[#b3261e]" role="alert">
+          {state.error}
         </p>
       ) : null}
+      <p>Confirm you&rsquo;re not a robot to start.</p>
+      <Captcha siteKey={captchaSiteKey} answered={state} theme="light" onSolved={() => form.current?.requestSubmit()} />
+      {pending ? <p role="status">Checking…</p> : null}
     </form>
   );
 }
@@ -71,8 +71,8 @@ export function RobotDialog({ captchaSiteKey }: { captchaSiteKey: string }) {
 
   if (!host) return null;
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-labelledby="robot-title" className="fixed inset-0 z-[100] grid place-items-center bg-black/90 p-4">
-      <div className="w-full max-w-sm rounded-md border border-line p-5">
+    <div role="dialog" aria-modal="true" aria-labelledby="robot-title" className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4">
+      <div className="w-full max-w-sm rounded-md bg-white p-5 text-[#0B162A]">
         <h2 id="robot-title" className={ui.h2}>
           Robot check
         </h2>

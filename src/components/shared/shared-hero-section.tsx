@@ -9,6 +9,8 @@ type HeroSectionProps = {
   /** As on geekatyourspot.com's home hero: the large block shows the image in the five columns beside the text. The phone block has none. */
   image?: string;
   imgAlt?: string;
+  /** The home page's title size in the large block, as geekatyourspot.com's hero h1: lg:text-7xl, xl:text-[6.5rem]. Other pages keep lg:text-[4.0rem]. */
+  largeTitle?: boolean;
   /**
    * What the five columns beside the text hold when there is no image, for a page whose first screen is something to fill in. It is a
    * function of the id suffix because both blocks render it: the phone block passes "" and the large block passes "-lg", so no id is
@@ -22,7 +24,7 @@ type HeroSectionProps = {
  * there): two blocks, a phone block with lg:hidden and a large block with hidden lg:block, each with its own classes and its own navy
  * background, never one responsive block. The large block is twelve columns, the text in seven and the other five beside it.
  */
-export default function HeroSection({ title, summary, action, image, imgAlt, children }: HeroSectionProps) {
+export default function HeroSection({ title, summary, action, image, imgAlt, largeTitle, children }: HeroSectionProps) {
   return (
     <>
       <header className="min-h-screen w-full bg-[#0B162A] lg:hidden">
@@ -42,7 +44,15 @@ export default function HeroSection({ title, summary, action, image, imgAlt, chi
         <div className="container min-h-screen">
           <div className="grid min-h-screen grid-cols-12 place-items-center">
             <div className="col-span-7">
-              <h1 className="font-[var(--font-sora)] font-black leading-[0.95] text-white shadow-text lg:text-[4.0rem]">{title}</h1>
+              <h1
+                className={
+                  largeTitle
+                    ? "text-white lg:text-7xl xl:text-[6.5rem] leading-[0.95] font-black font-[var(--font-sora)] shadow-text"
+                    : "font-[var(--font-sora)] font-black leading-[0.95] text-white shadow-text lg:text-[4.0rem]"
+                }
+              >
+                {title}
+              </h1>
               <p className="pt-3 text-2xl text-white shadow-text">{summary}</p>
               {action ? <div className="pt-8">{action}</div> : null}
             </div>

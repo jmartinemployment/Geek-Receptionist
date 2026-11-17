@@ -47,6 +47,7 @@ export default function Home() {
         summary="An AI receptionist that answers your business calls and tells every caller it is an AI."
         image="/images/home-hero.avif"
         imgAlt="The Geek-Receptionist robot"
+        largeTitle
         action={
           <a href={`#${SCHEDULER_ID}`} className={ui.button}>
             {SCHEDULER_LABEL}

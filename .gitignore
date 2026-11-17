@@ -32,3 +32,50 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ── AI assistants / agents (local only — never commit) ─────────────────────
+# Claude Code
+.claude/
+.claude/**
+.claudeignore
+CLAUDE.md
+CLAUDE.local.md
+CLAUDE.*.md
+/claude/
+claude/tasks/
+claude/bootstrap/
+
+# Cursor — all of it, local only (Jeff, 2026-10-07)
+.cursor/
+.cursorignore
+.cursorindexingignore
+.cursorrules
+
+# OpenAI Codex, Continue, Aider, Windsurf, Copilot workspace instructions
+.codex/
+.continue/
+.aider*
+.aider.conf.yml
+.windsurf/
+.github/copilot-instructions.md
+.github/instructions/
+
+# Generic agent instruction files (use README.md / CONTRIBUTING.md / Architecture.md instead)
+AGENTS.md
+AGENTS.local.md
+**/AGENTS.md
+!CONTRIBUTING.md
+
+# Agent skills / MCP / graphify (installed or generated locally)
+.agents/
+**/skills-lock.json
+skills-lock.json
+.mcp.json
+.mcp.json.local
+.graphifyignore
+.graphify-out/
+graphify-out/
+
+# Agent session artifacts
+agent-transcripts/
+**/agent-transcripts/

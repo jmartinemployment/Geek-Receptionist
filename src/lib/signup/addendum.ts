@@ -10,7 +10,7 @@ export const ADDENDUM_TITLE = "Professional services addendum";
 /** The addendum's paragraphs, as shown above its checkbox. */
 export const ADDENDUM_TERMS: readonly string[] = [
   "The receptionist is an AI. It answers calls to this business, takes messages and records calls, and tells callers that it is an AI. It does not give legal, accounting, tax, financial, insurance or educational advice, and this business will not rely on it for any.",
-  "This business stays responsible for its own professional, confidentiality and record-keeping duties to its clients, students and regulators, including whether its calls may be answered by an AI and recorded.",
+  "This business stays responsible for its own professional, confidentiality and record-keeping duties to its clients, students and regulators, including whether its calls may be answered by an AI.",
   "This business will not use the receptionist to take privileged, confidential or regulated information beyond what is needed to pass on a message.",
 ];
 

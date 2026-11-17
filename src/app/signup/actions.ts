@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { clearSignup, passGate, readGates, readSignup, writeSignup } from "@/lib/signup/state";
+import { clearGates, clearSignup, passGate, readGates, readSignup, writeSignup } from "@/lib/signup/state";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
 import { postOnboarding } from "@/services/onboarding";
@@ -32,6 +32,14 @@ export async function countryAction(inUnitedStates: boolean): Promise<{ error: s
   if (!inUnitedStates) return { error: signupMessage("country_not_supported") };
   await passGate("country");
   redirect("/signup?start=1");
+}
+
+/**
+ * What closing the "not in the United States" dialog does: the robot check is forgotten, so the next visit starts from it again. It runs
+ * on close, not with the No, because clearing the cookie re-renders the page back to the hero and the dialog would vanish with it.
+ */
+export async function forgetRobotCheckAction(): Promise<void> {
+  await clearGates();
 }
 
 /** Step 2: is the business a healthcare or veterinary business. A no is remembered; a yes is the end of it, said at once. */

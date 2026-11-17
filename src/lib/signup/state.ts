@@ -131,9 +131,14 @@ export async function writeSignup(state: SignupState): Promise<void> {
   });
 }
 
+const gone = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: 0 };
+
+/** Forgets the robot check and the questions passed, so the next visit starts from the robot check again. */
+export async function clearGates(): Promise<void> {
+  (await cookies()).set(GATES_COOKIE, "", gone);
+}
+
 export async function clearSignup(): Promise<void> {
-  const jar = await cookies();
-  const gone = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: 0 };
-  jar.set(SIGNUP_COOKIE, "", gone);
-  jar.set(GATES_COOKIE, "", gone);
+  (await cookies()).set(SIGNUP_COOKIE, "", gone);
+  await clearGates();
 }

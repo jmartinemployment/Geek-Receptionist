@@ -4,7 +4,7 @@ import HeroSection from "@/components/shared/shared-hero-section";
 import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
-import { choosePlanAction, countryAction, healthcareAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { choosePlanAction, countryAction, forgetRobotCheckAction, healthcareAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
 import { getBusinessActivities } from "@/services/onboarding";
 import { BusinessForm, LoginForm, NumberForm, RobotCheckButton } from "./signup-forms";
@@ -93,7 +93,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         {step === "country" && (
           <div className="flex flex-nowrap justify-center gap-3">
             <ActionButton action={countryAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
-            <ActionButton action={countryAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
+            <ActionButton action={countryAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet dialogTitle="Not available outside the United States" onDialogClose={forgetRobotCheckAction} />
           </div>
         )}
 

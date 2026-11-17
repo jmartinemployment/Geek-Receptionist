@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 html, body {
   width: 100%;
@@ -295,23 +297,3 @@ html, body {
     font-size: 1.5rem;
     line-height: 2rem;
   }
-
-/* This site only: its own color tokens, which the sign-in, dashboard and form code use. geekatyourspot.com's globals.css above is copied
-   unchanged except for its two imports, tw-animate-css and shadcn/tailwind.css, which this site does not have. */
-@theme {
-  --color-ink: #ffffff;
-  --color-muted: rgba(255, 255, 255, 0.72);
-  --color-line: rgba(255, 255, 255, 0.14);
-  --color-paper: #132340;
-  --color-wash: #0b162a;
-  --color-accent: #c83803;
-  --color-teak: #8c4e2a;
-  --color-ok: #62c58c;
-  --color-warn: #e0a64a;
-  --color-bad: #f2877f;
-  --font-display: var(--font-sora), system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-}

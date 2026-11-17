@@ -73,8 +73,16 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const activities = step === "business" ? await getBusinessActivities() : null;
 
   return (
-    <HeroSection title={title} summary={summary}>
-      <div className="w-full">
+    <HeroSection
+      title={title}
+      summary={summary}
+      action={
+        <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>
+          Continue
+        </button>
+      }
+    >
+      <div className="w-full text-left">
         <section className="mb-4" aria-labelledby="step-heading">
           <h2 id="step-heading" className={ui.h2}>
             {STEPS[index].title}
@@ -86,7 +94,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           ) : null}
 
           {step === "country" && (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-nowrap gap-3">
               <ActionButton action={countryAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
               <ActionButton action={countryAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
             </div>
@@ -95,7 +103,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           {step === "healthcare" && (
             <>
               <p className={`${ui.muted} mb-4`}>Is the business a healthcare or veterinary business?</p>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-nowrap gap-3">
                 <ActionButton action={healthcareAction.bind(null, false)} label="No, it is not" pendingLabel="One moment…" />
                 <ActionButton action={healthcareAction.bind(null, true)} label="Yes, it is" pendingLabel="One moment…" quiet />
               </div>

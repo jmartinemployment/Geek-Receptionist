@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, Sora } from "next/font/google";
 import type { ReactNode } from "react";
+import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
 // The two faces of geekatyourspot.com: Sora for headings, Figtree for everything else.
@@ -21,7 +22,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${sora.variable} ${figtree.variable}`}>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }

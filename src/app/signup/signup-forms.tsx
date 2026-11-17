@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { ui } from "@/lib/ui";
 import { Captcha } from "@/components/captcha";
 import type { BusinessActivity } from "@/services/onboarding";
@@ -27,17 +27,21 @@ function bySector(activities: BusinessActivity[]): [string, BusinessActivity[]][
   return [...sectors.entries()];
 }
 
-/** Step 1: the robot check on its own, before anything is asked. */
+/** Step 1: the robot check on its own, before anything is asked. Ticking the box sends it; there is no second click. */
 export function RobotForm({ captchaSiteKey }: { captchaSiteKey: string }) {
   const [state, action, pending] = useActionState(captchaAction, start());
+  const form = useRef<HTMLFormElement>(null);
 
   return (
-    <form action={action} className="flex flex-col gap-2">
+    <form ref={form} action={action} className="flex flex-col gap-2">
       <Refusal error={state.error} />
-      <Captcha siteKey={captchaSiteKey} answered={state} />
-      <button className={`${ui.button} mt-1 self-start`} type="submit" disabled={pending}>
-        {pending ? "Checking…" : "Continue"}
-      </button>
+      <p className={ui.muted}>Confirm you&rsquo;re not a robot to start.</p>
+      <Captcha siteKey={captchaSiteKey} answered={state} onSolved={() => form.current?.requestSubmit()} />
+      {pending ? (
+        <p className={ui.muted} role="status">
+          Checking…
+        </p>
+      ) : null}
     </form>
   );
 }

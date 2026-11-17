@@ -46,7 +46,7 @@ export default function HeroSection({ title, summary, action, image, imgAlt, chi
               <p className="pt-3 text-2xl text-white shadow-text">{summary}</p>
               {action ? <div className="pt-8">{action}</div> : null}
             </div>
-            <div className="col-span-5 flex min-h-screen flex-col items-center justify-center text-white">
+            <div className="col-span-5 flex min-h-screen flex-col items-center justify-center text-center text-white">
               {image ? (
                 <Image src={image} width={1024} height={1024} sizes="(min-width: 1024px) 42vw, 1px" priority alt={imgAlt ?? ""} className="h-auto w-full" />
               ) : children ? (

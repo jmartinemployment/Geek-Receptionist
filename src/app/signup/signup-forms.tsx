@@ -107,7 +107,7 @@ export function RobotCheckButton({ captchaSiteKey }: { captchaSiteKey: string })
   );
 }
 
-export function BusinessForm({ activities }: { activities: BusinessActivity[] }) {
+export function BusinessForm({ activities, idSuffix }: { activities: BusinessActivity[]; idSuffix: string }) {
   const [state, action, pending] = useActionState(businessAction, start());
   const value = (name: string) => state.fields[name] ?? "";
 
@@ -116,10 +116,10 @@ export function BusinessForm({ activities }: { activities: BusinessActivity[] })
       <Refusal error={state.error} />
 
       <fieldset className="flex min-w-0 flex-col gap-2">
-        <label htmlFor="businessName" className={label}>Business name</label>
-        <input id="businessName" name="businessName" required autoComplete="organization" defaultValue={value("businessName")} className={field} />
-        <label htmlFor="businessActivityCode" className={label}>What the business does</label>
-        <select id="businessActivityCode" name="businessActivityCode" required defaultValue={value("businessActivityCode")} className={field}>
+        <label htmlFor={`businessName${idSuffix}`} className={label}>Business name</label>
+        <input id={`businessName${idSuffix}`} name="businessName" required autoComplete="organization" defaultValue={value("businessName")} className={field} />
+        <label htmlFor={`businessActivityCode${idSuffix}`} className={label}>What the business does</label>
+        <select id={`businessActivityCode${idSuffix}`} name="businessActivityCode" required defaultValue={value("businessActivityCode")} className={field}>
           <option value="" disabled>
             Choose what the business does
           </option>
@@ -137,14 +137,14 @@ export function BusinessForm({ activities }: { activities: BusinessActivity[] })
 
       <fieldset className="flex min-w-0 flex-col gap-2">
         <legend className="mb-1 font-display text-lg font-bold">Where it is and how to reach you</legend>
-        <label htmlFor="stateCode" className={label}>State</label>
-        <input id="stateCode" name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} w-24 uppercase`} />
-        <label htmlFor="contactEmail" className={label}>Email</label>
-        <input id="contactEmail" name="contactEmail" type="email" required autoComplete="email" aria-describedby="emailHint" defaultValue={value("contactEmail")} className={field} />
-        <p id="emailHint" className={`${ui.muted} text-sm`}>You will sign in with this email.</p>
-        <label htmlFor="contactPhone" className={label}>Business phone</label>
-        <input id="contactPhone" name="contactPhone" type="tel" required autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" aria-describedby="phoneHint" defaultValue={value("contactPhone")} className={field} />
-        <p id="phoneHint" className={`${ui.muted} text-sm`}>A US number, typed any way you like.</p>
+        <label htmlFor={`stateCode${idSuffix}`} className={label}>State</label>
+        <input id={`stateCode${idSuffix}`} name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} w-24 uppercase`} />
+        <label htmlFor={`contactEmail${idSuffix}`} className={label}>Email</label>
+        <input id={`contactEmail${idSuffix}`} name="contactEmail" type="email" required autoComplete="email" aria-describedby={`emailHint${idSuffix}`} defaultValue={value("contactEmail")} className={field} />
+        <p id={`emailHint${idSuffix}`} className={`${ui.muted} text-sm`}>You will sign in with this email.</p>
+        <label htmlFor={`contactPhone${idSuffix}`} className={label}>Business phone</label>
+        <input id={`contactPhone${idSuffix}`} name="contactPhone" type="tel" required autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" aria-describedby={`phoneHint${idSuffix}`} defaultValue={value("contactPhone")} className={field} />
+        <p id={`phoneHint${idSuffix}`} className={`${ui.muted} text-sm`}>A US number, typed any way you like.</p>
       </fieldset>
 
       <label className="flex items-start gap-3">
@@ -164,14 +164,14 @@ export function BusinessForm({ activities }: { activities: BusinessActivity[] })
   );
 }
 
-export function NumberForm() {
+export function NumberForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(activateAction, start());
 
   return (
     <form action={action} className="flex flex-col gap-2">
       <Refusal error={state.error} />
-      <label htmlFor="areaCode" className={label}>Area code for your receptionist&rsquo;s number</label>
-      <input id="areaCode" name="areaCode" required inputMode="numeric" pattern="[2-9][0-9]{2}" maxLength={3} placeholder="561" defaultValue={state.fields.areaCode ?? ""} className={`${field} w-28`} />
+      <label htmlFor={`areaCode${idSuffix}`} className={label}>Area code for your receptionist&rsquo;s number</label>
+      <input id={`areaCode${idSuffix}`} name="areaCode" required inputMode="numeric" pattern="[2-9][0-9]{2}" maxLength={3} placeholder="561" defaultValue={state.fields.areaCode ?? ""} className={`${field} w-28`} />
       <button className={`${ui.button} mt-3`} type="submit" disabled={pending}>
         {pending ? "Setting up your number…" : "Get my number"}
       </button>
@@ -180,18 +180,18 @@ export function NumberForm() {
   );
 }
 
-export function LoginForm({ email }: { email: string }) {
+export function LoginForm({ email, idSuffix }: { email: string; idSuffix: string }) {
   const [state, action, pending] = useActionState(createLoginAction, start({ email }));
 
   return (
     <form action={action} className="flex flex-col gap-2">
       <Refusal error={state.error} />
-      <label htmlFor="displayName" className={label}>Your name</label>
-      <input id="displayName" name="displayName" required autoComplete="name" defaultValue={state.fields.displayName ?? ""} className={field} />
-      <label htmlFor="email" className={label}>Email to sign in with</label>
-      <input id="email" name="email" type="email" required autoComplete="username" defaultValue={state.fields.email ?? email} className={field} />
-      <label htmlFor="password" className={label}>Password</label>
-      <input id="password" name="password" type="password" required autoComplete="new-password" className={field} />
+      <label htmlFor={`displayName${idSuffix}`} className={label}>Your name</label>
+      <input id={`displayName${idSuffix}`} name="displayName" required autoComplete="name" defaultValue={state.fields.displayName ?? ""} className={field} />
+      <label htmlFor={`email${idSuffix}`} className={label}>Email to sign in with</label>
+      <input id={`email${idSuffix}`} name="email" type="email" required autoComplete="username" defaultValue={state.fields.email ?? email} className={field} />
+      <label htmlFor={`password${idSuffix}`} className={label}>Password</label>
+      <input id={`password${idSuffix}`} name="password" type="password" required autoComplete="new-password" className={field} />
       <button className={`${ui.button} mt-3`} type="submit" disabled={pending}>
         {pending ? "Creating your login…" : "Create login and open dashboard"}
       </button>

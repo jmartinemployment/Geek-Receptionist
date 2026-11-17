@@ -5,9 +5,9 @@ import Footer from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
-// The two faces of geekatyourspot.com: Sora for headings, Figtree for everything else.
-const sora = Sora({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--font-sora", display: "swap" });
-const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-figtree", display: "swap" });
+// The two faces of geekatyourspot.com, loaded the way its layout.tsx loads them: Sora for headings, Figtree as --font-sans for everything else.
+const sora = Sora({ subsets: ["latin"], display: "swap", variable: "--font-sora", weight: ["400", "500", "600", "700"] });
+const figtree = Figtree({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Geek-Receptionist",
@@ -22,10 +22,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${sora.variable} ${figtree.variable}`}>
-      <body className="min-h-dvh">
+    <html lang="en" className={`h-full w-full antialiased font-sans ${figtree.variable} ${sora.variable}`}>
+      <body className="flex min-h-full flex-col">
         <Navbar />
-        {children}
+        <main>{children}</main>
         <Footer />
       </body>
     </html>

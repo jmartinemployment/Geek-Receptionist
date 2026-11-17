@@ -3,10 +3,12 @@ import { CardSkeleton } from "./card-skeleton";
 
 export default function DashboardLoading() {
   return (
-    <main className={ui.page}>
+    <div className="min-h-[calc(100dvh-4rem)] bg-[#0B162A] text-white">
+    <div className={ui.page}>
       <h1 className={ui.h1}>Your receptionist</h1>
       <CardSkeleton label="your subscription" />
       <CardSkeleton label="your calendar" />
-    </main>
+    </div>
+    </div>
   );
 }

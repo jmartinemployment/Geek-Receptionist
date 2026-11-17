@@ -5,7 +5,7 @@ export default async function SignedOut({ searchParams }: { searchParams: Promis
   const { notice } = await searchParams;
 
   return (
-    <main className={ui.center}>
+    <div className={ui.center}>
       <h1 className={ui.h1}>You are signed out</h1>
       {notice === "not_ended" ? (
         <p className={`${ui.status.warn} max-w-prose`} role="alert">
@@ -16,6 +16,6 @@ export default async function SignedOut({ searchParams }: { searchParams: Promis
       <Link className={ui.button} href="/login">
         Sign in again
       </Link>
-    </main>
+    </div>
   );
 }

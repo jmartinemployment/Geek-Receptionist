@@ -76,6 +76,102 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
   const activities = step === "business" ? await getBusinessActivities() : null;
 
+  // The steps are written once and rendered in both hero blocks, as geekatyourspot.com writes a section's body, so every id takes the block's suffix.
+  // The two yes-or-no questions take only the width their own words need, centered in the column with the text left aligned; the forms use all of it.
+  const body = (s: string) => (
+    <div className={compact ? "mx-auto w-fit max-w-full text-left" : "w-full text-left"}>
+      <section className="mb-4" aria-labelledby={`step-heading${s}`}>
+        <h2 id={`step-heading${s}`} className={`${ui.h2} ${compact ? QUESTION_WIDTH : ""}`}>
+          {STEPS[index].title}
+        </h2>
+        {refusal ? (
+          <p className={`${ui.status.bad} mb-3`} role="alert">
+            {refusal}
+          </p>
+        ) : null}
+
+        {step === "country" && (
+          <div className="flex flex-nowrap gap-3">
+            <ActionButton action={countryAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
+            <ActionButton action={countryAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
+          </div>
+        )}
+
+        {step === "healthcare" && (
+          <>
+            <p className={`${ui.muted} mb-4 ${QUESTION_WIDTH}`}>Is the business a healthcare or veterinary business?</p>
+            <div className="flex flex-nowrap gap-3">
+              <ActionButton action={healthcareAction.bind(null, false)} label="No, it is not" pendingLabel="One moment…" />
+              <ActionButton action={healthcareAction.bind(null, true)} label="Yes, it is" pendingLabel="One moment…" quiet />
+            </div>
+          </>
+        )}
+
+        {step === "business" && activities && (activities.ok ? (
+          <BusinessForm activities={activities.activities} idSuffix={s} />
+        ) : (
+          <p className={ui.status.bad} role="alert">
+            {signupMessage(activities.code)}
+          </p>
+        ))}
+
+        {step === "plan" && (
+          <>
+            <p className={`${ui.muted} mb-4`}>
+              Billed monthly through PayPal. Minutes over your plan are $0.50 each, charged at the end of the month to the PayPal account
+              you save next.
+            </p>
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {PLANS.map((plan) => (
+                <li key={plan.code} className="flex flex-col gap-2 rounded-md border border-line p-4">
+                  <p className="font-semibold">{plan.name}</p>
+                  <p>
+                    <span className="text-2xl font-semibold">${plan.price}</span> a month
+                  </p>
+                  <p className={ui.muted}>{plan.minutes.toLocaleString("en-US")} minutes included</p>
+                  <ActionButton action={choosePlanAction.bind(null, plan.code)} label={`Choose ${plan.name}`} pendingLabel="Opening PayPal…" />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {step === "payment_method" && (
+          <>
+            <p className={`${ui.muted} mb-4`}>
+              Your {state?.tier ? state.tier.charAt(0) + state.tier.slice(1).toLowerCase() : ""} subscription is approved. Now save your PayPal
+              account for minutes over your plan. Nothing is charged now.
+            </p>
+            <ActionButton action={savePaymentMethodAction} label="Save PayPal for overage minutes" pendingLabel="Opening PayPal…" />
+          </>
+        )}
+
+        {step === "number" && (
+          <>
+            <p className={`${ui.muted} mb-4`}>
+              Choose the area code your callers will dial. We check your payment with PayPal, then get a local number and set up your
+              receptionist on it.
+            </p>
+            <NumberForm idSuffix={s} />
+          </>
+        )}
+
+        {step === "login" && state && (
+          <>
+            <p className="mb-4">
+              Your receptionist answers at <span className="font-semibold">{state.phoneNumber}</span>. Create the login you will use to manage it.
+            </p>
+            <LoginForm email={state.contactEmail} idSuffix={s} />
+          </>
+        )}
+      </section>
+
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        {state && step !== "login" ? <ActionButton action={startOverAction} label="Start over" pendingLabel="Starting over…" quiet /> : null}
+      </div>
+    </div>
+  );
+
   return (
     <HeroSection
       title={title}
@@ -86,98 +182,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         </button>
       }
     >
-      {/* The two yes-or-no questions take only the width their own words need, centered in the column with the text left aligned; the column itself is unchanged, and the forms use all of it. */}
-      <div className={compact ? "mx-auto w-fit max-w-full text-left" : "w-full text-left"}>
-        <section className="mb-4" aria-labelledby="step-heading">
-          <h2 id="step-heading" className={`${ui.h2} ${compact ? QUESTION_WIDTH : ""}`}>
-            {STEPS[index].title}
-          </h2>
-          {refusal ? (
-            <p className={`${ui.status.bad} mb-3`} role="alert">
-              {refusal}
-            </p>
-          ) : null}
-
-          {step === "country" && (
-            <div className="flex flex-nowrap gap-3">
-              <ActionButton action={countryAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
-              <ActionButton action={countryAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
-            </div>
-          )}
-
-          {step === "healthcare" && (
-            <>
-              <p className={`${ui.muted} mb-4 ${QUESTION_WIDTH}`}>Is the business a healthcare or veterinary business?</p>
-              <div className="flex flex-nowrap gap-3">
-                <ActionButton action={healthcareAction.bind(null, false)} label="No, it is not" pendingLabel="One moment…" />
-                <ActionButton action={healthcareAction.bind(null, true)} label="Yes, it is" pendingLabel="One moment…" quiet />
-              </div>
-            </>
-          )}
-
-          {step === "business" && activities && (activities.ok ? (
-            <BusinessForm activities={activities.activities} />
-          ) : (
-            <p className={ui.status.bad} role="alert">
-              {signupMessage(activities.code)}
-            </p>
-          ))}
-
-          {step === "plan" && (
-            <>
-              <p className={`${ui.muted} mb-4`}>
-                Billed monthly through PayPal. Minutes over your plan are $0.50 each, charged at the end of the month to the PayPal account
-                you save next.
-              </p>
-              <ul className="grid gap-3 sm:grid-cols-2">
-                {PLANS.map((plan) => (
-                  <li key={plan.code} className="flex flex-col gap-2 rounded-md border border-line p-4">
-                    <p className="font-semibold">{plan.name}</p>
-                    <p>
-                      <span className="text-2xl font-semibold">${plan.price}</span> a month
-                    </p>
-                    <p className={ui.muted}>{plan.minutes.toLocaleString("en-US")} minutes included</p>
-                    <ActionButton action={choosePlanAction.bind(null, plan.code)} label={`Choose ${plan.name}`} pendingLabel="Opening PayPal…" />
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {step === "payment_method" && (
-            <>
-              <p className={`${ui.muted} mb-4`}>
-                Your {state?.tier ? state.tier.charAt(0) + state.tier.slice(1).toLowerCase() : ""} subscription is approved. Now save your PayPal
-                account for minutes over your plan. Nothing is charged now.
-              </p>
-              <ActionButton action={savePaymentMethodAction} label="Save PayPal for overage minutes" pendingLabel="Opening PayPal…" />
-            </>
-          )}
-
-          {step === "number" && (
-            <>
-              <p className={`${ui.muted} mb-4`}>
-                Choose the area code your callers will dial. We check your payment with PayPal, then get a local number and set up your
-                receptionist on it.
-              </p>
-              <NumberForm />
-            </>
-          )}
-
-          {step === "login" && state && (
-            <>
-              <p className="mb-4">
-                Your receptionist answers at <span className="font-semibold">{state.phoneNumber}</span>. Create the login you will use to manage it.
-              </p>
-              <LoginForm email={state.contactEmail} />
-            </>
-          )}
-        </section>
-
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {state && step !== "login" ? <ActionButton action={startOverAction} label="Start over" pendingLabel="Starting over…" quiet /> : null}
-        </div>
-      </div>
+      {body}
     </HeroSection>
   );
 }

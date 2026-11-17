@@ -1,7 +1,303 @@
 @import "tailwindcss";
 
-/* geekatyourspot.com's own colours and type (~/development/geek-style-guide.html): navy ground, navy panels, one orange accent,
-   Sora for headings and Figtree for everything else. There is no light or dark switch; the site is navy. */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+   overflow-x: hidden;
+  /* Adds protective spacing so content isn't hidden under notches */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);}
+
+@custom-variant dark (&:is(.dark *));
+
+/* hover: also matches a link tapped once on a screen that cannot hover, and the heading inside it; see link-tap-toggle.tsx. */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover {
+      @slot;
+    }
+  }
+  &[data-tapped] {
+    @slot;
+  }
+  [data-tapped] & {
+    @slot;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-heading: var(--font-sans);
+  --font-sora: var(--font-sora);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-brand-blue: #023059;
+  --color-brand-teal-blue: #024059;
+  --color-brand-ocean-blue: #025e73;
+  --color-brand-teak: #8c4e2a;
+  --color-brand-salsa-red: #8c2703;
+  --color-brand-true-black: #0a080d;
+  --color-brand-deep-ocean-blue: #023859;
+  --color-brand-dark-water: #024873;
+  --color-brand-frost-aqua: #bdf2f2;
+  --color-brand-brown-suede: #733e1f;
+  --color-brand-maastricht-blue: #012840;
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(34.16% 0.115 266.68);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.375rem;
+  --radius-lg: 0.375rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+  --tw-ring-color: var(--ring);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* The home page marquee rows. Each track holds its items twice, so sliding it by half its width
+   loops without a visible jump. InfiniteMarquee sets the duration. */
+@keyframes marquee-left {
+  from { transform: translateX(0%); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0%); }
+}
+
+@layer base {
+    h2, h3, h4, h5 {
+    display: block;
+  }
+  /* Every link in the page content is bold. A link inside a heading keeps the
+     heading's weight, and a weight class on a link still wins. */
+  main a {
+    font-weight: 700;
+  }
+  main :is(h1, h2, h3, h4, h5, h6) a {
+    font-weight: inherit;
+  }
+  /* No link carries a text shadow, including one inherited from the paragraph it sits in
+     (Jeff, 2026-10-21). A heading inside a link keeps its own shadow class, and a link inside a
+     heading takes the heading's shadow, so the heading reads as one piece. */
+  a {
+    text-shadow: none;
+  }
+  :is(h1, h2, h3, h4, h5, h6) a {
+    text-shadow: inherit;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans overflow-x-hidden;
+    @apply max-w-screen;
+  }
+  body {
+    @apply bg-background;
+    @apply max-w-screen;
+    @apply w-full
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  .btn {
+    @apply inline-block rounded px-4 py-2 font-medium transition-colors;
+  }
+  .btn-primary {
+    @apply bg-[#C83803] text-white hover:bg-[#8C4E2A];
+  }
+  .shadow-text {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, .375);
+  }
+  .text-shadow-xs {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  .shadow-text-white {
+    text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.5);
+  }
+    .shadow-text-orange {
+    text-shadow: 2px 2px 4px rgba(140, 39, 3, .75);
+  }
+  .shadow-text-violet {
+    text-shadow: 2px 2px 4px rgba(127, 0, 255, 0.4)
+  }
+    .shadow-text-purple {
+    text-shadow: 2px 2px 4px rgba(106, 78, 214, 0.5);
+  }
+  .shadow-text-light-blue {
+    text-shadow: 2px 2px 4px rgba(63, 81, 181, 0.5);
+  }
+  .shadow-text-dark-blue {
+    text-shadow: 2px 2px 4px rgba(11, 22, 42, 0.25);
+  }
+  .shadow-box {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  }
+  .shadow-box-white {
+    box-shadow: 0 4px 6px rgba(255, 255, 255, 0.5);
+  }
+}
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  width: 100%;
+  /* Define fixed max-widths at specific breakpoints */
+  @variant sm {
+    max-width: 540px;
+  }
+  @variant md {
+    max-width: 720px;
+  }
+  @variant lg {
+    max-width: 960px;
+  }
+  @variant xl {
+    max-width: 1140px;
+  }
+  @variant 2xl {
+    max-width: 1320px;
+  }
+
+
+/* Global hover state */
+
+}
+  .text-xs {
+    font-size: .75rem;
+    line-height: 1rem;
+  }
+  .text-sm {
+    font-size: .875rem;
+    line-height: 1.25rem;
+  }
+  .text-base {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+  .text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  .text-xl {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  .text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+/* This site only: its own color tokens, which the sign-in, dashboard and form code use. geekatyourspot.com's globals.css above is copied
+   unchanged except for its two imports, tw-animate-css and shadcn/tailwind.css, which this site does not have. */
 @theme {
   --color-ink: #ffffff;
   --color-muted: rgba(255, 255, 255, 0.72);
@@ -13,40 +309,9 @@
   --color-ok: #62c58c;
   --color-warn: #e0a64a;
   --color-bad: #f2877f;
-  --font-sans: var(--font-figtree), system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-sora), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-:root { color-scheme: dark; }
-
-body {
-  @apply bg-wash text-ink font-sans antialiased;
-}
-
-/* In the base layer, so a heading's own utilities (leading-[0.95], text sizes) win over these defaults. */
-@layer base {
-  h1, h2, h3 {
-    @apply font-display;
-    line-height: 1.05;
-    text-wrap: balance;
-  }
-}
-
-/* The site's text shadow on white text over a dark ground. */
-.shadow-text { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.375); }
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-}
-
-/* geekatyourspot.com's container: 1rem of side padding and a fixed maximum width at each breakpoint. */
-@utility container {
-  margin-inline: auto;
-  padding-inline: 1rem;
-  width: 100%;
-  @variant sm { max-width: 540px; }
-  @variant md { max-width: 720px; }
-  @variant lg { max-width: 960px; }
-  @variant xl { max-width: 1140px; }
-  @variant 2xl { max-width: 1320px; }
 }

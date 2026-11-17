@@ -1,7 +1,7 @@
 /** The few class lists every page shares, so a button or a card looks the same wherever it is. */
 export const ui = {
   page: "mx-auto w-full max-w-2xl px-4 py-10",
-  center: "flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-3 px-4 text-center",
+  center: "flex min-h-[calc(100dvh-4rem)] flex-col bg-[#0B162A] text-white items-center justify-center gap-3 px-4 text-center",
   card: "mb-4 rounded-md border border-line bg-paper p-5",
   h1: "mb-4 text-4xl font-extrabold",
   h2: "mb-2 text-2xl font-extrabold",

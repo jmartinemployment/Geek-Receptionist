@@ -12,7 +12,7 @@ export default async function Login() {
   const siteKey = captchaSiteKey();
 
   return (
-    <main className={ui.center}>
+    <div className={ui.center}>
       <h1 className={ui.h1}>Sign in to Geek-Receptionist</h1>
       {siteKey ? (
         <LoginForm captchaSiteKey={siteKey} />
@@ -21,6 +21,6 @@ export default async function Login() {
           {loginMessage("captcha_not_configured")}
         </p>
       )}
-    </main>
+    </div>
   );
 }

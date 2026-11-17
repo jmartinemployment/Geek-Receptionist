@@ -20,12 +20,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const authError = await getAuthError();
   if (authError) {
     return (
-      <main className={ui.center}>
+      <div className={ui.center}>
         <h1 className={ui.h1}>Your sign-in could not be renewed</h1>
         <p className={ui.status.bad} role="alert">
           GeekAPI did not answer the renewal ({authError}). You are still signed in; reload this page shortly.
         </p>
-      </main>
+      </div>
     );
   }
   if (!(await getAccessToken())) redirect("/login");
@@ -33,7 +33,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const notice = noticeFrom(await searchParams);
 
   return (
-    <main className={ui.page}>
+    <div className="min-h-[calc(100dvh-4rem)] bg-[#0B162A] text-white">
+    <div className={ui.page}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className={`${ui.h1} mb-0`}>Your receptionist</h1>
         <ActionButton action={signOutAction} label="Sign out" pendingLabel="Signing out…" quiet />
@@ -45,6 +46,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         <CalendarSection />
       </Suspense>
       {notice ? <NoticeToast notice={notice} /> : null}
-    </main>
+    </div>
+    </div>
   );
 }

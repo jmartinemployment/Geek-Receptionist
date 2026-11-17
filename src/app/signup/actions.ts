@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { clearSignup, readSignup, writeSignup } from "@/lib/signup/state";
+import { clearSignup, passGate, readGates, readSignup, writeSignup } from "@/lib/signup/state";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
 import { postOnboarding } from "@/services/onboarding";
@@ -18,26 +18,49 @@ const text = (form: FormData, name: string) => {
   return typeof value === "string" ? value.trim() : "";
 };
 
-/** Step 1: the business and the compliance statement, behind the robot check. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
+/** Step 1: the robot check. Google's answer is checked here, once; a pass is remembered and the form goes on. */
+export async function captchaAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const outcome = await verifyCaptcha(form.get("g-recaptcha-response"), visitorIpFrom(await headers()));
+  if (outcome !== "ok") return { error: signupMessage(outcome), fields: {} };
+  await passGate("captcha");
+  redirect("/signup");
+}
+
+/** Step 2: is the business in the United States. A yes is remembered and the form goes on; a no is the end of it, said at once. */
+export async function countryAction(inUnitedStates: boolean): Promise<{ error: string | null }> {
+  if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired") };
+  if (!inUnitedStates) return { error: signupMessage("country_not_supported") };
+  await passGate("country");
+  redirect("/signup");
+}
+
+/** Step 3: is the business a healthcare or veterinary business. A no is remembered; a yes is the end of it, said at once. */
+export async function healthcareAction(isHealthcare: boolean): Promise<{ error: string | null }> {
+  if (!(await readGates()).has("country")) return { error: signupMessage("signup_expired") };
+  if (isHealthcare) return { error: signupMessage("industry_excluded") };
+  await passGate("healthcare");
+  redirect("/signup");
+}
+
+/** Step 4: the business and the compliance statement, once the first three questions are answered. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
 export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
     businessName: text(form, "businessName"),
     businessActivityCode: text(form, "businessActivityCode"),
-    countryCode: text(form, "countryCode"),
     stateCode: text(form, "stateCode").toUpperCase(),
     contactEmail: text(form, "contactEmail"),
     contactPhone: text(form, "contactPhone"),
   };
   const attested = form.get("complianceAttested") === "on";
 
-  const visitor = await headers();
-  const captcha = await verifyCaptcha(form.get("g-recaptcha-response"), visitorIpFrom(visitor));
-  if (captcha !== "ok") return { error: signupMessage(captcha), fields };
+  const gates = await readGates();
+  if (!gates.has("captcha") || !gates.has("country") || !gates.has("healthcare")) return { error: signupMessage("signup_expired"), fields };
 
+  const visitor = await headers();
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
     businessName: fields.businessName,
     businessActivityCode: fields.businessActivityCode,
-    countryCode: fields.countryCode,
+    countryCode: "US",
     stateCode: fields.stateCode,
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone,
@@ -52,7 +75,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   redirect("/signup");
 }
 
-/** Step 2: the plan. GeekAPI starts a PayPal subscription to it for this tenant and the visitor approves it in PayPal. */
+/** Step 5: the plan. GeekAPI starts a PayPal subscription to it for this tenant and the visitor approves it in PayPal. */
 export async function choosePlanAction(tier: string): Promise<{ error: string | null }> {
   const state = await readSignup();
   if (!state) return { error: signupMessage("signup_expired") };
@@ -76,7 +99,7 @@ export async function choosePlanAction(tier: string): Promise<{ error: string | 
   redirect(approvalUrl);
 }
 
-/** Step 2, second half: saving the visitor's PayPal account for overage charges, approved in PayPal. */
+/** Step 5, second half: saving the visitor's PayPal account for overage charges, approved in PayPal. */
 export async function savePaymentMethodAction(): Promise<{ error: string | null }> {
   const state = await readSignup();
   if (!state?.subscriptionApproved) return { error: signupMessage("signup_expired") };
@@ -99,7 +122,7 @@ export async function savePaymentMethodAction(): Promise<{ error: string | null 
 }
 
 /**
- * Step 3: the area code. GeekAPI checks the subscription and the saved payment method with PayPal, then buys the number in that area
+ * Step 7: the area code. GeekAPI checks the subscription and the saved payment method with PayPal, then buys the number in that area
  * code and sets up the receptionist on it. This is the step that spends money.
  */
 export async function activateAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
@@ -123,7 +146,7 @@ export async function activateAction(_previous: SignupFormState, form: FormData)
   redirect("/signup");
 }
 
-/** Step 4: the owner's login. The password goes to GeekAPI once to make the login and once to sign in, and is never kept or shown. */
+/** Step 8: the owner's login. The password goes to GeekAPI once to make the login and once to sign in, and is never kept or shown. */
 export async function createLoginAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = { email: text(form, "email"), displayName: text(form, "displayName") };
   const password = form.get("password");

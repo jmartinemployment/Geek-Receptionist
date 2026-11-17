@@ -1,15 +1,18 @@
 import { ActionButton } from "@/components/action-button";
-import { readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
+import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
-import { choosePlanAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { choosePlanAction, countryAction, healthcareAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
 import { getBusinessActivities } from "@/services/onboarding";
-import { BusinessForm, LoginForm, NumberForm } from "./signup-forms";
+import { BusinessForm, LoginForm, NumberForm, RobotForm } from "./signup-forms";
 
 export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
+  { step: "captcha", title: "Robot check" },
+  { step: "country", title: "Your country" },
+  { step: "healthcare", title: "Your industry" },
   { step: "business", title: "Your business" },
   { step: "plan", title: "Choose a plan" },
   { step: "payment_method", title: "Save a payment method" },
@@ -29,7 +32,7 @@ const CODE = /^[a-z0-9_]{1,64}$/;
 /** Self-service signup, rendered on the server from where this browser's signup stands. Each step is a Server Action; no step reloads the page. */
 export default async function Signup({ searchParams }: { searchParams: Promise<{ error?: string | string[] }> }) {
   const state = await readSignup();
-  const step = stepOf(state);
+  const step = stepOf(state, await readGates());
   const index = STEPS.findIndex((s) => s.step === step);
   const { error } = await searchParams;
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
@@ -57,12 +60,37 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           </p>
         ) : null}
 
-        {step === "business" && activities && (!siteKey ? (
-          <p className={ui.status.bad} role="alert">
-            {signupMessage("captcha_not_configured")}
-          </p>
-        ) : activities.ok ? (
-          <BusinessForm activities={activities.activities} captchaSiteKey={siteKey} />
+        {step === "captcha" &&
+          (siteKey ? (
+            <RobotForm captchaSiteKey={siteKey} />
+          ) : (
+            <p className={ui.status.bad} role="alert">
+              {signupMessage("captcha_not_configured")}
+            </p>
+          ))}
+
+        {step === "country" && (
+          <>
+            <p className={`${ui.muted} mb-4`}>Is the business in the United States?</p>
+            <div className="flex flex-wrap gap-3">
+              <ActionButton action={countryAction.bind(null, true)} label="Yes, in the United States" pendingLabel="One moment…" />
+              <ActionButton action={countryAction.bind(null, false)} label="No, in another country" pendingLabel="One moment…" quiet />
+            </div>
+          </>
+        )}
+
+        {step === "healthcare" && (
+          <>
+            <p className={`${ui.muted} mb-4`}>Is the business a healthcare or veterinary business?</p>
+            <div className="flex flex-wrap gap-3">
+              <ActionButton action={healthcareAction.bind(null, false)} label="No, it is not" pendingLabel="One moment…" />
+              <ActionButton action={healthcareAction.bind(null, true)} label="Yes, it is" pendingLabel="One moment…" quiet />
+            </div>
+          </>
+        )}
+
+        {step === "business" && activities && (activities.ok ? (
+          <BusinessForm activities={activities.activities} />
         ) : (
           <p className={ui.status.bad} role="alert">
             {signupMessage(activities.code)}

@@ -1,6 +1,40 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
 export const SIGNUP_COOKIE = "rp_signup";
+
+/**
+ * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, then the two
+ * disqualifying questions. The cookie is signed with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the
+ * check. Country and healthcare are only bookmarks: GeekAPI decides both again when the business is submitted.
+ */
+export const GATES_COOKIE = "rp_gates";
+
+export const GATES = ["captcha", "country", "healthcare"] as const;
+export type Gate = (typeof GATES)[number];
+
+const gateKey = (): string | null => {
+  const value = (process.env.RECAPTCHA_SECRET_KEY ?? "").trim();
+  return value.length > 0 ? value : null;
+};
+
+/** The cookie's value for these gates: their names, a dot, and the signature of the names. */
+export function signGates(gates: readonly Gate[], key: string): string {
+  const names = gates.join(",");
+  return `${names}.${createHmac("sha256", key).update(names).digest("hex")}`;
+}
+
+/** The gates a cookie value carries, or none when it is missing, not signed by this key, or altered. */
+export function parseGates(raw: string | undefined, key: string): ReadonlySet<Gate> {
+  if (!raw) return new Set();
+  const dot = raw.lastIndexOf(".");
+  if (dot < 0) return new Set();
+  const names = raw.slice(0, dot);
+  const given = Buffer.from(raw.slice(dot + 1), "hex");
+  const expected = createHmac("sha256", key).update(names).digest();
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) return new Set();
+  return new Set(GATES.filter((gate) => names.split(",").includes(gate)));
+}
 
 /**
  * Where a visitor is in /signup, kept in an httpOnly cookie between steps and across the trips to PayPal. It holds ids only (the tenant
@@ -17,14 +51,19 @@ export type SignupState = {
   phoneNumber?: string;
 };
 
-export type SignupStep = "business" | "plan" | "payment_method" | "number" | "login";
+export type SignupStep = "captcha" | "country" | "healthcare" | "business" | "plan" | "payment_method" | "number" | "login";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID = /^[A-Za-z0-9-]{1,64}$/;
 
 /** The step a visitor is on, from what is already done. */
-export function stepOf(state: SignupState | null): SignupStep {
-  if (!state) return "business";
+export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): SignupStep {
+  if (!state) {
+    if (!gates.has("captcha")) return "captcha";
+    if (!gates.has("country")) return "country";
+    if (!gates.has("healthcare")) return "healthcare";
+    return "business";
+  }
   if (!state.subscriptionApproved) return "plan";
   if (!state.vaultTokenId) return "payment_method";
   if (!state.phoneNumber) return "number";
@@ -56,6 +95,27 @@ export function parseSignup(raw: string | undefined): SignupState | null {
   };
 }
 
+export async function readGates(): Promise<ReadonlySet<Gate>> {
+  const key = gateKey();
+  if (!key) return new Set();
+  return parseGates((await cookies()).get(GATES_COOKIE)?.value, key);
+}
+
+/** Remembers for a day that the visitor got past a question. Server Actions and Route Handlers only; it needs the reCAPTCHA secret to sign with. */
+export async function passGate(gate: Gate): Promise<void> {
+  const key = gateKey();
+  if (!key) throw new Error("RECAPTCHA_SECRET_KEY is not set, so the signup's progress cannot be signed.");
+  const passed = new Set(await readGates());
+  passed.add(gate);
+  (await cookies()).set(GATES_COOKIE, signGates(GATES.filter((g) => passed.has(g)), key), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+}
+
 export async function readSignup(): Promise<SignupState | null> {
   return parseSignup((await cookies()).get(SIGNUP_COOKIE)?.value);
 }
@@ -72,5 +132,8 @@ export async function writeSignup(state: SignupState): Promise<void> {
 }
 
 export async function clearSignup(): Promise<void> {
-  (await cookies()).set(SIGNUP_COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+  const jar = await cookies();
+  const gone = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/", maxAge: 0 };
+  jar.set(SIGNUP_COOKIE, "", gone);
+  jar.set(GATES_COOKIE, "", gone);
 }

@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { ui } from "@/lib/ui";
 import { Captcha } from "@/components/captcha";
 import type { BusinessActivity } from "@/services/onboarding";
-import { activateAction, businessAction, createLoginAction, type SignupFormState } from "./actions";
+import { activateAction, businessAction, captchaAction, createLoginAction, type SignupFormState } from "./actions";
 
 const field =
   "rounded border border-line bg-wash px-3 py-2 text-ink placeholder:text-muted focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-white";
@@ -27,7 +27,22 @@ function bySector(activities: BusinessActivity[]): [string, BusinessActivity[]][
   return [...sectors.entries()];
 }
 
-export function BusinessForm({ activities, captchaSiteKey }: { activities: BusinessActivity[]; captchaSiteKey: string }) {
+/** Step 1: the robot check on its own, before anything is asked. */
+export function RobotForm({ captchaSiteKey }: { captchaSiteKey: string }) {
+  const [state, action, pending] = useActionState(captchaAction, start());
+
+  return (
+    <form action={action} className="flex flex-col gap-2">
+      <Refusal error={state.error} />
+      <Captcha siteKey={captchaSiteKey} answered={state} />
+      <button className={`${ui.button} mt-1 self-start`} type="submit" disabled={pending}>
+        {pending ? "Checking…" : "Continue"}
+      </button>
+    </form>
+  );
+}
+
+export function BusinessForm({ activities }: { activities: BusinessActivity[] }) {
   const [state, action, pending] = useActionState(businessAction, start());
   const value = (name: string) => state.fields[name] ?? "";
 
@@ -35,7 +50,7 @@ export function BusinessForm({ activities, captchaSiteKey }: { activities: Busin
     <form action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex min-w-0 flex-col gap-2">
         <label htmlFor="businessName" className={label}>Business name</label>
         <input id="businessName" name="businessName" required autoComplete="organization" defaultValue={value("businessName")} className={field} />
         <label htmlFor="businessActivityCode" className={label}>What the business does</label>
@@ -55,24 +70,10 @@ export function BusinessForm({ activities, captchaSiteKey }: { activities: Busin
         </select>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex min-w-0 flex-col gap-2">
         <legend className="mb-1 font-display text-lg font-bold">Where it is and how to reach you</legend>
-        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="countryCode" className={label}>Country</label>
-            <select id="countryCode" name="countryCode" required autoComplete="country" defaultValue={value("countryCode")} className={field}>
-              <option value="" disabled>
-                Choose the business&rsquo;s country
-              </option>
-              <option value="US">United States</option>
-              <option value="OTHER">Another country</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="stateCode" className={label}>State</label>
-            <input id="stateCode" name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} uppercase`} />
-          </div>
-        </div>
+        <label htmlFor="stateCode" className={label}>State</label>
+        <input id="stateCode" name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} w-24 uppercase`} />
         <label htmlFor="contactEmail" className={label}>Email</label>
         <input id="contactEmail" name="contactEmail" type="email" required autoComplete="email" aria-describedby="emailHint" defaultValue={value("contactEmail")} className={field} />
         <p id="emailHint" className={`${ui.muted} text-sm`}>You will sign in with this email.</p>
@@ -88,7 +89,6 @@ export function BusinessForm({ activities, captchaSiteKey }: { activities: Busin
           and calls to it may be answered and recorded by an AI receptionist that tells callers so.
         </span>
       </label>
-      <Captcha siteKey={captchaSiteKey} answered={state} />
       <div className="flex flex-col gap-2">
         <button className={ui.button} type="submit" disabled={pending}>
           {pending ? "Checking…" : "Continue"}

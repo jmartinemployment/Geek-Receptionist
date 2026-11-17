@@ -1,14 +1,12 @@
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import { ui } from "@/lib/ui";
 
 type HeroSectionProps = {
   title: string;
   summary: string;
-  /** The page's one button: its label and where it goes. Left out when the page puts something to use beside the text instead. */
-  action?: { href: string; label: string };
-  /** Optional, as on geekatyourspot.com: with an image the five columns beside the text show it. */
+  /** The page's one button, under the summary: a link or a button the page makes. Left out when the page has none. */
+  action?: ReactNode;
+  /** Optional, as on geekatyourspot.com's home hero: with an image the five columns beside the text show it, from a laptop screen up. */
   image?: string;
   imgAlt?: string;
   /** What the five columns beside the text hold when there is no image, for a page whose first screen is something to fill in. */
@@ -31,16 +29,14 @@ export default function HeroSection({ title, summary, action, image, imgAlt, chi
               {title}
             </h1>
             <p className="pt-3 text-xl text-white shadow-text lg:text-2xl">{summary}</p>
-            {action ? (
-              <div className="pt-6">
-                <Link href={action.href} className={ui.button}>
-                  {action.label}
-                </Link>
-              </div>
-            ) : null}
+            {action ? <div className="pt-6">{action}</div> : null}
           </div>
-          <div className="flex w-full flex-col items-center justify-center lg:col-span-5">
-            {image ? <Image width={460} height={460} src={image} alt={imgAlt ?? ""} loading="eager" /> : children}
+          <div className={`${image ? "hidden lg:flex" : "flex"} w-full flex-col items-center justify-center lg:col-span-5`}>
+            {image ? (
+              <Image src={image} width={1024} height={1024} sizes="(min-width: 1024px) 42vw, 1px" priority alt={imgAlt ?? ""} className="h-auto w-full" />
+            ) : (
+              children
+            )}
           </div>
         </div>
       </div>

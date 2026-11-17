@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useSyncExternalStore } from "react";
+import { useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { ui } from "@/lib/ui";
 import { Captcha } from "@/components/captcha";
@@ -50,11 +50,11 @@ function RobotForm({ captchaSiteKey }: { captchaSiteKey: string }) {
 const noSubscription = () => () => {};
 
 /**
- * The robot check as a dialog that opens with the page and cannot be closed: passing the check is the only way past it. It is a plain
- * fixed layer in the body, not a native dialog, because Google's picture challenge opens in the body and a native dialog would sit
- * over it. While it is open the rest of the page is inert, so the keyboard cannot reach what is behind it.
+ * The robot check as a dialog, opened by the Continue button. It is a plain fixed layer in the body, not a native dialog, because
+ * Google's picture challenge opens in the body and a native dialog would sit over it. While it is open the rest of the page is inert,
+ * so the keyboard cannot reach what is behind it. Escape or a click on the dimmed layer closes it.
  */
-export function RobotDialog({ captchaSiteKey }: { captchaSiteKey: string }) {
+function RobotDialog({ captchaSiteKey, onClose }: { captchaSiteKey: string; onClose: () => void }) {
   const host = useSyncExternalStore(noSubscription, () => document.body, () => null);
 
   useEffect(() => {
@@ -63,16 +63,26 @@ export function RobotDialog({ captchaSiteKey }: { captchaSiteKey: string }) {
     for (const element of behind) element.setAttribute("inert", "");
     const overflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
     return () => {
+      document.removeEventListener("keydown", closeOnEscape);
       for (const element of behind) element.removeAttribute("inert");
       document.documentElement.style.overflow = overflow;
     };
-  }, [host]);
+  }, [host, onClose]);
 
   if (!host) return null;
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-labelledby="robot-title" className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4">
-      <div className="w-full max-w-sm rounded-md bg-white p-5 text-[#0B162A]">
+    <div
+      className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div role="dialog" aria-modal="true" aria-labelledby="robot-title" className="w-full max-w-sm rounded-md bg-white p-5 text-[#0B162A]">
         <h2 id="robot-title" className={ui.h2}>
           Robot check
         </h2>
@@ -80,6 +90,20 @@ export function RobotDialog({ captchaSiteKey }: { captchaSiteKey: string }) {
       </div>
     </div>,
     host,
+  );
+}
+
+/** The orange Continue button under the hero's summary. It opens the robot check; passing it takes the visitor on to the first question. */
+export function RobotCheckButton({ captchaSiteKey }: { captchaSiteKey: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button type="button" className={ui.button} onClick={() => setOpen(true)}>
+        Continue
+      </button>
+      {open ? <RobotDialog captchaSiteKey={captchaSiteKey} onClose={() => setOpen(false)} /> : null}
+    </>
   );
 }
 

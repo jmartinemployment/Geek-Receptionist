@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import ClosingBand from "@/components/home/closing-band";
-import FactsStrip from "@/components/home/facts-strip";
 import FaqSection from "@/components/home/faq-section";
 import HowItWorks from "@/components/home/how-it-works";
 import MissedCalls from "@/components/home/missed-calls";
 import Pricing from "@/components/home/pricing";
 import WhatItDoes from "@/components/home/what-it-does";
+import { SCHEDULER_ID } from "@/components/shared/scheduler/scheduler-id";
+import { SchedulerShell } from "@/components/shared/scheduler/scheduler-shell";
 import HeroSection from "@/components/shared/shared-hero-section";
 import { FAQS } from "@/data/home/faq";
-import { SCHEDULER_LABEL, SCHEDULER_URL, SITE_URL } from "@/data/home/links";
+import { SCHEDULER_LABEL, SITE_URL } from "@/data/home/links";
 import { PLANS } from "@/data/home/plans";
 import { JsonLd, faqPageSchema, organizationSchema, serviceSchema } from "@/lib/seo/json-ld";
 import { ui } from "@/lib/ui";
@@ -31,7 +31,10 @@ export const metadata: Metadata = {
   },
 };
 
-/** The public home page. Everyone sees it, signed in or not; it reads no cookie, so it is built once and served as a file. */
+/**
+ * The public home page, in geekatyourspot.com's outline: the hero, one full-height section per h2, then the scheduler. Everyone sees it,
+ * signed in or not; it reads no cookie, so it is built once and served as a file.
+ */
 export default function Home() {
   return (
     <>
@@ -45,18 +48,17 @@ export default function Home() {
         image="/images/home-hero.avif"
         imgAlt="The Geek-Receptionist robot"
         action={
-          <a href={SCHEDULER_URL} className={ui.button}>
+          <a href={`#${SCHEDULER_ID}`} className={ui.button}>
             {SCHEDULER_LABEL}
           </a>
         }
       />
-      <FactsStrip />
       <MissedCalls />
       <WhatItDoes />
       <HowItWorks />
       <Pricing />
       <FaqSection />
-      <ClosingBand />
+      <SchedulerShell />
     </>
   );
 }

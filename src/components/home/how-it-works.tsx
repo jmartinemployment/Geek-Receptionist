@@ -22,7 +22,7 @@ function steps(idSuffix: string) {
 export default function HowItWorks() {
   return (
     <>
-      <section className="min-h-screen w-full bg-[#025E73] py-5 text-white lg:hidden">
+      <section className="min-h-screen w-full bg-[#BF5934] py-5 text-white lg:hidden">
         <div className="container">
           <div className="grid min-h-screen grid-cols-1 content-center gap-y-8">
             <h2 id="how-it-works" className="font-[var(--font-sora)] text-[8vw] font-black leading-[0.95] text-white shadow-text sm:text-4xl md:text-5xl">
@@ -33,7 +33,7 @@ export default function HowItWorks() {
         </div>
       </section>
 
-      <section className="hidden min-h-screen bg-[#025E73] py-5 text-white lg:block">
+      <section className="hidden min-h-screen bg-[#BF5934] py-5 text-white lg:block">
         <div className="container">
           <div className="grid min-h-screen grid-cols-12 content-center gap-x-4 gap-y-10">
             <div className="col-span-12">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, Sora } from "next/font/google";
 import type { ReactNode } from "react";
+import { Footer } from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-dvh">
         <Navbar />
         {children}
+        <Footer />
       </body>
     </html>
   );

@@ -41,13 +41,8 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const siteKey = captchaSiteKey();
 
   return (
-    <>
-      <HeroSection
-        title="Set up your receptionist"
-        summary="Answer a few questions, choose a plan and get a phone number for your receptionist."
-        action={{ href: "#signup-steps", label: "Get started" }}
-      />
-      <main id="signup-steps" className={`${ui.page} scroll-mt-16`}>
+    <HeroSection title="Set up your receptionist" summary="Answer a few questions, choose a plan and get a phone number for your receptionist.">
+      <div className="w-full">
         <ol className="mb-6 flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label="Signup steps">
           {STEPS.map((s, i) => (
             <li key={s.step} aria-current={i === index ? "step" : undefined} className={i === index ? "font-semibold text-ink" : i < index ? "text-ok" : "text-muted"}>
@@ -56,7 +51,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           ))}
         </ol>
 
-        <section className={ui.card} aria-labelledby="step-heading">
+        <section className="mb-4 rounded-md border border-line p-5" aria-labelledby="step-heading">
           <h2 id="step-heading" className={ui.h2}>
             {STEPS[index].title}
           </h2>
@@ -157,7 +152,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         <div className="flex flex-wrap items-center justify-end gap-3">
           {state && step !== "login" ? <ActionButton action={startOverAction} label="Start over" pendingLabel="Starting over…" quiet /> : null}
         </div>
-      </main>
-    </>
+      </div>
+    </HeroSection>
   );
 }

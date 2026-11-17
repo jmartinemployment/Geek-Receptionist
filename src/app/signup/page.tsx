@@ -82,7 +82,8 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         </button>
       }
     >
-      <div className="w-full text-left">
+      {/* The two yes-or-no questions take only the width their own words need, centered in the column with the text left aligned; the column itself is unchanged, and the forms use all of it. */}
+      <div className={step === "country" || step === "healthcare" ? "mx-auto w-fit max-w-full text-left" : "w-full text-left"}>
         <section className="mb-4" aria-labelledby="step-heading">
           <h2 id="step-heading" className={ui.h2}>
             {STEPS[index].title}

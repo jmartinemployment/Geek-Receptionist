@@ -7,7 +7,7 @@ import type { BusinessActivity } from "@/services/onboarding";
 import { activateAction, businessAction, createLoginAction, type SignupFormState } from "./actions";
 
 const field =
-  "rounded-md border border-line bg-paper px-3 py-2 text-ink focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-accent";
+  "rounded border border-line bg-wash px-3 py-2 text-ink placeholder:text-muted focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-white";
 const label = "font-semibold";
 
 function Refusal({ error }: { error: string | null }) {
@@ -32,51 +32,69 @@ export function BusinessForm({ activities, captchaSiteKey }: { activities: Busin
   const value = (name: string) => state.fields[name] ?? "";
 
   return (
-    <form action={action} className="flex flex-col gap-2">
+    <form action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
-      <label htmlFor="businessName" className={label}>Business name</label>
-      <input id="businessName" name="businessName" required autoComplete="organization" defaultValue={value("businessName")} className={field} />
-      <label htmlFor="businessActivityCode" className={label}>What the business does</label>
-      <select id="businessActivityCode" name="businessActivityCode" required defaultValue={value("businessActivityCode")} className={field}>
-        <option value="" disabled>
-          Choose its IRS business activity code
-        </option>
-        {bySector(activities).map(([sector, codes]) => (
-          <optgroup key={sector} label={sector}>
-            {codes.map((a) => (
-              <option key={a.code} value={a.code}>
-                {a.code} {a.name}
+
+      <fieldset className="flex flex-col gap-2">
+        <label htmlFor="businessName" className={label}>Business name</label>
+        <input id="businessName" name="businessName" required autoComplete="organization" defaultValue={value("businessName")} className={field} />
+        <label htmlFor="businessActivityCode" className={label}>What the business does</label>
+        <select id="businessActivityCode" name="businessActivityCode" required defaultValue={value("businessActivityCode")} className={field}>
+          <option value="" disabled>
+            Choose what the business does
+          </option>
+          {bySector(activities).map(([sector, codes]) => (
+            <optgroup key={sector} label={sector}>
+              {codes.map((a) => (
+                <option key={a.code} value={a.code}>
+                  {a.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 font-display text-lg font-bold">Where it is and how to reach you</legend>
+        <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="countryCode" className={label}>Country</label>
+            <select id="countryCode" name="countryCode" required autoComplete="country" defaultValue={value("countryCode")} className={field}>
+              <option value="" disabled>
+                Choose the business&rsquo;s country
               </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
-      <p className={`${ui.muted} text-sm`}>The code on your tax return (line B of Schedule C), from the IRS&rsquo;s 2025 list.</p>
-      <label htmlFor="countryCode" className={label}>Country</label>
-      <select id="countryCode" name="countryCode" required autoComplete="country" defaultValue={value("countryCode")} className={field}>
-        <option value="" disabled>
-          Choose the business&rsquo;s country
-        </option>
-        <option value="US">United States</option>
-        <option value="OTHER">Another country</option>
-      </select>
-      <label htmlFor="stateCode" className={label}>State</label>
-      <input id="stateCode" name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} w-24 uppercase`} />
-      <label htmlFor="contactEmail" className={label}>Email</label>
-      <input id="contactEmail" name="contactEmail" type="email" required autoComplete="email" defaultValue={value("contactEmail")} className={field} />
-      <label htmlFor="contactPhone" className={label}>Business phone</label>
-      <input id="contactPhone" name="contactPhone" type="tel" required autoComplete="tel-national" placeholder="(561) 555-0101" defaultValue={value("contactPhone")} className={field} />
-      <label className="mt-2 flex items-start gap-2">
-        <input type="checkbox" name="complianceAttested" required className="mt-1.5" />
+              <option value="US">United States</option>
+              <option value="OTHER">Another country</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="stateCode" className={label}>State</label>
+            <input id="stateCode" name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} uppercase`} />
+          </div>
+        </div>
+        <label htmlFor="contactEmail" className={label}>Email</label>
+        <input id="contactEmail" name="contactEmail" type="email" required autoComplete="email" aria-describedby="emailHint" defaultValue={value("contactEmail")} className={field} />
+        <p id="emailHint" className={`${ui.muted} text-sm`}>You will sign in with this email.</p>
+        <label htmlFor="contactPhone" className={label}>Business phone</label>
+        <input id="contactPhone" name="contactPhone" type="tel" required autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" aria-describedby="phoneHint" defaultValue={value("contactPhone")} className={field} />
+        <p id="phoneHint" className={`${ui.muted} text-sm`}>A US number, typed any way you like.</p>
+      </fieldset>
+
+      <label className="flex items-start gap-3">
+        <input type="checkbox" name="complianceAttested" required className="mt-1.5 size-4 accent-[#c83803]" />
         <span>
-          The business is in the United States and is not a healthcare provider, and calls to it may be answered and recorded by an AI
-          receptionist that tells callers so.
+          This business is not a healthcare, veterinary, legal, accounting, tax, payroll, financial, insurance or education business,
+          and calls to it may be answered and recorded by an AI receptionist that tells callers so.
         </span>
       </label>
       <Captcha siteKey={captchaSiteKey} answered={state} />
-      <button className={`${ui.button} mt-3`} type="submit" disabled={pending}>
-        {pending ? "Checking…" : "Continue"}
-      </button>
+      <div className="flex flex-col gap-2">
+        <button className={ui.button} type="submit" disabled={pending}>
+          {pending ? "Checking…" : "Continue"}
+        </button>
+        <p className={`${ui.muted} text-sm`}>Nothing is charged in this step. You choose a plan next.</p>
+      </div>
     </form>
   );
 }

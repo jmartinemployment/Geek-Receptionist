@@ -1,37 +1,32 @@
 @import "tailwindcss";
 
-/* The portal's colours. Utilities read these variables, so the dark values below apply everywhere without a dark: variant. */
+/* geekatyourspot.com's own colours and type (~/development/geek-style-guide.html): navy ground, navy panels, one orange accent,
+   Sora for headings and Figtree for everything else. There is no light or dark switch; the site is navy. */
 @theme {
-  --color-ink: #17202a;
-  --color-muted: #5b6672;
-  --color-line: #d8dee4;
-  --color-paper: #ffffff;
-  --color-wash: #f5f7f9;
-  --color-accent: #1a5fb4;
-  --color-ok: #1e7a46;
-  --color-warn: #9a5b00;
-  --color-bad: #b3261e;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-ink: #ffffff;
+  --color-muted: rgba(255, 255, 255, 0.72);
+  --color-line: rgba(255, 255, 255, 0.14);
+  --color-paper: #132340;
+  --color-wash: #0b162a;
+  --color-accent: #c83803;
+  --color-teak: #8c4e2a;
+  --color-ok: #62c58c;
+  --color-warn: #e0a64a;
+  --color-bad: #f2877f;
+  --font-sans: var(--font-figtree), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-sora), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-ink: #e8edf2;
-    --color-muted: #a3aeb9;
-    --color-line: #34404c;
-    --color-paper: #141b22;
-    --color-wash: #0e1319;
-    --color-accent: #7db2f5;
-    --color-ok: #62c58c;
-    --color-warn: #e0a64a;
-    --color-bad: #f2877f;
-  }
-}
-
-:root { color-scheme: light dark; }
+:root { color-scheme: dark; }
 
 body {
   @apply bg-wash text-ink font-sans antialiased;
+}
+
+h1, h2, h3 {
+  @apply font-display;
+  line-height: 1.05;
+  text-wrap: balance;
 }
 
 @media (prefers-reduced-motion: reduce) {

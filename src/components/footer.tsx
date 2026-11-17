@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { gtmLinkId, gtmLinkIdFromHref } from "@/lib/gtm/link-id";
 
-/** The pages the footer links to live on geekatyourspot.com, not here, so each link goes to the main site; the ids are built from the same paths as there. */
+/** The pages the footer links to live on geekatyourspot.com, not here, so each link goes to the main site. */
 const MAIN_SITE = "https://geekatyourspot.com";
 
 const HUB_GROUPS = [
@@ -32,10 +31,7 @@ const HUB_GROUPS = [
   },
 ] as const;
 
-function HubGroup({
-  group,
-  idSuffix = "",
-}: Readonly<{ group: (typeof HUB_GROUPS)[number]; idSuffix?: string }>) {
+function HubGroup({ group }: Readonly<{ group: (typeof HUB_GROUPS)[number] }>) {
   return (
     <div className="pb-4">
       <h2 className="text-white text-base shadow-text font-bold uppercase">
@@ -45,7 +41,6 @@ function HubGroup({
         {group.links.map((link) => (
           <li key={link.href} className="py-1">
             <Link
-              id={`${gtmLinkIdFromHref(link.href, "footer")}${idSuffix}`}
               href={`${MAIN_SITE}${link.href}`}
               className="font-bold text-white text-sm hover:text-[#c83803] transition-colors"
             >
@@ -59,9 +54,9 @@ function HubGroup({
 }
 
 export default function Footer() {
-  const brand = (idSuffix = "") => (
+  const brand = () => (
     <>
-      <Link href={MAIN_SITE} id={`${gtmLinkIdFromHref("/", "footer-logo")}${idSuffix}`} className="py-5">
+      <Link href={MAIN_SITE} className="py-5">
         <Image
           src="/images/GeekAtYourSpotWhite.svg"
           alt="Geek @ Your Spot LLC"
@@ -76,7 +71,6 @@ export default function Footer() {
       <div className="flex">
         <span className="pe-5">
           <a
-            id={`${gtmLinkId(["social", "facebook"])}${idSuffix}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Geek @ Your Spot LLC on Facebook"
@@ -99,7 +93,6 @@ export default function Footer() {
         </span>
         <span className="px-5">
           <a
-            id={`${gtmLinkId(["social", "linkedin"])}${idSuffix}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Geek @ Your Spot LLC on LinkedIn"
@@ -122,7 +115,6 @@ export default function Footer() {
         </span>
         <span className="ps-5">
           <a
-            id={`${gtmLinkId(["social", "instagram"])}${idSuffix}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Geek @ Your Spot LLC on Instagram"
@@ -147,7 +139,7 @@ export default function Footer() {
     </>
   );
 
-  const legal = (idSuffix = "") => (
+  const legal = () => (
     <>
       <p className="inline-block text-center text-xs">
         © 2026 Geek @ Your Spot LLC
@@ -157,7 +149,6 @@ export default function Footer() {
       </p>
       <p className="inline-block text-center text-xs">
         <a
-          id={`${gtmLinkIdFromHref("/privacy-policy")}${idSuffix}`}
           className="hover:text-white transition-colors"
           href={`${MAIN_SITE}/privacy-policy`}
         >
@@ -166,7 +157,6 @@ export default function Footer() {
       </p>
       <p className="inline-block text-center text-xs">
         <a
-          id={`${gtmLinkIdFromHref("/terms-and-conditions")}${idSuffix}`}
           className="hover:text-white transition-colors"
           href={`${MAIN_SITE}/terms-and-conditions`}
         >
@@ -195,18 +185,18 @@ export default function Footer() {
       </div>
       <div className="hidden flex-col justify-center container mt-5 pt-5 lg:flex">
         <div className="grid grid-cols-12 gap-4 container py-5 my-5">
-          <div className="col-span-3">{brand("-lg")}</div>
+          <div className="col-span-3">{brand()}</div>
           <div className="col-span-9">
             <div className="grid grid-cols-3 gap-4">
               {HUB_GROUPS.map((group) => (
-                <HubGroup key={group.label} group={group} idSuffix="-lg" />
+                <HubGroup key={group.label} group={group} />
               ))}
             </div>
           </div>
         </div>
         <div className="border-t border-white/5 flex flex-col items-center justify-center py-5 mt-5">
           <div className="flex flex-row w-full justify-between items-center gap-6 text-slate-500 uppercase tracking-widest text-center px-5">
-            {legal("-lg")}
+            {legal()}
           </div>
         </div>
       </div>

@@ -99,7 +99,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "healthcare" && (
           <div className="flex flex-nowrap justify-center gap-3">
-            <ActionButton action={healthcareAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
+            <ActionButton action={healthcareAction.bind(null, true)} label="Yes" pendingLabel="One moment…" dialogTitle="Not available for healthcare or veterinary businesses" />
             <ActionButton action={healthcareAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
           </div>
         )}

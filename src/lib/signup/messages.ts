@@ -12,7 +12,8 @@ const MESSAGES: Record<string, string> = {
   captcha_unavailable: "Google’s robot check could not be reached. Try again shortly.",
   business_activity_unknown: "Choose what the business does from the list.",
   contact_phone_not_us: "Enter the business's US phone number, ten digits, such as (561) 555-0101.",
-  industry_excluded: "Geek-Receptionist cannot be used by healthcare or veterinary businesses.",
+  industry_excluded:
+    "Geek-Receptionist cannot be used by healthcare or veterinary businesses. Healthcare businesses are HIPAA-covered entities, and we exclude them outright.",
   industry_addendum_not_available: "Geek-Receptionist is not yet available for legal, financial, accounting or education businesses.",
   attestation_required: "Confirm the compliance statement to continue.",
   rate_limited: "Too many signup attempts from this address. Try again in an hour.",

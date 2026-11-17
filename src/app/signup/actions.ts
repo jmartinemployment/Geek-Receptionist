@@ -35,8 +35,8 @@ export async function countryAction(inUnitedStates: boolean): Promise<{ error: s
 }
 
 /**
- * What closing the "not in the United States" dialog does: the robot check is forgotten, so the next visit starts from it again. It runs
- * on close, not with the No, because clearing the cookie re-renders the page back to the hero and the dialog would vanish with it.
+ * What closing a refusal dialog (not in the United States, healthcare or veterinary) does: the robot check is forgotten, so the next visit starts from it again. It runs
+ * on close, not with the answer, because clearing the cookie re-renders the page back to the hero and the dialog would vanish with it.
  */
 export async function forgetRobotCheckAction(): Promise<void> {
   await clearGates();

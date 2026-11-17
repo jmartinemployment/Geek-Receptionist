@@ -23,11 +23,17 @@ body {
   @apply bg-wash text-ink font-sans antialiased;
 }
 
-h1, h2, h3 {
-  @apply font-display;
-  line-height: 1.05;
-  text-wrap: balance;
+/* In the base layer, so a heading's own utilities (leading-[0.95], text sizes) win over these defaults. */
+@layer base {
+  h1, h2, h3 {
+    @apply font-display;
+    line-height: 1.05;
+    text-wrap: balance;
+  }
 }
+
+/* The site's text shadow on white text over a dark ground. */
+.shadow-text { text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.375); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

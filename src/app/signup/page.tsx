@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
   { step: "country", title: "Is Business located in United States?" },
-  { step: "healthcare", title: "Your industry" },
+  { step: "healthcare", title: "Is the business a healthcare or veterinary business?" },
   { step: "business", title: "Your business" },
   { step: "plan", title: "Choose a plan" },
   { step: "payment_method", title: "Save a payment method" },
@@ -98,13 +98,10 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         )}
 
         {step === "healthcare" && (
-          <>
-            <p className={`${ui.muted} mb-4 ${QUESTION_WIDTH}`}>Is the business a healthcare or veterinary business?</p>
-            <div className="flex flex-nowrap justify-center gap-3">
-              <ActionButton action={healthcareAction.bind(null, false)} label="No, it is not" pendingLabel="One moment…" />
-              <ActionButton action={healthcareAction.bind(null, true)} label="Yes, it is" pendingLabel="One moment…" quiet />
-            </div>
-          </>
+          <div className="flex flex-nowrap justify-center gap-3">
+            <ActionButton action={healthcareAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
+            <ActionButton action={healthcareAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
+          </div>
         )}
 
         {step === "business" && activities && (activities.ok ? (

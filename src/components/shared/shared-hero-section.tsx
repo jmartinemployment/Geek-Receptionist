@@ -31,9 +31,9 @@ export default function HeroSection({ title, summary, action, image, imgAlt, chi
             <p className="pt-3 text-xl text-white shadow-text lg:text-2xl">{summary}</p>
             {action ? <div className="pt-6">{action}</div> : null}
           </div>
-          <div className={`${image ? "order-first lg:order-none" : ""} flex w-full flex-col items-center justify-center lg:col-span-5`}>
+          <div className={`${image ? "order-first lg:order-none" : ""} flex w-full flex-col items-start justify-center lg:col-span-5`}>
             {image ? (
-              <Image src={image} width={1024} height={1024} sizes="(min-width: 1024px) 42vw, 16rem" priority alt={imgAlt ?? ""} className="h-auto w-full max-w-64 lg:max-w-none" />
+              <Image src={image} width={1024} height={1024} sizes="(min-width: 1024px) 42vw, 16rem" priority alt={imgAlt ?? ""} className="mx-auto h-auto w-full max-w-64 lg:max-w-none" />
             ) : (
               children
             )}

@@ -30,6 +30,9 @@ const PLANS = [
 
 const CODE = /^[a-z0-9_]{1,64}$/;
 
+/** The words of a yes-or-no question wrap at this width, so the block they make is narrower than the column and can sit centered in it. */
+const QUESTION_WIDTH = "max-w-[17.5rem]";
+
 /** Self-service signup, rendered on the server from where this browser's signup stands. Each step is a Server Action; no step reloads the page. */
 export default async function Signup({ searchParams }: { searchParams: Promise<{ error?: string | string[]; start?: string | string[] }> }) {
   const state = await readSignup();
@@ -68,6 +71,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   }
 
   const step = gateStep === "captcha" ? "country" : gateStep;
+  const compact = step === "country" || step === "healthcare";
   const index = STEPS.findIndex((s) => s.step === step);
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
   const activities = step === "business" ? await getBusinessActivities() : null;
@@ -83,9 +87,9 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
       }
     >
       {/* The two yes-or-no questions take only the width their own words need, centered in the column with the text left aligned; the column itself is unchanged, and the forms use all of it. */}
-      <div className={step === "country" || step === "healthcare" ? "mx-auto w-fit max-w-full text-left" : "w-full text-left"}>
+      <div className={compact ? "mx-auto w-fit max-w-full text-left" : "w-full text-left"}>
         <section className="mb-4" aria-labelledby="step-heading">
-          <h2 id="step-heading" className={ui.h2}>
+          <h2 id="step-heading" className={`${ui.h2} ${compact ? QUESTION_WIDTH : ""}`}>
             {STEPS[index].title}
           </h2>
           {refusal ? (
@@ -103,7 +107,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
           {step === "healthcare" && (
             <>
-              <p className={`${ui.muted} mb-4`}>Is the business a healthcare or veterinary business?</p>
+              <p className={`${ui.muted} mb-4 ${QUESTION_WIDTH}`}>Is the business a healthcare or veterinary business?</p>
               <div className="flex flex-nowrap gap-3">
                 <ActionButton action={healthcareAction.bind(null, false)} label="No, it is not" pendingLabel="One moment…" />
                 <ActionButton action={healthcareAction.bind(null, true)} label="Yes, it is" pendingLabel="One moment…" quiet />

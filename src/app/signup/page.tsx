@@ -12,7 +12,7 @@ import { BusinessForm, LoginForm, NumberForm, RobotCheckButton } from "./signup-
 export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
-  { step: "country", title: "Your country" },
+  { step: "country", title: "Is Business located in United States?" },
   { step: "healthcare", title: "Your industry" },
   { step: "business", title: "Your business" },
   { step: "plan", title: "Choose a plan" },
@@ -86,13 +86,10 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           ) : null}
 
           {step === "country" && (
-            <>
-              <p className={`${ui.muted} mb-4`}>Is the business in the United States?</p>
-              <div className="flex flex-wrap gap-3">
-                <ActionButton action={countryAction.bind(null, true)} label="Yes, in the United States" pendingLabel="One moment…" />
-                <ActionButton action={countryAction.bind(null, false)} label="No, in another country" pendingLabel="One moment…" quiet />
-              </div>
-            </>
+            <div className="flex flex-wrap gap-3">
+              <ActionButton action={countryAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
+              <ActionButton action={countryAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
+            </div>
           )}
 
           {step === "healthcare" && (

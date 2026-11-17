@@ -10,7 +10,11 @@ test("each step follows from what is already done", () => {
   assert.equal(stepOf(null, new Set<Gate>(["captcha"])), "country");
   assert.equal(stepOf(null, new Set<Gate>(["captcha", "healthcare"])), "country");
   assert.equal(stepOf(null, new Set<Gate>(["captcha", "country"])), "healthcare");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare"])), "business");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare"])), "profession");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "profession"])), "business");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "profession", "professional"])), "addendum");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "profession", "professional", "addendum"])), "business");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "professional", "addendum"])), "profession");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, new Set<Gate>(["captcha", "country", "healthcare"])), "plan");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, new Set<Gate>(["captcha", "country", "healthcare"])), "plan");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true }, new Set<Gate>(["captcha", "country", "healthcare"])), "payment_method");

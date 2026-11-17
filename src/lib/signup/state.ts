@@ -4,13 +4,15 @@ import { cookies } from "next/headers";
 export const SIGNUP_COOKIE = "rp_signup";
 
 /**
- * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, then the two
- * disqualifying questions. The cookie is signed with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the
- * check. Country and healthcare are only bookmarks: GeekAPI decides both again when the business is submitted.
+ * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, the two
+ * disqualifying questions, then the professional services question and, for a business that answers yes to it, the addendum.
+ * "profession" is the question answered, "professional" is a yes to it, and "addendum" is the addendum agreed to. The cookie is signed
+ * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. Country and healthcare are only bookmarks:
+ * GeekAPI decides both again when the business is submitted, and decides again whether the business needs the addendum.
  */
 export const GATES_COOKIE = "rp_gates";
 
-export const GATES = ["captcha", "country", "healthcare"] as const;
+export const GATES = ["captcha", "country", "healthcare", "profession", "professional", "addendum"] as const;
 export type Gate = (typeof GATES)[number];
 
 const gateKey = (): string | null => {
@@ -51,7 +53,7 @@ export type SignupState = {
   phoneNumber?: string;
 };
 
-export type SignupStep = "captcha" | "country" | "healthcare" | "business" | "plan" | "payment_method" | "number" | "login";
+export type SignupStep = "captcha" | "country" | "healthcare" | "profession" | "addendum" | "business" | "plan" | "payment_method" | "number" | "login";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID = /^[A-Za-z0-9-]{1,64}$/;
@@ -62,6 +64,8 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
     if (!gates.has("captcha")) return "captcha";
     if (!gates.has("country")) return "country";
     if (!gates.has("healthcare")) return "healthcare";
+    if (!gates.has("profession")) return "profession";
+    if (gates.has("professional") && !gates.has("addendum")) return "addendum";
     return "business";
   }
   if (!state.subscriptionApproved) return "plan";
@@ -101,12 +105,10 @@ export async function readGates(): Promise<ReadonlySet<Gate>> {
   return parseGates((await cookies()).get(GATES_COOKIE)?.value, key);
 }
 
-/** Remembers for a day that the visitor got past a question. Server Actions and Route Handlers only; it needs the reCAPTCHA secret to sign with. */
-export async function passGate(gate: Gate): Promise<void> {
+/** Writes the gates for a day. Server Actions and Route Handlers only; it needs the reCAPTCHA secret to sign with. */
+async function writeGates(passed: ReadonlySet<Gate>): Promise<void> {
   const key = gateKey();
   if (!key) throw new Error("RECAPTCHA_SECRET_KEY is not set, so the signup's progress cannot be signed.");
-  const passed = new Set(await readGates());
-  passed.add(gate);
   (await cookies()).set(GATES_COOKIE, signGates(GATES.filter((g) => passed.has(g)), key), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -114,6 +116,18 @@ export async function passGate(gate: Gate): Promise<void> {
     path: "/",
     maxAge: 60 * 60 * 24,
   });
+}
+
+/** Remembers for a day that the visitor got past these questions. */
+export async function passGate(...gates: Gate[]): Promise<void> {
+  await writeGates(new Set([...(await readGates()), ...gates]));
+}
+
+/** Forgets these questions and leaves the rest, so the visitor is asked them again. */
+export async function dropGates(...gates: Gate[]): Promise<void> {
+  const passed = new Set(await readGates());
+  for (const gate of gates) passed.delete(gate);
+  await writeGates(passed);
 }
 
 export async function readSignup(): Promise<SignupState | null> {

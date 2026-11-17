@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { clearGates, clearSignup, passGate, readGates, readSignup, writeSignup } from "@/lib/signup/state";
+import { clearGates, clearSignup, dropGates, passGate, readGates, readSignup, writeSignup } from "@/lib/signup/state";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
 import { postOnboarding } from "@/services/onboarding";
@@ -50,7 +50,32 @@ export async function healthcareAction(isHealthcare: boolean): Promise<{ error: 
   redirect("/signup?start=1");
 }
 
-/** Step 3: the business and the compliance statement, once the robot check and the first two questions are passed. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
+/**
+ * Between steps 2 and 3: is the business a legal, accounting, tax, payroll, finance, insurance or education business. A no goes on to the business; a
+ * yes goes to the addendum first.
+ */
+export async function professionAction(isProfessional: boolean): Promise<{ error: string | null }> {
+  if (!(await readGates()).has("healthcare")) return { error: signupMessage("signup_expired") };
+  if (isProfessional) await passGate("profession", "professional");
+  else await passGate("profession");
+  redirect("/signup?start=1");
+}
+
+/** Only after a yes to that question: the professional services addendum. Agreeing is remembered and sent to GeekAPI with the business. */
+export async function addendumAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  if (!(await readGates()).has("professional")) return { error: signupMessage("signup_expired"), fields: {} };
+  if (form.get("addendumSigned") !== "on") return { error: signupMessage("addendum_not_agreed"), fields: {} };
+  await passGate("addendum");
+  redirect("/signup?start=1");
+}
+
+/** Back from the addendum, or from the business, to the professional services question, which is then asked again. */
+export async function professionBackAction(): Promise<{ error: string | null }> {
+  await dropGates("profession", "professional", "addendum");
+  redirect("/signup?start=1");
+}
+
+/** Step 3: the business and the compliance statement, once the robot check and the questions are passed. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
 export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
     businessName: text(form, "businessName"),
@@ -62,7 +87,9 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   const attested = form.get("complianceAttested") === "on";
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("country") || !gates.has("healthcare")) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("country") || !gates.has("healthcare") || !gates.has("profession")) return { error: signupMessage("signup_expired"), fields };
+  if (gates.has("professional") && !gates.has("addendum")) return { error: signupMessage("signup_expired"), fields };
+  const addendumSigned = gates.has("addendum");
 
   const visitor = await headers();
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
@@ -73,7 +100,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone,
     complianceAttested: attested,
-    addendumSigned: false,
+    addendumSigned,
   }, visitor);
 
   const tenantId = answer.body?.tenantId;

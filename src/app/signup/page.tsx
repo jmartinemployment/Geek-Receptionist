@@ -4,16 +4,19 @@ import HeroSection from "@/components/shared/shared-hero-section";
 import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
-import { choosePlanAction, countryAction, forgetRobotCheckAction, healthcareAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { ADDENDUM_QUESTION, ADDENDUM_TITLE } from "@/lib/signup/addendum";
+import { choosePlanAction, countryAction, forgetRobotCheckAction, healthcareAction, professionAction, professionBackAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
 import { getBusinessActivities } from "@/services/onboarding";
-import { BusinessForm, LoginForm, NumberForm, RobotCheckButton } from "./signup-forms";
+import { AddendumForm, BusinessForm, LoginForm, NumberForm, RobotCheckButton } from "./signup-forms";
 
 export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
   { step: "country", title: "Is Business located in United States?" },
   { step: "healthcare", title: "Is the business a healthcare or veterinary business?" },
+  { step: "profession", title: ADDENDUM_QUESTION },
+  { step: "addendum", title: ADDENDUM_TITLE },
   { step: "business", title: "Your business" },
   { step: "plan", title: "Choose a plan" },
   { step: "payment_method", title: "Save a payment method" },
@@ -71,13 +74,13 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   }
 
   const step = gateStep === "captcha" ? "country" : gateStep;
-  const compact = step === "country" || step === "healthcare";
+  const compact = step === "country" || step === "healthcare" || step === "profession";
   const index = STEPS.findIndex((s) => s.step === step);
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
   const activities = step === "business" ? await getBusinessActivities() : null;
 
   // The steps are written once and rendered in both hero blocks, as geekatyourspot.com writes a section's body, so every id takes the block's suffix.
-  // The two yes-or-no questions take only the width their own words need, centered in the column with the text centered; the forms use all of it.
+  // The yes-or-no questions take only the width their own words need, centered in the column with the text centered; the forms use all of it.
   const body = (s: string) => (
     <div className={compact ? "mx-auto w-fit max-w-full text-center" : "w-full text-left"}>
       <section className="mb-4" aria-labelledby={`step-heading${s}`}>
@@ -103,6 +106,15 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
             <ActionButton action={healthcareAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
           </div>
         )}
+
+        {step === "profession" && (
+          <div className="flex flex-nowrap justify-center gap-3">
+            <ActionButton action={professionAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
+            <ActionButton action={professionAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
+          </div>
+        )}
+
+        {step === "addendum" && <AddendumForm />}
 
         {step === "business" && activities && (activities.ok ? (
           <BusinessForm activities={activities.activities} idSuffix={s} />
@@ -164,6 +176,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
       </section>
 
       <div className="flex flex-wrap items-center justify-end gap-3">
+        {step === "addendum" || step === "business" ? <ActionButton action={professionBackAction} label="Back" pendingLabel="One moment…" quiet /> : null}
         {state && step !== "login" ? <ActionButton action={startOverAction} label="Start over" pendingLabel="Starting over…" quiet /> : null}
       </div>
     </div>

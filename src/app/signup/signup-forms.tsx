@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useEffect, useRef, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { ui } from "@/lib/ui";
 import { Captcha } from "@/components/captcha";
 import type { BusinessActivity } from "@/services/onboarding";
@@ -27,8 +28,8 @@ function bySector(activities: BusinessActivity[]): [string, BusinessActivity[]][
   return [...sectors.entries()];
 }
 
-/** Step 1: the robot check on its own, before anything is asked. Ticking the box sends it; there is no second click. */
-export function RobotForm({ captchaSiteKey }: { captchaSiteKey: string }) {
+/** The robot check form. Ticking the box sends it; there is no second click. */
+function RobotForm({ captchaSiteKey }: { captchaSiteKey: string }) {
   const [state, action, pending] = useActionState(captchaAction, start());
   const form = useRef<HTMLFormElement>(null);
 
@@ -43,6 +44,42 @@ export function RobotForm({ captchaSiteKey }: { captchaSiteKey: string }) {
         </p>
       ) : null}
     </form>
+  );
+}
+
+const noSubscription = () => () => {};
+
+/**
+ * The robot check as a dialog that opens with the page and cannot be closed: passing the check is the only way past it. It is a plain
+ * fixed layer in the body, not a native dialog, because Google's picture challenge opens in the body and a native dialog would sit
+ * over it. While it is open the rest of the page is inert, so the keyboard cannot reach what is behind it.
+ */
+export function RobotDialog({ captchaSiteKey }: { captchaSiteKey: string }) {
+  const host = useSyncExternalStore(noSubscription, () => document.body, () => null);
+
+  useEffect(() => {
+    if (!host) return;
+    const behind = [...document.querySelectorAll("body > header, body > main, body > footer")];
+    for (const element of behind) element.setAttribute("inert", "");
+    const overflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      for (const element of behind) element.removeAttribute("inert");
+      document.documentElement.style.overflow = overflow;
+    };
+  }, [host]);
+
+  if (!host) return null;
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-labelledby="robot-title" className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4">
+      <div className="w-full max-w-sm rounded-md border border-line bg-paper p-5">
+        <h2 id="robot-title" className={ui.h2}>
+          Robot check
+        </h2>
+        <RobotForm captchaSiteKey={captchaSiteKey} />
+      </div>
+    </div>,
+    host,
   );
 }
 

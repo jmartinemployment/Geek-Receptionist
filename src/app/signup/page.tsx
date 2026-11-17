@@ -6,12 +6,11 @@ import { ui } from "@/lib/ui";
 import { choosePlanAction, countryAction, healthcareAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
 import { getBusinessActivities } from "@/services/onboarding";
-import { BusinessForm, LoginForm, NumberForm, RobotForm } from "./signup-forms";
+import { BusinessForm, LoginForm, NumberForm, RobotDialog } from "./signup-forms";
 
 export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
-  { step: "captcha", title: "Robot check" },
   { step: "country", title: "Your country" },
   { step: "healthcare", title: "Your industry" },
   { step: "business", title: "Your business" },
@@ -33,7 +32,10 @@ const CODE = /^[a-z0-9_]{1,64}$/;
 /** Self-service signup, rendered on the server from where this browser's signup stands. Each step is a Server Action; no step reloads the page. */
 export default async function Signup({ searchParams }: { searchParams: Promise<{ error?: string | string[] }> }) {
   const state = await readSignup();
-  const step = stepOf(state, await readGates());
+  const gateStep = stepOf(state, await readGates());
+  // The robot check is a dialog over the first step, not a step of its own: until it is passed the page shows the country question behind it.
+  const robotCheck = gateStep === "captcha";
+  const step = robotCheck ? "country" : gateStep;
   const index = STEPS.findIndex((s) => s.step === step);
   const { error } = await searchParams;
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
@@ -43,6 +45,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   return (
     <HeroSection title="Set up your receptionist" summary="Answer a few questions, choose a plan and get a phone number for your receptionist.">
       <div className="w-full">
+        {robotCheck && siteKey ? <RobotDialog captchaSiteKey={siteKey} /> : null}
         <ol className="mb-6 flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label="Signup steps">
           {STEPS.map((s, i) => (
             <li key={s.step} aria-current={i === index ? "step" : undefined} className={i === index ? "font-semibold text-ink" : i < index ? "text-ok" : "text-muted"}>
@@ -61,16 +64,13 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
             </p>
           ) : null}
 
-          {step === "captcha" &&
-            (siteKey ? (
-              <RobotForm captchaSiteKey={siteKey} />
-            ) : (
-              <p className={ui.status.bad} role="alert">
-                {signupMessage("captcha_not_configured")}
-              </p>
-            ))}
+          {robotCheck && !siteKey ? (
+            <p className={ui.status.bad} role="alert">
+              {signupMessage("captcha_not_configured")}
+            </p>
+          ) : null}
 
-          {step === "country" && (
+          {step === "country" && (siteKey || !robotCheck) && (
             <>
               <p className={`${ui.muted} mb-4`}>Is the business in the United States?</p>
               <div className="flex flex-wrap gap-3">

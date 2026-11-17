@@ -18,7 +18,7 @@ const text = (form: FormData, name: string) => {
   return typeof value === "string" ? value.trim() : "";
 };
 
-/** Step 1: the robot check. Google's answer is checked here, once; a pass is remembered and the form goes on. */
+/** Before step 1: the robot check, a dialog over the first step. Google's answer is checked here, once; a pass is remembered and the form goes on. */
 export async function captchaAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const outcome = await verifyCaptcha(form.get("g-recaptcha-response"), visitorIpFrom(await headers()));
   if (outcome !== "ok") return { error: signupMessage(outcome), fields: {} };
@@ -26,7 +26,7 @@ export async function captchaAction(_previous: SignupFormState, form: FormData):
   redirect("/signup");
 }
 
-/** Step 2: is the business in the United States. A yes is remembered and the form goes on; a no is the end of it, said at once. */
+/** Step 1: is the business in the United States. A yes is remembered and the form goes on; a no is the end of it, said at once. */
 export async function countryAction(inUnitedStates: boolean): Promise<{ error: string | null }> {
   if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired") };
   if (!inUnitedStates) return { error: signupMessage("country_not_supported") };
@@ -34,7 +34,7 @@ export async function countryAction(inUnitedStates: boolean): Promise<{ error: s
   redirect("/signup");
 }
 
-/** Step 3: is the business a healthcare or veterinary business. A no is remembered; a yes is the end of it, said at once. */
+/** Step 2: is the business a healthcare or veterinary business. A no is remembered; a yes is the end of it, said at once. */
 export async function healthcareAction(isHealthcare: boolean): Promise<{ error: string | null }> {
   if (!(await readGates()).has("country")) return { error: signupMessage("signup_expired") };
   if (isHealthcare) return { error: signupMessage("industry_excluded") };
@@ -42,7 +42,7 @@ export async function healthcareAction(isHealthcare: boolean): Promise<{ error: 
   redirect("/signup");
 }
 
-/** Step 4: the business and the compliance statement, once the first three questions are answered. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
+/** Step 3: the business and the compliance statement, once the robot check and the first two questions are passed. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
 export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
     businessName: text(form, "businessName"),
@@ -75,7 +75,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   redirect("/signup");
 }
 
-/** Step 5: the plan. GeekAPI starts a PayPal subscription to it for this tenant and the visitor approves it in PayPal. */
+/** Step 4: the plan. GeekAPI starts a PayPal subscription to it for this tenant and the visitor approves it in PayPal. */
 export async function choosePlanAction(tier: string): Promise<{ error: string | null }> {
   const state = await readSignup();
   if (!state) return { error: signupMessage("signup_expired") };
@@ -99,7 +99,7 @@ export async function choosePlanAction(tier: string): Promise<{ error: string | 
   redirect(approvalUrl);
 }
 
-/** Step 5, second half: saving the visitor's PayPal account for overage charges, approved in PayPal. */
+/** Step 5: saving the visitor's PayPal account for overage charges, approved in PayPal. */
 export async function savePaymentMethodAction(): Promise<{ error: string | null }> {
   const state = await readSignup();
   if (!state?.subscriptionApproved) return { error: signupMessage("signup_expired") };
@@ -122,7 +122,7 @@ export async function savePaymentMethodAction(): Promise<{ error: string | null 
 }
 
 /**
- * Step 7: the area code. GeekAPI checks the subscription and the saved payment method with PayPal, then buys the number in that area
+ * Step 6: the area code. GeekAPI checks the subscription and the saved payment method with PayPal, then buys the number in that area
  * code and sets up the receptionist on it. This is the step that spends money.
  */
 export async function activateAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
@@ -146,7 +146,7 @@ export async function activateAction(_previous: SignupFormState, form: FormData)
   redirect("/signup");
 }
 
-/** Step 8: the owner's login. The password goes to GeekAPI once to make the login and once to sign in, and is never kept or shown. */
+/** Step 7: the owner's login. The password goes to GeekAPI once to make the login and once to sign in, and is never kept or shown. */
 export async function createLoginAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = { email: text(form, "email"), displayName: text(form, "displayName") };
   const password = form.get("password");

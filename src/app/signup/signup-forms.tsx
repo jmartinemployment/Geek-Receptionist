@@ -71,8 +71,8 @@ export function RobotDialog({ captchaSiteKey }: { captchaSiteKey: string }) {
 
   if (!host) return null;
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-labelledby="robot-title" className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4">
-      <div className="w-full max-w-sm rounded-md border border-line bg-paper p-5">
+    <div role="dialog" aria-modal="true" aria-labelledby="robot-title" className="fixed inset-0 z-[100] grid place-items-center bg-black/90 p-4">
+      <div className="w-full max-w-sm rounded-md border border-line p-5">
         <h2 id="robot-title" className={ui.h2}>
           Robot check
         </h2>

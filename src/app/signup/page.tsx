@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
 import { readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
@@ -121,10 +120,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         )}
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/login" className="text-accent">
-          Already set up? Sign in
-        </Link>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         {state && step !== "login" ? <ActionButton action={startOverAction} label="Start over" pendingLabel="Starting over…" quiet /> : null}
       </div>
     </main>

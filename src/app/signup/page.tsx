@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
+import { SchedulerShell } from "@/components/shared/scheduler/scheduler-shell";
 import HeroSection from "@/components/shared/shared-hero-section";
 import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
@@ -48,25 +49,28 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const started = state !== null || (start === "1" && gateStep !== "captcha");
   if (!started) {
     return (
-      <HeroSection
-        title={title}
-        summary={summary}
-        image="/images/home-hero.avif"
-        imgAlt="A Geek @ Your Spot LLC robot action figure in its package, holding a laptop with a rising chart, beside icons for chat, automation, reporting and a small business storefront."
-        action={
-          gateStep !== "captcha" ? (
-            <Link href="/signup?start=1" className={ui.button}>
-              Continue
-            </Link>
-          ) : siteKey ? (
-            <RobotCheckButton captchaSiteKey={siteKey} />
-          ) : (
-            <p className={ui.status.bad} role="alert">
-              {signupMessage("captcha_not_configured")}
-            </p>
-          )
-        }
-      />
+      <>
+        <HeroSection
+          title={title}
+          summary={summary}
+          image="/images/home-hero.avif"
+          imgAlt="A Geek @ Your Spot LLC robot action figure in its package, holding a laptop with a rising chart, beside icons for chat, automation, reporting and a small business storefront."
+          action={
+            gateStep !== "captcha" ? (
+              <Link href="/signup?start=1" className={ui.button}>
+                Continue
+              </Link>
+            ) : siteKey ? (
+              <RobotCheckButton captchaSiteKey={siteKey} />
+            ) : (
+              <p className={ui.status.bad} role="alert">
+                {signupMessage("captcha_not_configured")}
+              </p>
+            )
+          }
+        />
+        <SchedulerShell />
+      </>
     );
   }
 
@@ -169,16 +173,19 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   );
 
   return (
-    <HeroSection
-      title={title}
-      summary={summary}
-      action={
-        <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>
-          Continue
-        </button>
-      }
-    >
-      {body}
-    </HeroSection>
+    <>
+      <HeroSection
+        title={title}
+        summary={summary}
+        action={
+          <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>
+            Continue
+          </button>
+        }
+      >
+        {body}
+      </HeroSection>
+      <SchedulerShell />
+    </>
   );
 }

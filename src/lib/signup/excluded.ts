@@ -1,31 +1,24 @@
 /**
  * The industries that cannot sign up, each asked about in its own question (Jeff, 2026-11-18: "more enforceable to ask each
- * separately"). The codes and the questions are the same ones GeekAPI holds (ExcludedIndustries); GeekAPI refuses an answer whose
+ * separately"). Exactly these five (Jeff, 2026-11-18); veterinary and telemarketing are no longer excluded. The codes and the questions are the same ones GeekAPI holds (ExcludedIndustries); GeekAPI refuses an answer whose
  * question differs from its own, and stores every answer forever, so the two lists change together.
  * GeekBackend docs/Geek-Receptionist.md section 5, item 1.
  */
 export const EXCLUDED_CODES = [
-  "healthcare",
-  "veterinary",
+  "hipaa",
   "securities_broker_dealer",
   "investment_adviser",
   "commodity_futures_derivatives",
-  "medicare_sales",
-  "telemarketing",
+  "medicare_tpmo",
 ] as const;
 
 export type ExcludedCode = (typeof EXCLUDED_CODES)[number];
 
 export const EXCLUDED_INDUSTRIES: Record<ExcludedCode, { question: string; dialogTitle: string; refusal: string }> = {
-  healthcare: {
-    question: "Is the business a healthcare business?",
-    dialogTitle: "Not available for healthcare businesses",
-    refusal: "Geek-Receptionist cannot be used by healthcare businesses. Healthcare businesses are HIPAA-covered entities, and we exclude them outright.",
-  },
-  veterinary: {
-    question: "Is the business a veterinary business?",
-    dialogTitle: "Not available for veterinary businesses",
-    refusal: "Geek-Receptionist cannot be used by veterinary businesses. We exclude them outright.",
+  hipaa: {
+    question: "Is the business a HIPAA covered entity or business associate, such as a healthcare provider, health plan or a business that handles patient health information for one?",
+    dialogTitle: "Not available for HIPAA covered entities or business associates",
+    refusal: "Geek-Receptionist cannot be used by HIPAA covered entities or business associates. We exclude them outright.",
   },
   securities_broker_dealer: {
     question: "Is the business a securities broker-dealer?",
@@ -42,15 +35,10 @@ export const EXCLUDED_INDUSTRIES: Record<ExcludedCode, { question: string; dialo
     dialogTitle: "Not available for commodity futures or derivatives businesses",
     refusal: "Geek-Receptionist cannot be used by commodity futures or derivatives businesses. We exclude them outright.",
   },
-  medicare_sales: {
-    question: "Is the business a Medicare sales organization?",
-    dialogTitle: "Not available for Medicare sales organizations",
-    refusal: "Geek-Receptionist cannot be used by Medicare sales organizations. We exclude them outright.",
-  },
-  telemarketing: {
-    question: "Is the business a telemarketing business?",
-    dialogTitle: "Not available for telemarketing businesses",
-    refusal: "Geek-Receptionist cannot be used by telemarketing businesses. We exclude them outright.",
+  medicare_tpmo: {
+    question: "Is the business a Third-Party Marketing Organization (TPMO) involved in Medicare Advantage or Part D marketing and sales?",
+    dialogTitle: "Not available for Medicare Advantage or Part D TPMOs",
+    refusal: "Geek-Receptionist cannot be used by Third-Party Marketing Organizations (TPMOs) involved in Medicare Advantage or Part D marketing and sales. We exclude them outright.",
   },
 };
 

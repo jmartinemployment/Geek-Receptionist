@@ -14,7 +14,7 @@ const MESSAGES: Record<string, string> = {
   industry_not_answered: "The questions about the business were not all answered. Start again.",
   contact_phone_not_us: "Enter the business's US phone number, ten digits, such as (561) 555-0101.",
   industry_excluded:
-    "Geek-Receptionist cannot be used by healthcare, veterinary, securities broker-dealer, investment adviser, commodity futures or derivatives, Medicare sales or telemarketing businesses. We exclude them outright.",
+    "Geek-Receptionist cannot be used by HIPAA covered entities or business associates, securities broker-dealers, investment advisers, commodity futures or derivatives businesses, or Third-Party Marketing Organizations (TPMOs) involved in Medicare Advantage or Part D marketing and sales. We exclude them outright.",
   attestation_required: "Confirm the compliance statement to continue.",
   rate_limited: "Too many signup attempts from this address. Try again in an hour.",
   tier_unknown: "Choose one of the four plans.",

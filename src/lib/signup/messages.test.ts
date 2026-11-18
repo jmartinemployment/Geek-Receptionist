@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { refusalOf, signupMessage } from "./messages";
 
 test("a known code shows its fixed sentence", () => {
-  assert.match(signupMessage("industry_excluded"), /healthcare/);
-  assert.match(signupMessage("industry_excluded"), /telemarketing/);
+  assert.match(signupMessage("industry_excluded"), /HIPAA/);
+  assert.match(signupMessage("industry_excluded"), /Medicare Advantage or Part D/);
   assert.match(signupMessage("business_description_required"), /what the business does/);
   assert.match(signupMessage("contact_phone_not_us"), /US phone/);
   assert.match(signupMessage("paypal_cancelled"), /Nothing was charged/);

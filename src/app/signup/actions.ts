@@ -85,7 +85,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone,
     complianceAttested: attested,
-    industryAnswers: answersThrough("telemarketing", false),
+    industryAnswers: answersThrough("medicare_tpmo", false),
   }, visitor);
 
   const tenantId = answer.body?.tenantId;

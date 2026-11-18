@@ -20,17 +20,17 @@ const MENU: MenuItem[] = [
 
 const itemClass = "px-3 py-2 text-sm font-bold text-[#0B162A] hover:text-[#c83803] transition-colors";
 
-/** geekatyourspot.com's top bar (src/components/layout/navbar.tsx there): sticky, 4rem tall, white, the logo on the left, the menu on the right. */
+/** geekatyourspot.com's top bar (src/components/layout/navbar.tsx there): sticky, 4rem tall, white, the logo on the left, the menu centered with equal space between its items. */
 export function Navbar() {
   return (
     <header className="z-[60] h-16 border-b border-black/10 bg-white shadow-sm">
       <div className="container h-full">
-        <div className="flex h-full w-full items-center justify-between">
-          <Link href="/" className="flex items-center">
+        <div className="flex h-full w-full items-center">
+          <Link href="/" className="flex flex-1 items-center">
             <Image src="/images/GeekAtYourSpot.svg" alt="Geek @ Your Spot LLC logo" width={116} height={48} priority />
           </Link>
           <nav aria-label="Main">
-            <ul className="flex items-center gap-1">
+            <ul className="flex items-center gap-8">
               {MENU.map((item) =>
                 item.links ? (
                   <li key={item.label} className="group relative">
@@ -57,6 +57,8 @@ export function Navbar() {
               )}
             </ul>
           </nav>
+          {/* Balances the logo, so the menu sits in the middle of the bar. */}
+          <div className="flex-1" aria-hidden="true" />
         </div>
       </div>
     </header>

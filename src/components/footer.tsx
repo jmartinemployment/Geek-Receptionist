@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-/** The pages the footer links to live on geekatyourspot.com, not here, so each link goes to the main site. */
+/** The Use Cases, Tools and Resources pages live on geekatyourspot.com, not here, so those links go to the main site. */
 const MAIN_SITE = "https://geekatyourspot.com";
 
 const HUB_GROUPS = [
@@ -31,7 +31,25 @@ const HUB_GROUPS = [
   },
 ] as const;
 
-function HubGroup({ group }: Readonly<{ group: (typeof HUB_GROUPS)[number] }>) {
+/** This site's own pages (Jeff, 2026-11-18); the groups above link to geekatyourspot.com. */
+const SITE_GROUPS = [
+  {
+    label: "Product",
+    links: [
+      { label: "Docs", href: "/docs" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Platform", href: "/platform" },
+    ],
+  },
+  {
+    label: "Company",
+    links: [{ label: "Contact", href: "/contact" }],
+  },
+] as const;
+
+type FooterGroup = { label: string; links: readonly { label: string; href: string }[] };
+
+function HubGroup({ group, site }: Readonly<{ group: FooterGroup; site: string }>) {
   return (
     <div className="pb-4">
       <h2 className="text-white text-base shadow-text font-bold uppercase">
@@ -41,7 +59,7 @@ function HubGroup({ group }: Readonly<{ group: (typeof HUB_GROUPS)[number] }>) {
         {group.links.map((link) => (
           <li key={link.href} className="py-1">
             <Link
-              href={`${MAIN_SITE}${link.href}`}
+              href={`${site}${link.href}`}
               className="font-bold text-white text-sm hover:text-[#c83803] transition-colors"
             >
               {link.label}
@@ -172,8 +190,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-8 py-5 my-5">
           <div>{brand()}</div>
           <div>
+            {SITE_GROUPS.map((group) => (
+              <HubGroup key={group.label} group={group} site="" />
+            ))}
             {HUB_GROUPS.map((group) => (
-              <HubGroup key={group.label} group={group} />
+              <HubGroup key={group.label} group={group} site={MAIN_SITE} />
             ))}
           </div>
         </div>
@@ -187,9 +208,12 @@ export default function Footer() {
         <div className="grid grid-cols-12 gap-4 container py-5 my-5">
           <div className="col-span-3">{brand()}</div>
           <div className="col-span-9">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-5 gap-4">
+              {SITE_GROUPS.map((group) => (
+                <HubGroup key={group.label} group={group} site="" />
+              ))}
               {HUB_GROUPS.map((group) => (
-                <HubGroup key={group.label} group={group} />
+                <HubGroup key={group.label} group={group} site={MAIN_SITE} />
               ))}
             </div>
           </div>

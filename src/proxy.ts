@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ACCESS_COOKIE, AUTH_ERROR_HEADER, REFRESH_COOKIE } from "@/lib/auth/cookies";
+import { SIGNUP_COOKIE } from "@/lib/signup/state";
 import { clearSessionCookies, refreshSession, sessionEnded, setSessionCookies } from "@/services/owner-auth";
 
 /**
@@ -44,10 +45,14 @@ export async function proxy(request: NextRequest) {
 
 /**
  * The dashboard streams, so once it starts rendering a redirect can only happen in the browser: a visitor with no sign-in is sent to
- * /login here instead, before anything renders. Every other path passes on; its page or route decides what a missing sign-in means.
+ * /signup if this browser has a signup in progress, otherwise /login, before anything renders. Every other path passes on; its page or route decides what a missing sign-in means.
  */
 function signedOut(request: NextRequest, change?: (jar: NextRequest["cookies"]) => void): NextResponse {
-  if (request.nextUrl.pathname.startsWith("/dashboard")) return NextResponse.redirect(new URL("/login", request.url), 303);
+  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+    // A signup this browser started and has not finished (its cookie is still set) goes back to the signup (Jeff, 2026-11-18).
+    const target = request.cookies.has(SIGNUP_COOKIE) ? "/signup" : "/login";
+    return NextResponse.redirect(new URL(target, request.url), 303);
+  }
   return withoutAuthError(request, change);
 }
 

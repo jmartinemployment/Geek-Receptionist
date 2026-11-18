@@ -36,7 +36,7 @@ export const FAQS: Faq[] = [
     id: "faq-who-can-sign-up",
     question: "Which businesses can sign up?",
     answer:
-      "Businesses located in the United States. Healthcare and veterinary businesses cannot sign up.",
+      "Businesses located in the United States. Healthcare, veterinary, securities broker-dealer, investment adviser, commodity futures or derivatives, Medicare sales and telemarketing businesses cannot sign up.",
   },
   {
     id: "faq-phone-number",

@@ -161,7 +161,13 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         {step === "login" && state && (
           <>
             <p className="mb-4">
-              Your receptionist answers at <span className="font-semibold">{state.phoneNumber}</span>. Create the login you will use to manage it.
+              {state.phoneNumber ? (
+                <>
+                  Your receptionist answers at <span className="font-semibold">{state.phoneNumber}</span>. Create the login you will use to manage it.
+                </>
+              ) : (
+                <>This account is not billed. Create the login you will use to manage it.</>
+              )}
             </p>
             <LoginForm email={state.contactEmail} idSuffix={s} />
           </>

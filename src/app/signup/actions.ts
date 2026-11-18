@@ -122,6 +122,12 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   if (answer.status !== 200 || typeof tenantId !== "string") return { error: refusalOf(answer.body, answer.status), fields };
 
   await writeSignup({ tenantId, contactEmail: fields.contactEmail });
+
+  // Geek @ Your Spot's own account skips PayPal and the number (GeekAPI decides, from BILLING_EXEMPT_EMAIL); every other business
+  // is answered not exempt and goes on to the plan. A failure is shown, never read as either answer.
+  const exemption = await postOnboarding("/api/v1/onboarding/billing-exemption", { tenantId }, visitor);
+  if (exemption.status !== 200 || typeof exemption.body?.exempt !== "boolean") return { error: refusalOf(exemption.body, exemption.status), fields };
+  if (exemption.body.exempt === true) await writeSignup({ tenantId, contactEmail: fields.contactEmail, billingExempt: true });
   redirect("/signup");
 }
 
@@ -201,7 +207,7 @@ export async function createLoginAction(_previous: SignupFormState, form: FormDa
   const fields = { email: text(form, "email"), displayName: text(form, "displayName") };
   const password = form.get("password");
   const state = await readSignup();
-  if (!state?.phoneNumber) return { error: signupMessage("signup_expired"), fields };
+  if (!state?.phoneNumber && !state?.billingExempt) return { error: signupMessage("signup_expired"), fields };
   if (typeof password !== "string" || password.length === 0) return { error: "Choose a password.", fields };
 
   const created = await postOnboarding("/api/v1/onboarding/create-owner-login", {

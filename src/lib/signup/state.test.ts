@@ -28,6 +28,8 @@ test("each step follows from what is already done", () => {
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true }, new Set<Gate>(["captcha", "country", "healthcare"])), "payment_method");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1" }, new Set<Gate>(["captcha", "country", "healthcare"])), "number");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1", phoneNumber: "+15615550100" }, new Set<Gate>(["captcha", "country", "healthcare"])), "login");
+  // An account GeekAPI exempted from billing goes straight from the business to its login.
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", billingExempt: true }, new Set<Gate>(["captcha", "country", "healthcare"])), "login");
 });
 
 test("a cookie this app did not write is a fresh start", () => {

@@ -33,7 +33,6 @@ const MESSAGES: Record<string, string> = {
   area_code_invalid: "Enter a three-digit US area code.",
   tenant_not_pending: "This signup is already finished. Sign in instead.",
   telephony_provisioning_failed: "A phone number could not be set up in that area code. Nothing was kept; try another area code.",
-  retell_provisioning_failed: "The receptionist could not be set up. Nothing was kept; try again.",
   owner_exists: "This business, or this email, already has a login. Sign in instead.",
   tenant_not_active: "The subscription is not active yet, so a login cannot be made.",
   portal_not_configured: "Signup is not available right now. This site has no GeekAPI key set.",

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import FaqSection from "@/components/home/faq-section";
 import HowItWorks from "@/components/home/how-it-works";
 import MissedCalls from "@/components/home/missed-calls";
-import Pricing from "@/components/home/pricing";
 import WhatItDoes from "@/components/home/what-it-does";
 import { SCHEDULER_ID } from "@/components/shared/scheduler/scheduler-id";
 import { SchedulerShell } from "@/components/shared/scheduler/scheduler-shell";
@@ -57,7 +56,6 @@ export default function Home() {
       <MissedCalls />
       <WhatItDoes />
       <HowItWorks />
-      <Pricing />
       <FaqSection />
       <SchedulerShell />
     </>

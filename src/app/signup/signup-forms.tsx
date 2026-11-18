@@ -2,10 +2,9 @@
 
 import { useActionState, useRef, useState } from "react";
 import { ui } from "@/lib/ui";
-import { ADDENDUM_AGREEMENT, ADDENDUM_TERMS } from "@/lib/signup/addendum";
 import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
-import { activateAction, addendumAction, businessAction, captchaAction, createLoginAction, type SignupFormState } from "./actions";
+import { activateAction, businessAction, captchaAction, createLoginAction, type SignupFormState } from "./actions";
 
 const field =
   "rounded border border-line bg-wash px-3 py-2 text-ink placeholder:text-muted focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-white";
@@ -60,27 +59,6 @@ export function RobotCheckButton({ captchaSiteKey }: { captchaSiteKey: string })
       </button>
       {open ? <RobotDialog captchaSiteKey={captchaSiteKey} onClose={() => setOpen(false)} /> : null}
     </>
-  );
-}
-
-/** The professional services addendum as its own step: its paragraphs, the box that agrees to it, and Continue. */
-export function AddendumForm() {
-  const [state, action, pending] = useActionState(addendumAction, start());
-
-  return (
-    <form action={action} className="flex flex-col gap-4">
-      <Refusal error={state.error} />
-      {ADDENDUM_TERMS.map((term) => (
-        <p key={term}>{term}</p>
-      ))}
-      <label className="flex items-start gap-3">
-        <input type="checkbox" name="addendumSigned" required className="mt-1.5 size-4 accent-[#c83803]" />
-        <span>{ADDENDUM_AGREEMENT}</span>
-      </label>
-      <button className={ui.button} type="submit" disabled={pending}>
-        {pending ? "One moment…" : "Agree and continue"}
-      </button>
-    </form>
   );
 }
 

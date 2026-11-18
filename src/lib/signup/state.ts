@@ -5,17 +5,16 @@ import { EXCLUDED_CODES, type ExcludedCode } from "./excluded";
 export const SIGNUP_COOKIE = "rp_signup";
 
 /**
- * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, the two
- * disqualifying questions, then the professional services question and, for a business that answers yes to it, the addendum.
- * "profession" is the question answered, "professional" is a yes to it, and "addendum" is the addendum agreed to. The cookie is signed
+ * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, the country
+ * question, then the seven excluded-industry questions. The cookie is signed
  * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. Each excluded industry has its own
  * gate, named by its code, which is a no to that industry's question. Country is only a bookmark, which GeekAPI decides again when
  * the business is submitted. The industry answers are sent to GeekAPI from these gates; it stores every one forever and refuses
- * an excluded industry, a missing answer, and a professional services business without its addendum.
+ * an excluded industry and a missing answer.
  */
 export const GATES_COOKIE = "rp_gates";
 
-export const GATES = ["captcha", "country", ...EXCLUDED_CODES, "profession", "professional", "addendum"] as const;
+export const GATES = ["captcha", "country", ...EXCLUDED_CODES] as const;
 export type Gate = (typeof GATES)[number];
 
 const gateKey = (): string | null => {
@@ -61,7 +60,7 @@ export type SignupState = {
   billingExempt?: boolean;
 };
 
-export type SignupStep = "captcha" | "country" | ExcludedCode | "profession" | "addendum" | "business" | "plan" | "payment_method" | "number" | "login";
+export type SignupStep = "captcha" | "country" | ExcludedCode | "business" | "plan" | "payment_method" | "number" | "login";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID = /^[A-Za-z0-9-]{1,64}$/;
@@ -72,8 +71,6 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
     if (!gates.has("captcha")) return "captcha";
     if (!gates.has("country")) return "country";
     for (const code of EXCLUDED_CODES) if (!gates.has(code)) return code;
-    if (!gates.has("profession")) return "profession";
-    if (gates.has("professional") && !gates.has("addendum")) return "addendum";
     return "business";
   }
   if (state.billingExempt) return "login";
@@ -131,13 +128,6 @@ async function writeGates(passed: ReadonlySet<Gate>): Promise<void> {
 /** Remembers for a day that the visitor got past these questions. */
 export async function passGate(...gates: Gate[]): Promise<void> {
   await writeGates(new Set([...(await readGates()), ...gates]));
-}
-
-/** Forgets these questions and leaves the rest, so the visitor is asked them again. */
-export async function dropGates(...gates: Gate[]): Promise<void> {
-  const passed = new Set(await readGates());
-  for (const gate of gates) passed.delete(gate);
-  await writeGates(passed);
 }
 
 export async function readSignup(): Promise<SignupState | null> {

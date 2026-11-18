@@ -18,11 +18,7 @@ test("each step follows from what is already done", () => {
   assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "veterinary", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives", "medicare_sales"])), "telemarketing");
   // A later industry answered no does not let an earlier one be skipped.
   assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "telemarketing"])), "veterinary");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "veterinary", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives", "medicare_sales", "telemarketing"])), "profession");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "veterinary", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives", "medicare_sales", "telemarketing", "profession"])), "business");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "veterinary", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives", "medicare_sales", "telemarketing", "profession", "professional"])), "addendum");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "veterinary", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives", "medicare_sales", "telemarketing", "profession", "professional", "addendum"])), "business");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "veterinary", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives", "medicare_sales", "telemarketing", "professional", "addendum"])), "profession");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "healthcare", "veterinary", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives", "medicare_sales", "telemarketing"])), "business");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, new Set<Gate>(["captcha", "country", "healthcare"])), "plan");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, new Set<Gate>(["captcha", "country", "healthcare"])), "plan");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true }, new Set<Gate>(["captcha", "country", "healthcare"])), "payment_method");

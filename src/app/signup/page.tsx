@@ -4,19 +4,16 @@ import HeroSection from "@/components/shared/shared-hero-section";
 import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
-import { ADDENDUM_QUESTION, ADDENDUM_TITLE } from "@/lib/signup/addendum";
 import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, isExcludedCode } from "@/lib/signup/excluded";
-import { choosePlanAction, countryAction, excludedIndustryAction, forgetRobotCheckAction, professionAction, professionBackAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { choosePlanAction, countryAction, excludedIndustryAction, forgetRobotCheckAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
-import { AddendumForm, BusinessForm, LoginForm, NumberForm, RobotCheckButton } from "./signup-forms";
+import { BusinessForm, LoginForm, NumberForm, RobotCheckButton } from "./signup-forms";
 
 export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
   { step: "country", title: "Is Business located in United States?" },
   ...EXCLUDED_CODES.map((code) => ({ step: code as SignupStep, title: EXCLUDED_INDUSTRIES[code].question })),
-  { step: "profession", title: ADDENDUM_QUESTION },
-  { step: "addendum", title: ADDENDUM_TITLE },
   { step: "business", title: "Your business" },
   { step: "plan", title: "Choose a plan" },
   { step: "payment_method", title: "Save a payment method" },
@@ -74,7 +71,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   }
 
   const step = gateStep === "captcha" ? "country" : gateStep;
-  const compact = step === "country" || isExcludedCode(step) || step === "profession";
+  const compact = step === "country" || isExcludedCode(step);
   const index = STEPS.findIndex((s) => s.step === step);
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
 
@@ -105,15 +102,6 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
             <ActionButton action={excludedIndustryAction.bind(null, step, false)} label="No" pendingLabel="One moment…" quiet />
           </div>
         )}
-
-        {step === "profession" && (
-          <div className="flex flex-nowrap justify-center gap-3">
-            <ActionButton action={professionAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
-            <ActionButton action={professionAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
-          </div>
-        )}
-
-        {step === "addendum" && <AddendumForm />}
 
         {step === "business" && <BusinessForm idSuffix={s} />}
 
@@ -175,7 +163,6 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
       </section>
 
       <div className="flex flex-wrap items-center justify-end gap-3">
-        {step === "addendum" || step === "business" ? <ActionButton action={professionBackAction} label="Back" pendingLabel="One moment…" quiet /> : null}
         {state && step !== "login" ? <ActionButton action={startOverAction} label="Start over" pendingLabel="Starting over…" quiet /> : null}
       </div>
     </div>

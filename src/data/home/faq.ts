@@ -36,7 +36,7 @@ export const FAQS: Faq[] = [
     id: "faq-who-can-sign-up",
     question: "Which businesses can sign up?",
     answer:
-      "Businesses located in the United States. Healthcare and veterinary businesses cannot sign up. Legal, accounting, tax, payroll, finance, insurance and education businesses sign a professional services addendum during signup.",
+      "Businesses located in the United States. Healthcare and veterinary businesses cannot sign up.",
   },
   {
     id: "faq-phone-number",

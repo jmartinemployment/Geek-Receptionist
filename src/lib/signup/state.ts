@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { EXCLUDED_CODES, type ExcludedCode } from "./excluded";
 
 export const SIGNUP_COOKIE = "rp_signup";
 
@@ -7,12 +8,14 @@ export const SIGNUP_COOKIE = "rp_signup";
  * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, the two
  * disqualifying questions, then the professional services question and, for a business that answers yes to it, the addendum.
  * "profession" is the question answered, "professional" is a yes to it, and "addendum" is the addendum agreed to. The cookie is signed
- * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. Country and healthcare are only bookmarks:
- * GeekAPI decides both again when the business is submitted, and decides again whether the business needs the addendum.
+ * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. Each excluded industry has its own
+ * gate, named by its code, which is a no to that industry's question. Country is only a bookmark, which GeekAPI decides again when
+ * the business is submitted. The industry answers are sent to GeekAPI from these gates; it stores every one forever and refuses
+ * an excluded industry, a missing answer, and a professional services business without its addendum.
  */
 export const GATES_COOKIE = "rp_gates";
 
-export const GATES = ["captcha", "country", "healthcare", "profession", "professional", "addendum"] as const;
+export const GATES = ["captcha", "country", ...EXCLUDED_CODES, "profession", "professional", "addendum"] as const;
 export type Gate = (typeof GATES)[number];
 
 const gateKey = (): string | null => {
@@ -53,7 +56,7 @@ export type SignupState = {
   phoneNumber?: string;
 };
 
-export type SignupStep = "captcha" | "country" | "healthcare" | "profession" | "addendum" | "business" | "plan" | "payment_method" | "number" | "login";
+export type SignupStep = "captcha" | "country" | ExcludedCode | "profession" | "addendum" | "business" | "plan" | "payment_method" | "number" | "login";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID = /^[A-Za-z0-9-]{1,64}$/;
@@ -63,7 +66,7 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
   if (!state) {
     if (!gates.has("captcha")) return "captcha";
     if (!gates.has("country")) return "country";
-    if (!gates.has("healthcare")) return "healthcare";
+    for (const code of EXCLUDED_CODES) if (!gates.has(code)) return code;
     if (!gates.has("profession")) return "profession";
     if (gates.has("professional") && !gates.has("addendum")) return "addendum";
     return "business";

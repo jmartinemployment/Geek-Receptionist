@@ -5,7 +5,6 @@ import { ui } from "@/lib/ui";
 import { ADDENDUM_AGREEMENT, ADDENDUM_TERMS } from "@/lib/signup/addendum";
 import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
-import type { BusinessActivity } from "@/services/onboarding";
 import { activateAction, addendumAction, businessAction, captchaAction, createLoginAction, type SignupFormState } from "./actions";
 
 const field =
@@ -21,13 +20,6 @@ function Refusal({ error }: { error: string | null }) {
 }
 
 const start = (fields: Record<string, string> = {}): SignupFormState => ({ error: null, fields });
-
-/** The chart's sectors in its own order, each with its codes, for the list's groups. */
-function bySector(activities: BusinessActivity[]): [string, BusinessActivity[]][] {
-  const sectors = new Map<string, BusinessActivity[]>();
-  for (const activity of activities) sectors.set(activity.sector, [...(sectors.get(activity.sector) ?? []), activity]);
-  return [...sectors.entries()];
-}
 
 /** The robot check form, for the white dialog: dark text and the light box. Ticking the box sends it; there is no second click. */
 function RobotForm({ captchaSiteKey }: { captchaSiteKey: string }) {
@@ -92,7 +84,7 @@ export function AddendumForm() {
   );
 }
 
-export function BusinessForm({ activities, idSuffix }: { activities: BusinessActivity[]; idSuffix: string }) {
+export function BusinessForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(businessAction, start());
   const value = (name: string) => state.fields[name] ?? "";
 
@@ -103,21 +95,8 @@ export function BusinessForm({ activities, idSuffix }: { activities: BusinessAct
       <fieldset className="flex min-w-0 flex-col gap-2">
         <label htmlFor={`businessName${idSuffix}`} className={label}>Business name</label>
         <input id={`businessName${idSuffix}`} name="businessName" required autoComplete="organization" defaultValue={value("businessName")} className={field} />
-        <label htmlFor={`businessActivityCode${idSuffix}`} className={label}>What the business does</label>
-        <select id={`businessActivityCode${idSuffix}`} name="businessActivityCode" required defaultValue={value("businessActivityCode")} className={field}>
-          <option value="" disabled>
-            Choose what the business does
-          </option>
-          {bySector(activities).map(([sector, codes]) => (
-            <optgroup key={sector} label={sector}>
-              {codes.map((a) => (
-                <option key={a.code} value={a.code}>
-                  {a.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+        <label htmlFor={`businessDescription${idSuffix}`} className={label}>What the business does</label>
+        <input id={`businessDescription${idSuffix}`} name="businessDescription" required maxLength={120} placeholder="Plumbing and heating" defaultValue={value("businessDescription")} className={field} />
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-2">

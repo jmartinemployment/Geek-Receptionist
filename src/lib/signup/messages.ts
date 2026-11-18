@@ -10,10 +10,11 @@ const MESSAGES: Record<string, string> = {
   captcha_failed: "Tick “I’m not a robot” and try again.",
   captcha_not_configured: "Signup is not available right now. This site has no reCAPTCHA key set.",
   captcha_unavailable: "Google’s robot check could not be reached. Try again shortly.",
-  business_activity_unknown: "Choose what the business does from the list.",
+  business_description_required: "Say what the business does.",
+  industry_not_answered: "The questions about the business were not all answered. Start again.",
   contact_phone_not_us: "Enter the business's US phone number, ten digits, such as (561) 555-0101.",
   industry_excluded:
-    "Geek-Receptionist cannot be used by healthcare or veterinary businesses. Healthcare businesses are HIPAA-covered entities, and we exclude them outright.",
+    "Geek-Receptionist cannot be used by healthcare, veterinary, securities broker-dealer, investment adviser, commodity futures or derivatives, Medicare sales or telemarketing businesses. We exclude them outright.",
   addendum_required:
     "A legal, accounting, tax, payroll, finance, insurance or education business agrees to the professional services addendum first. Go back to that question and answer Yes.",
   addendum_not_agreed: "Tick the box to agree to the addendum and continue.",

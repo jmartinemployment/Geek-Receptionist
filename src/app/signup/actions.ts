@@ -6,6 +6,7 @@ import { publicOrigin } from "@/lib/auth/same-origin";
 import { clearGates, clearSignup, dropGates, passGate, readGates, readSignup, writeSignup } from "@/lib/signup/state";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
+import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, answersThrough, isExcludedCode, type ExcludedCode } from "@/lib/signup/excluded";
 import { postOnboarding } from "@/services/onboarding";
 import { setSessionCookies, signIn, visitorIpFrom } from "@/services/owner-auth";
 
@@ -35,18 +36,29 @@ export async function countryAction(inUnitedStates: boolean): Promise<{ error: s
 }
 
 /**
- * What closing a refusal dialog (not in the United States, healthcare or veterinary) does: the robot check is forgotten, so the next visit starts from it again. It runs
+ * What closing a refusal dialog (not in the United States, an excluded industry) does: the robot check is forgotten, so the next visit starts from it again. It runs
  * on close, not with the answer, because clearing the cookie re-renders the page back to the hero and the dialog would vanish with it.
  */
 export async function forgetRobotCheckAction(): Promise<void> {
   await clearGates();
 }
 
-/** Step 2: is the business a healthcare or veterinary business. A no is remembered; a yes is the end of it, said at once. */
-export async function healthcareAction(isHealthcare: boolean): Promise<{ error: string | null }> {
-  if (!(await readGates()).has("country")) return { error: signupMessage("signup_expired") };
-  if (isHealthcare) return { error: signupMessage("industry_excluded") };
-  await passGate("healthcare");
+/**
+ * Step 2, once for each excluded industry, in order: is the business that kind of business. A no is remembered and goes on to the
+ * next. A yes is the end of it: GeekAPI is told at once, with the noes before it, and keeps them forever; then the refusal is said.
+ * If GeekAPI could not store the yes the visitor is still stopped, and is told what failed.
+ */
+export async function excludedIndustryAction(code: ExcludedCode, isExcluded: boolean): Promise<{ error: string | null }> {
+  if (!isExcludedCode(code)) return { error: signupMessage("signup_expired") };
+  const gates = await readGates();
+  const before = EXCLUDED_CODES.slice(0, EXCLUDED_CODES.indexOf(code));
+  if (!gates.has("country") || !before.every((earlier) => gates.has(earlier))) return { error: signupMessage("signup_expired") };
+
+  if (isExcluded) {
+    const kept = await postOnboarding("/api/v1/onboarding/industry-refusals", { answers: answersThrough(code, true) }, await headers());
+    return { error: kept.status === 200 ? EXCLUDED_INDUSTRIES[code].refusal : refusalOf(kept.body, kept.status) };
+  }
+  await passGate(code);
   redirect("/signup?start=1");
 }
 
@@ -55,7 +67,8 @@ export async function healthcareAction(isHealthcare: boolean): Promise<{ error: 
  * yes goes to the addendum first.
  */
 export async function professionAction(isProfessional: boolean): Promise<{ error: string | null }> {
-  if (!(await readGates()).has("healthcare")) return { error: signupMessage("signup_expired") };
+  const gates = await readGates();
+  if (!EXCLUDED_CODES.every((code) => gates.has(code))) return { error: signupMessage("signup_expired") };
   if (isProfessional) await passGate("profession", "professional");
   else await passGate("profession");
   redirect("/signup?start=1");
@@ -79,7 +92,7 @@ export async function professionBackAction(): Promise<{ error: string | null }> 
 export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
     businessName: text(form, "businessName"),
-    businessActivityCode: text(form, "businessActivityCode"),
+    businessDescription: text(form, "businessDescription"),
     stateCode: text(form, "stateCode").toUpperCase(),
     contactEmail: text(form, "contactEmail"),
     contactPhone: text(form, "contactPhone"),
@@ -87,20 +100,22 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   const attested = form.get("complianceAttested") === "on";
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("country") || !gates.has("healthcare") || !gates.has("profession")) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("country") || !EXCLUDED_CODES.every((code) => gates.has(code)) || !gates.has("profession")) return { error: signupMessage("signup_expired"), fields };
   if (gates.has("professional") && !gates.has("addendum")) return { error: signupMessage("signup_expired"), fields };
   const addendumSigned = gates.has("addendum");
 
   const visitor = await headers();
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
     businessName: fields.businessName,
-    businessActivityCode: fields.businessActivityCode,
+    businessDescription: fields.businessDescription,
     countryCode: "US",
     stateCode: fields.stateCode,
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone,
     complianceAttested: attested,
     addendumSigned,
+    industryAnswers: answersThrough("telemarketing", false),
+    professionalServices: gates.has("professional"),
   }, visitor);
 
   const tenantId = answer.body?.tenantId;

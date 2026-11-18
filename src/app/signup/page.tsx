@@ -5,16 +5,16 @@ import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/sta
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
 import { ADDENDUM_QUESTION, ADDENDUM_TITLE } from "@/lib/signup/addendum";
-import { choosePlanAction, countryAction, forgetRobotCheckAction, healthcareAction, professionAction, professionBackAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, isExcludedCode } from "@/lib/signup/excluded";
+import { choosePlanAction, countryAction, excludedIndustryAction, forgetRobotCheckAction, professionAction, professionBackAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
-import { getBusinessActivities } from "@/services/onboarding";
 import { AddendumForm, BusinessForm, LoginForm, NumberForm, RobotCheckButton } from "./signup-forms";
 
 export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
   { step: "country", title: "Is Business located in United States?" },
-  { step: "healthcare", title: "Is the business a healthcare or veterinary business?" },
+  ...EXCLUDED_CODES.map((code) => ({ step: code as SignupStep, title: EXCLUDED_INDUSTRIES[code].question })),
   { step: "profession", title: ADDENDUM_QUESTION },
   { step: "addendum", title: ADDENDUM_TITLE },
   { step: "business", title: "Your business" },
@@ -74,10 +74,9 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   }
 
   const step = gateStep === "captcha" ? "country" : gateStep;
-  const compact = step === "country" || step === "healthcare" || step === "profession";
+  const compact = step === "country" || isExcludedCode(step) || step === "profession";
   const index = STEPS.findIndex((s) => s.step === step);
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
-  const activities = step === "business" ? await getBusinessActivities() : null;
 
   // The steps are written once and rendered in both hero blocks, as geekatyourspot.com writes a section's body, so every id takes the block's suffix.
   // The yes-or-no questions take only the width their own words need, centered in the column with the text centered; the forms use all of it.
@@ -100,10 +99,10 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           </div>
         )}
 
-        {step === "healthcare" && (
+        {isExcludedCode(step) && (
           <div className="flex flex-nowrap justify-center gap-3">
-            <ActionButton action={healthcareAction.bind(null, true)} label="Yes" pendingLabel="One moment…" dialogTitle="Not available for healthcare or veterinary businesses" onDialogClose={forgetRobotCheckAction} />
-            <ActionButton action={healthcareAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet />
+            <ActionButton action={excludedIndustryAction.bind(null, step, true)} label="Yes" pendingLabel="One moment…" dialogTitle={EXCLUDED_INDUSTRIES[step].dialogTitle} onDialogClose={forgetRobotCheckAction} />
+            <ActionButton action={excludedIndustryAction.bind(null, step, false)} label="No" pendingLabel="One moment…" quiet />
           </div>
         )}
 
@@ -116,13 +115,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "addendum" && <AddendumForm />}
 
-        {step === "business" && activities && (activities.ok ? (
-          <BusinessForm activities={activities.activities} idSuffix={s} />
-        ) : (
-          <p className={ui.status.bad} role="alert">
-            {signupMessage(activities.code)}
-          </p>
-        ))}
+        {step === "business" && <BusinessForm idSuffix={s} />}
 
         {step === "plan" && (
           <>

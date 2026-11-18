@@ -15,6 +15,7 @@ const MENU: MenuItem[] = [
   },
   { label: "Platform", links: [{ label: "Dashboard", href: "/dashboard" }] },
   { label: "Pricing", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
 ];
 
 const itemClass = "px-3 py-2 text-sm font-bold text-[#0B162A] hover:text-[#c83803] transition-colors";

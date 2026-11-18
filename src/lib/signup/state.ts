@@ -6,7 +6,7 @@ export const SIGNUP_COOKIE = "rp_signup";
 
 /**
  * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, the country
- * question, then the five excluded-industry questions. The cookie is signed
+ * question, then the eight excluded-industry questions. The cookie is signed
  * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. Each excluded industry has its own
  * gate, named by its code, which is a no to that industry's question. Country is only a bookmark, which GeekAPI decides again when
  * the business is submitted. The industry answers are sent to GeekAPI from these gates; it stores every one forever and refuses

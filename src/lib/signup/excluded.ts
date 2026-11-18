@@ -1,11 +1,16 @@
 /**
  * The industries that cannot sign up, each asked about in its own question (Jeff, 2026-11-18: "more enforceable to ask each
- * separately"). Exactly these five (Jeff, 2026-11-18); veterinary and telemarketing are no longer excluded. The codes and the questions are the same ones GeekAPI holds (ExcludedIndustries); GeekAPI refuses an answer whose
+ * separately"). Exactly these five (Jeff, 2026-11-18); veterinary and telemarketing are no longer excluded.
+ * HIPAA is asked as four questions, one each (Jeff, 2026-11-18), so the five industries are eight questions; the single `hipaa`
+ * question is retired, and GeekAPI accepts only these eight. The codes and the questions are the same ones GeekAPI holds (ExcludedIndustries); GeekAPI refuses an answer whose
  * question differs from its own, and stores every answer forever, so the two lists change together.
  * GeekBackend docs/Geek-Receptionist.md section 5, item 1.
  */
 export const EXCLUDED_CODES = [
-  "hipaa",
+  "hipaa_healthcare_provider",
+  "hipaa_health_plan",
+  "hipaa_clearinghouse",
+  "hipaa_business_associate",
   "securities_broker_dealer",
   "investment_adviser",
   "commodity_futures_derivatives",
@@ -15,10 +20,25 @@ export const EXCLUDED_CODES = [
 export type ExcludedCode = (typeof EXCLUDED_CODES)[number];
 
 export const EXCLUDED_INDUSTRIES: Record<ExcludedCode, { question: string; dialogTitle: string; refusal: string }> = {
-  hipaa: {
-    question: "Is the business a HIPAA covered entity or business associate, such as a healthcare provider, health plan or a business that handles patient health information for one?",
-    dialogTitle: "Not available for HIPAA covered entities or business associates",
-    refusal: "Geek-Receptionist cannot be used by HIPAA covered entities or business associates. We exclude them outright.",
+  hipaa_healthcare_provider: {
+    question: "Is the business a healthcare provider?",
+    dialogTitle: "Not available for healthcare providers",
+    refusal: "Geek-Receptionist cannot be used by healthcare providers. We exclude them outright.",
+  },
+  hipaa_health_plan: {
+    question: "Is the business a health plan?",
+    dialogTitle: "Not available for health plans",
+    refusal: "Geek-Receptionist cannot be used by health plans. We exclude them outright.",
+  },
+  hipaa_clearinghouse: {
+    question: "Is the business a healthcare clearinghouse?",
+    dialogTitle: "Not available for healthcare clearinghouses",
+    refusal: "Geek-Receptionist cannot be used by healthcare clearinghouses. We exclude them outright.",
+  },
+  hipaa_business_associate: {
+    question: "Does the business handle patient health information for a healthcare provider or health plan?",
+    dialogTitle: "Not available for HIPAA business associates",
+    refusal: "Geek-Receptionist cannot be used by businesses that handle patient health information for a healthcare provider or health plan. We exclude them outright.",
   },
   securities_broker_dealer: {
     question: "Is the business a securities broker-dealer?",

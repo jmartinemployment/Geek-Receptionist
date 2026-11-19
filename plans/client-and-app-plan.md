@@ -2,131 +2,188 @@
 
 A plan for review. Written 2026-11-19. Pre-launch.
 
-## The opportunity
+## The Opportunity & Core Architecture (Zero-Knowledge ZDR)
 
-Small businesses miss calls they cannot answer. AI receptionists exist to handle these calls, but every product in
-the market records and stores call content by default. The plan is to build an AI phone receptionist that answers,
-books, messages and transfers — with no call recordings or transcripts stored unless the client opts in.
+Small businesses miss calls they cannot answer. Most AI receptionists record, transcribe, and store customer
+conversations inside the vendor's cloud by default — creating privacy exposure, compliance overhead, and third-party
+data lock-in.
 
-## The business
+The proposed platform operates strictly as a transient, zero-knowledge conduit. Geek-Receptionist never retains call
+audio, transcripts, or conversation content, nor can the platform operator view or access client conversations. All
+conversational data exists only in volatile memory (RAM) during an active call and is purged immediately upon call
+completion. If a client wants call summaries, transcripts, or logs saved, the platform facilitates direct delivery
+into client-owned infrastructure (Google Drive, Google Cloud Storage, AWS S3, email, or external calendars) using
+write-only or narrowly scoped permissions.
 
-Sold by Geek @ Your Spot LLC (Delray Beach, Florida) by monthly subscription to US small businesses. The plan is to
-exclude categories of business where call recording obligations may conflict with a no-retention model: the four
-HIPAA-regulated categories (healthcare provider, health plan, healthcare clearinghouse, business associate), securities
-broker-dealers, investment advisers, commodity futures or derivatives dealers, and Medicare Advantage or Part D
-third-party marketers. These exclusions are a proposal for review.
+## Target Market & Industry Guardrails
 
-## Pricing
+Sold by Geek @ Your Spot LLC (Delray Beach, Florida) by monthly subscription to US small businesses.
 
-A subscription model is proposed with four tiers by included minutes and no free trial. Draft pricing:
+The plan proposes excluding business categories where statutory recording or retention obligations conflict with a
+zero-retention model:
 
-| Tier     | Price | Included minutes |
-|----------|-------|-----------------|
-| Starter  | $30   | 90              |
-| Standard | $48   | 250             |
-| Pro      | $148  | 1,000           |
-| Premium  | $298  | 2,000           |
+- The four HIPAA-regulated categories (healthcare provider, health plan, healthcare clearinghouse, business associate)
+- Securities broker-dealers, investment advisers, and commodity futures or derivatives dealers
+- Medicare Advantage or Part D third-party marketers
 
-Proposed overage of $0.50 per minute, each call rounded to the whole minute, payment through PayPal. The tier
-structure, prices, overage rate and no-trial approach are all open to review.
+Answering yes to any screening question halts signup and permanently logs the exclusion answer for compliance records.
 
-Twilio cost estimate: approximately $0.085 per minute before premium voice, plus $1.15 per month per number.
+## Proposed Pricing & Metering Rules
 
-## Signup and setup
+A four-tier monthly subscription model is proposed with upfront PayPal billing and no free trial (mitigated by a
+pre-payment browser test call during setup).
 
-A 12-step flow is proposed. The owner builds and tests the receptionist before paying, then pays and goes live.
+| Tier     | Monthly Price | Included Minutes |
+|----------|---------------|-----------------|
+| Starter  | $30           | 90              |
+| Standard | $48           | 250             |
+| Pro      | $148          | 1,000           |
+| Premium  | $298          | 2,000           |
 
-1. Robot check and country confirmation.
-2. Industry exclusion questions.
-3. Business details: name, description, state, contact email, phone, attestation, website and Google listing.
-4. The plan reads the business's website and Google listing to pre-fill services, hours, prices and common questions.
-   The owner reviews and accepts each item. Nothing saves until accepted. Documents such as a menu or price list can
-   also be uploaded.
-5. The receptionist's identity: name, voice and opening greeting.
-6. Abilities the owner switches on individually. The AI is told only about abilities that are on and ready.
-   - Answer questions: from accepted information only.
-   - Take messages: needs an email address; messages emailed and not stored.
-   - Book appointments: needs a calendar connected; setup asks for appointment types, lengths, available hours, notice
-     required, booking horizon, buffer and what to collect. The AI checks availability before offering a time and does
-     not confirm until the calendar accepts. A failed booking becomes a message.
-   - Transfer to a person: needs one or more numbers; setup asks when to transfer, warm or cold, waterfall order and
-     what happens if nobody answers.
-   - Text confirmation: requires an approved A2P campaign; email until then; texts go only after the caller replies YES.
-7. Rules: what the receptionist must never say or do; prices only from accepted information; out-of-area callers
-   directed accordingly; a collection checklist for every call.
-8. Which calls the AI answers: every call, missed calls only, or after hours only.
-9. A browser test call before payment.
-10. Plan selection and payment.
-11. A phone number bought in the client's area code. The client chooses the connection: forward an existing number, or
-    use the new number directly. Number porting is a later addition.
-12. Owner login.
+Overage rate: $0.50 per minute, billed in whole-minute increments.
 
-## How a call works
+Twilio baseline cost estimate: approximately $0.085 per minute (before premium voice) plus $1.15 per month per
+phone number.
 
-A consent step is proposed before the AI engages. The caller is told they are speaking with an AI, that their audio
-is processed but not retained, and is given the choice to continue or decline. Draft script: "Thank you for calling
-[business]. You will be interacting with our AI receptionist. Your audio will be temporarily recorded and processed
-to provide this service, but we do not retain call recordings or transcripts. To consent and continue, press 1. To
-decline, press 2."
+Edge-case metering rules (proposed):
 
-The AI's instructions are built on each call from the accepted information, the abilities that are on, the rules and
-the collection checklist.
+- **Consent declines and abandoned intros:** Calls ending at or before the consent gate are not billed to the client
+  (absorbed as minor platform overhead).
+- **Spam and short-call grace threshold:** Calls disconnecting under 10–15 seconds with no meaningful speech, or
+  flagged by carrier spam filtering, are excluded from billable minutes up to a reasonable monthly cap (e.g. 20 short
+  calls per month). Calls exceeding the threshold are rounded up to the full minute.
+- **Post-transfer bridged minutes:** Minutes incurred after a call transfers to the owner count toward the client's
+  monthly allowance, since Twilio continues billing the subaccount while bridging the line.
 
-A session that runs one agent at a time is proposed, modelled on Vapi's squad design, with silent handoffs between
-specialist agents (answering, booking, support). If the AI fails mid-call, the plan is to transfer the caller or end
-the call with a message.
+## Streamlined Onboarding Flow (Proposed)
 
-When the call ends, nothing of it is kept. Time, length and billable minutes are recorded for billing.
+Four logical stages allow the owner to reach the live browser test call within minutes.
 
-## After the call
+### Stage 1: Eligibility & Business Profile (Steps 1–3)
 
-A per-call email is proposed, built in memory from the call details and sent to the owner. Not stored. A text alert
-to the owner is also proposed. If the owner has connected a Zapier account, the same details go to their Zap.
+1. Screening and location: robot check, US country confirmation, and the eight excluded-industry screening questions.
+2. Core business details: name, description, state, contact email, business phone, compliance attestation, website
+   URL, and Google Business listing.
+3. Automated knowledge ingestion: GeekAPI reads the website and Google listing to pre-fill services, hours, service
+   area, prices, and FAQs. The owner reviews and accepts, edits, or drops each item — nothing saves until accepted.
+   Owners can upload menus or price lists, or enter details manually if a site cannot be scraped.
 
-A daily or weekly recap from metadata only — call count, minutes, bookings made — is proposed. What, if anything, is
-retained beyond the billing record is an open question.
+### Stage 2: Persona, Abilities & Bring Your Own Storage (Steps 4–6)
 
-## The dashboard
+4. Receptionist identity: name, voice selection, and opening greeting.
+5. Modular abilities and destinations. The owner toggles each on; the AI is given instructions and tools only for
+   enabled abilities:
+   - **Answer questions:** strictly from accepted business information.
+   - **Take messages:** dispatches structured summaries via email (and optional Zapier webhook) from RAM without
+     platform storage.
+   - **Book appointments:** connects via OAuth to the client's Google Calendar or Microsoft 365. Checks live
+     availability, confirms slots directly with the calendar API, and stores only the event ID and outcome flag.
+     Failed bookings route automatically as messages.
+   - **Call logs and transcripts (BYOS):** optional write-only connectors routing summaries or transcripts
+     (YYYY/MM/DD/call-{timestamp}-{last4}.{md|json}) directly into client-owned storage:
+     - Google Drive: one-click OAuth using the restricted drive.file scope, limiting access to a single newly created
+       Geek-Receptionist Logs folder.
+     - AWS S3 / Google Cloud Storage: guided setup providing a copy-pasteable minimal IAM policy (s3:PutObject or
+       storage.objectCreator on a single bucket prefix) with zero read, list, or delete rights.
+   - **Transfer to a person:** configures warm or cold waterfall transfer numbers and unanswered fallback behaviour.
+   - **Text confirmation:** dispatches SMS only after an approved A2P 10DLC campaign is active and the caller opts
+     in; email confirmation until then.
+6. Guardrails and call routing: prohibited topics, strict pricing adherence, out-of-area handling, required caller
+   collection checklist, and answering schedule (every call, missed calls only, or after hours only).
 
-Proposed: editable setup pages with a test call before saving; phone number and forwarding status; usage with alerts
-at 50, 75 and 100 percent; an optional monthly spending cap; call history from metadata only; billing; multiple users
-and multiple locations.
+### Stage 3: Pre-Payment Validation (Step 7)
 
-## Website chat
+7. Live browser test call: before paying, the owner tests the configured receptionist directly in the browser using
+   the same consent step, prompt, and tools as a live phone call. Protected by a strict session and minute allowance
+   to prevent abuse.
 
-Proposed: a chat widget using the same information and abilities as the phone receptionist, installed with one
-script, with chats not stored.
+### Stage 4: Activation & Number Provisioning (Steps 8–10)
 
-## The call engine
+8. Plan selection and PayPal checkout.
+9. Number provisioning and connection: purchases a local area-code number on the client's Twilio subaccount. The
+   client forwards an existing line or publishes the new number directly. Number porting deferred to a later phase.
+10. Dashboard access: owner login.
 
-The plan proposes Twilio ConversationRelay over a WebSocket to GeekAPI. The AI model is set by configuration with no
-default. The provider's data retention policy is verified before any privacy claim is made. One Twilio subaccount per
-client.
+## How a Call Works (Zero-Knowledge Execution)
 
-Three build phases are proposed:
-1. A single Receptionist agent. Three Twilio behaviours are proved on a test number before the rest is built.
-2. Triage and Booking agents with silent handoffs. Dashboard live call events.
-3. Support agent with cold transfer; Sales agent.
+1. **Inbound and spam pre-filter:** Twilio receives the call, checks tenant standing and monthly cap, applies carrier
+   spam filtering, and checks answering-hour rules.
+2. **Upfront consent gate:** before the AI engages, the caller hears a disclosure stating they are speaking with an
+   AI, that audio is processed in real time to assist them, and that no recordings or transcripts are retained by the
+   platform. Callers press 1 to continue or 2 to decline. Exact script and active vs. passive consent rules are
+   pending legal review.
+3. **Ephemeral ConversationRelay session:** WebSocket connects to GeekAPI. Instructions are assembled in memory from
+   the client's accepted profile and enabled tools. Upstream STT, TTS, and LLM providers are verified for zero data
+   retention (store: false, no training, no logging).
+4. **Single-agent execution and silent handoffs:** modelled on Vapi's squad design, the session runs one focused
+   specialist agent at a time (Receptionist, Triage, Booking, Support, Sales) with at most four tool rounds per turn.
+   Silent handoffs rebuild context without spoken filler. Caller barge-in immediately cancels in-flight audio.
+5. **In-memory dispatch, fallbacks, and purge:**
+   - If the AI fails mid-call, a fixed fallback message plays and transfers to the owner if configured, or ends the
+     call gracefully.
+   - Upon hang-up, GeekAPI builds the call summary in RAM, pushes concurrently to enabled destinations (email,
+     Zapier, Google Drive, S3/GCS), and purges memory.
+   - **Dead-letter email fallback:** if a write to Google Drive, S3, or Zapier fails (expired token, revoked key,
+     full quota), the payload routes immediately to the owner's contact email before RAM is cleared, accompanied by a
+     dashboard alert.
+   - Only non-content metadata (timestamp, duration, billable minutes, and tool outcome flags) is saved to the
+     platform database.
 
-Signup stays closed to new clients until Phase 1 is tested on a real call.
+## After the Call & Dashboard
 
-## Geek @ Your Spot as client number one
+- **Instant notifications:** per-call summary email with a one-click link to add unanswered questions to setup;
+  optional owner SMS alert after A2P approval; optional Zapier webhook push.
+- **Metadata-only recaps:** daily or weekly email digests showing call counts, minutes used, and bookings made —
+  zero call content.
+- **Client dashboard:** editable setup with pre-save browser test call; forwarding status; usage meter with 50%, 75%
+  and 100% alerts; optional hard monthly spending cap routing overflow calls to the owner; metadata-only call log;
+  billing management; storage connector health checks. Multi-user and multi-location support planned for later phases.
 
-The plan is for the owner to sign up through the same form as any client, with only a billing exemption. The
-existing company-specific code paths and Railway variables are replaced by the standard client setup.
+## Website Chat (Companion Channel)
 
-## What needs to be built
+An embeddable single-script chat widget powered by the same accepted business information, rules, and abilities
+(answering, booking, messaging). Conversations run ephemerally with zero platform storage and push summaries via the
+same email and BYOS pipeline.
 
-Signup steps 4–9; a website reading service; the call engine; an email sender; dashboard expansion; a browser test
-call; migration of the company line to the client routes.
+## Call Engine & Build Phases
 
-## Open questions
+Infrastructure: GeekAPI hosted on Railway with graceful deployment draining so active WebSocket calls are not dropped
+during deploys. One isolated Twilio subaccount per client.
 
-1. Which calls the AI answers.
-2. What the caller hears if the AI fails mid-call.
-3. The browser test call allowance.
-4. Whether abilities differ by pricing tier, and how website chat is counted.
-5. Whether spam calls and very short calls are billed.
-6. The wording of the consent prompt and the base template.
-7. The AI provider and their data retention policy; the call model; Twilio voice providers; handoff and call limits;
-   whether minutes after a transfer are billable; Railway draining time.
+- **Phase 1 (Core loop and Twilio verification):** single Receptionist agent. Prove three undocumented Twilio
+  behaviours on a test number first: Connect action URL TwiML execution, WebSocket upgrade URL signature validation,
+  and subaccount auth token signing. Signup remains closed until Phase 1 passes live call testing.
+- **Phase 2 (Multi-agent and live events):** Triage and Booking agents with silent handoffs; real-time dashboard call
+  status events via SignalR.
+- **Phase 3 (Expanded routing):** Support agent with cold transfer and Sales agent.
+
+## Geek @ Your Spot as Client Number One
+
+Geek @ Your Spot LLC signs up through the same self-serve onboarding flow as any external client, with only a
+billing exemption. The company line (865-6990) migrates onto standard client routes and all company-specific code
+paths and environment variables are removed.
+
+## What Needs to Be Built
+
+- Signup stages 1–4 (steps 3–9 are new).
+- Website reading service.
+- Call engine: WebSocket intake, per-tenant voice webhook, ConversationRelay session, agent loop, tools, recorder.
+- BYOS connectors: Google Drive OAuth, S3 and GCS write-only credential setup, pre-flight checks, dead-letter
+  fallback, periodic health checks.
+- Email sender.
+- Dashboard expansion.
+- Browser test call (Twilio Voice JavaScript SDK).
+- Migration of Geek @ Your Spot's line to the client routes.
+
+## Remaining Open Questions
+
+1. **Consent gate wording and mechanics:** confirming with Florida legal counsel whether active DTMF confirmation
+   (press 1) is required for all-party consent compliance, or whether a shorter upfront disclosure suffices.
+2. **Tier feature gating and website chat metering:** whether BYOS connectors (S3/GCS/Drive) and multi-agent routing
+   are included in Starter or reserved for Standard/Pro, and how website chat sessions map to monthly allowances.
+3. **Browser test call allowance:** the exact duration and attempt cap (e.g. two 2-minute test calls per signup
+   session) to prevent unauthenticated abuse.
+4. **Upstream vendor ZDR and addenda:** confirming signed zero data retention agreements with the chosen LLM, STT,
+   and TTS providers; Twilio's AI features addendum; and Railway's container drain timeout window.
+5. **Failure prompt wording:** the neutral spoken fallback message if an upstream AI or telephony error interrupts
+   a live call.

@@ -63,13 +63,10 @@ export function ContactDrawer({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
-  const [msRemaining, setMsRemaining] = useState(0);
+  const [tickMs, setMsRemaining] = useState(0);
 
   useEffect(() => {
-    if (!open || !hold) {
-      setMsRemaining(0);
-      return;
-    }
+    if (!open || !hold) return;
 
     let expiredNotified = false;
 
@@ -86,6 +83,8 @@ export function ContactDrawer({
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [open, hold, onHoldExpired]);
+
+  const msRemaining = open && hold ? tickMs : 0;
 
   const canSubmit =
     firstName.trim().length >= 2 &&

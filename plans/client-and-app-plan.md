@@ -27,6 +27,13 @@ What sets it apart: it keeps no call recordings, transcripts or call content by 
 content by default; Juney, Reception.ai and Allo offer it on a higher plan or through support, and every other product
 records by default (research 5.8, 5.9).
 
+**Positioning:** "The AI receptionist that stores no call recordings or transcripts." A finished, no-code receptionist for small
+businesses that answers, books and transfers, with no call content stored by default, consent before the AI engages, and an
+exclusion of industries whose rules require call recordings to be kept. No small-business product in the market research offers
+that by default; only Vapi does, and Vapi is a developer platform rather than an owner-ready product. RingCentral AIR is the
+benchmark for the owner's feature set. Market research covers 52 products in
+`plans/ai-receptionist-research/README.md`.
+
 ## 2. Fixed decisions (Jeff)
 
 - **A product for client businesses.** Geek @ Your Spot is client number one, on the same signup, data and call path as every
@@ -46,7 +53,10 @@ records by default (research 5.8, 5.9).
   duration, caller ID, call ID) for billing. A client who wants call content kept sends it to its own Amazon S3 or Google Cloud
   bucket (a later release). Never voicemail: a voicemail is a recording kept.
 - **The receptionist always says it is an AI.**
-- **Voice:** Twilio ConversationRelay. The AI model sits behind an interface and is chosen by a setting.
+- **Voice:** Twilio ConversationRelay. Calls stream over a WebSocket to our backend. The AI model sits behind an interface and
+  is chosen by a setting (`LlmProviders__DefaultProvider`; unset is refused, never a default). Each provider must be confirmed
+  for no training and no retention before any privacy claim is made.
+- **A Twilio subaccount per tenant.** Geek @ Your Spot's own account is billing-exempt.
 - **Calendars:** Google first (its connector is built), then Outlook, Apple iCloud, Calendly and Cal.com.
 - **Texts** need each client's A2P 10DLC campaign approved. A caller gets a confirmation text only after replying YES.
 - **No CRM** in this plan.
@@ -193,6 +203,35 @@ transfer from $149.
 Upfirst, Goodcall, LobbyStack and Voksha; short calls are not billed at Quo, Aircall, Upfirst and CallRail (under 15 seconds) and
 LobbyStack (under 10). Spam screening itself is in the next release.
 
+**Next release:** Spanish then other languages; spam and robocall screening; analytics from call metadata only (call volume,
+bookings, busiest times); number porting; recording to the client's own S3 or GCS bucket for clients who want it.
+
+**Later:** CRM connectors (Geek-CRM when it is ready); outbound reminder calls; reseller and white-label for agencies.
+Healthcare and HIPAA-regulated businesses stay excluded permanently.
+
+## 8a. Unit economics
+
+Twilio costs (read from Twilio's pricing pages 2026-11-18):
+- ConversationRelay: $0.07/min. The page does not say which speech-to-text and text-to-speech it includes; voice is billed
+  separately.
+- Inbound call on a local number: $0.0085/min; local number $1.15/month.
+- Model (text only, since ConversationRelay sends text): about $0.001–$0.005/min (not checked; depends on prompt and FAQ size).
+- Outbound SMS: $0.0083/segment plus a carrier fee of $0.0035–$0.005/message.
+- Premium voice (e.g. ElevenLabs): about $0.04–$0.08 per 1,000 characters (not checked).
+- **Total: about $0.08–$0.085/min** before any premium voice, plus $1.15/month per number.
+
+Cost if every included minute is used (at $0.085/min + $1.15 for the number, before PayPal fee and premium voice):
+
+| Tier | Price | Included minutes | Cost at full use |
+|---|---|---|---|
+| Starter | $30 | 90 | ~$8.80 |
+| Standard | $48 | 250 | ~$22.40 |
+| Pro | $148 | 1,000 | ~$86.15 |
+| Premium | $298 | 2,000 | ~$171.15 |
+
+Market for comparison: RingCentral $49/100 min, My AI Front Desk $99/200 min, Rosie $49/$149/$299 for 250/1,000/2,000 min.
+Our upper tiers are priced $1 under Rosie with the same minutes. Margins are raised later.
+
 ## 9. Geek @ Your Spot as client number one
 
 - Jeff signs up through the same form with contact@geekatyourspot.com. The billing exemption skips PayPal; nothing else is
@@ -207,6 +246,12 @@ LobbyStack (under 10). Spam screening itself is in the next release.
 
 ## 10. What changes in the code (outline; detailed after the review)
 
+- **Step 0 — Remove Retell (before anything else).** Every client signup today creates a Retell agent. Remove:
+  `RetellProvisioner.cs`, `RetellOptions.cs`, `RetellWebhookController.cs` and its `ApiKeyMiddleware` entry,
+  `RetellCallRecorder.cs`, the Retell steps in `SubscriptionActivation.cs` and `TenantStanding.cs` (suspend/resume/cancel),
+  `retell_agent_id` from the telephony model and repository with a migration that drops the column, the `RETELL_*` Railway
+  variables, and every Retell mention in the docs. Until ConversationRelay is fully built, a new signup gets a number that no
+  AI answers yet; signup stays closed to new clients until it is.
 - **Data:** client settings for accepted facts, identity, abilities and what each needs, rules, the collection checklist and
   which calls the AI takes. Several already have columns in `receptionist_configs` that nothing reads today (hours, transfer
   mode and number, emergency keywords). The default script leaves `ReceptionistDefaults`. The content columns left in

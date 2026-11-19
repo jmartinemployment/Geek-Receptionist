@@ -1,8 +1,7 @@
 import { SCHEDULER_ID } from "@/components/shared/scheduler/scheduler-id";
 import { SchedulerShell } from "@/components/shared/scheduler/scheduler-shell";
 import HeroSection from "@/components/shared/shared-hero-section";
-import { ui } from "@/lib/ui";
-
+import  UnifiedPlatformSection  from "@/components/home/Unified-Platform";
 /** The home page: the hero, whose button jumps to the scheduler below it. The sections between were cleared on 2026-11-18 for Jeff to rebuild. */
 export default function Home() {
   return (
@@ -19,6 +18,7 @@ export default function Home() {
           </a>
         }
       />
+      <UnifiedPlatformSection />
       <SchedulerShell />
     </>
   );

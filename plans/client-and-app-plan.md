@@ -76,9 +76,11 @@ Steps 1–3 are built. Steps 4–9 are new. Steps 10–12 are built and move to 
 
 1. The caller dials the client's number, or is forwarded from the client's existing number.
 2. The client's standing is checked.
-3. Keypad consent, word for word: "Thank you for calling [business]. You will be interacting with our AI receptionist.
-   Your audio will be temporarily recorded and processed to provide this service, but we do not retain call recordings
-   or transcripts. To consent and continue, press 1. To decline, press 2." No key or pressing 2 ends the call.
+3. Keypad consent before the AI engages. The caller is told they are speaking with an AI, that their audio is
+   processed but not retained, and is given the choice to continue or decline. A caller who does not consent is not
+   connected to the AI. Draft script: "Thank you for calling [business]. You will be interacting with our AI
+   receptionist. Your audio will be temporarily recorded and processed to provide this service, but we do not retain
+   call recordings or transcripts. To consent and continue, press 1. To decline, press 2."
 4. ConversationRelay connects. The AI's instructions are built from the client's accepted information, the abilities
    that are on, the rules and the collection checklist. The session runs one agent at a time.
 5. The AI requests a tool only for an ability that is on. At most four tool rounds per caller turn. A tool that cannot
@@ -121,7 +123,7 @@ before going live. Chats are not stored.
 ## The call engine
 
 Calls run over a WebSocket to GeekAPI using Twilio ConversationRelay. The AI model sits behind an interface and is
-set by configuration; no model is a default. Each provider must be confirmed for no data training and no retention
+set by configuration; no model is a default. The provider is confirmed for no data training and no retention
 before any privacy claim is made. Each call uses `store: false` and no user identifier.
 
 One Twilio subaccount per client. The session runs one agent at a time — single-job agents, each with a fixed

@@ -6,21 +6,17 @@ Pre-launch. Written 2026-11-19.
 
 An AI phone receptionist sold by Geek @ Your Spot LLC (Delray Beach, Florida) by monthly subscription to US small
 businesses. The receptionist answers a business's phone, answers questions from the business's own information, takes
-messages, books appointments and transfers calls. No recordings, transcripts or call content are stored. The caller's
-words exist only during the call. Every call begins with a keypad consent step before the AI engages. The receptionist
-always identifies itself as an AI.
+messages, books appointments and transfers calls.
+
+No recordings, transcripts or call content are stored. The caller's words exist only during the call. Every call
+begins with a consent step before the AI engages. The receptionist identifies itself as an AI.
 
 ## Who it is for
 
-US small businesses. Eight categories are excluded at signup and their answers are stored permanently:
-
-- Healthcare providers, health plans, healthcare clearinghouses and business associates (the four HIPAA categories)
-- Securities broker-dealers
-- Investment advisers
-- Commodity futures or derivatives dealers
-- Medicare Advantage or Part D third-party marketers
-
-A yes to any of these ends the signup.
+US small businesses. Eight categories are excluded at signup and their answers are stored permanently: healthcare
+providers, health plans, healthcare clearinghouses and business associates (the four HIPAA categories), securities
+broker-dealers, investment advisers, commodity futures or derivatives dealers, and Medicare Advantage or Part D
+third-party marketers. A yes to any ends the signup.
 
 ## Pricing
 
@@ -35,8 +31,7 @@ No free trial. Paid monthly through PayPal, up front.
 
 Overage: $0.50 per minute. Each call rounded up to the whole minute.
 
-Unit cost: Twilio ConversationRelay $0.07/min, inbound call $0.0085/min, number $1.15/month. Total approximately
-$0.085/min before premium voice.
+Twilio cost estimate: approximately $0.085 per minute before premium voice, plus $1.15 per month per number.
 
 ## Signup and setup
 
@@ -51,16 +46,16 @@ Steps 1–3 are built. Steps 4–9 are new. Steps 10–12 are built and move to 
    site cannot be read, the owner types the information. Documents such as a menu or price list can be uploaded.
 5. Identity. The receptionist's name, voice and opening greeting.
 6. Abilities. The owner switches each on. The AI is told only about abilities that are on and ready.
-   - **Answer questions:** always on. Answers only from information the owner accepted.
-   - **Take messages:** needs an email address. Messages are emailed and not stored.
-   - **Book appointments:** needs a calendar connected. Setup asks for appointment types, lengths, available hours,
-     notice required, booking horizon, buffer between appointments and what to collect from the caller. The AI checks
+   - Answer questions: answers only from information the owner accepted.
+   - Take messages: needs an email address. Messages are emailed and not stored.
+   - Book appointments: needs a calendar connected. Setup asks for appointment types, lengths, available hours, notice
+     required, booking horizon, buffer between appointments and what to collect from the caller. The AI checks
      availability before offering a time and does not confirm a booking until the calendar accepts it. A booking that
      fails becomes a message.
-   - **Transfer to a person:** needs one or more numbers. Setup asks when to transfer, warm or cold, the order of
-     numbers for waterfall transfer and what happens if nobody answers.
-   - **Text confirmation:** requires an approved A2P campaign. Until then, confirmation is by email. Texts go only
-     after the caller replies YES.
+   - Transfer to a person: needs one or more numbers. Setup asks when to transfer, warm or cold, the order of numbers
+     for waterfall transfer and what happens if nobody answers.
+   - Text confirmation: requires an approved A2P campaign. Until then, confirmation is by email. Texts go only after
+     the caller replies YES.
 7. Rules. What the receptionist must never say or do. Prices only from accepted information. Callers outside the
    service area are told so. A question it cannot answer becomes a message when messages are on. A checklist of what
    to collect on every call.
@@ -76,7 +71,7 @@ Steps 1–3 are built. Steps 4–9 are new. Steps 10–12 are built and move to 
 
 1. The caller dials the client's number, or is forwarded from the client's existing number.
 2. The client's standing is checked.
-3. Keypad consent before the AI engages. The caller is told they are speaking with an AI, that their audio is
+3. A consent step before the AI engages. The caller is told they are speaking with an AI, that their audio is
    processed but not retained, and is given the choice to continue or decline. A caller who does not consent is not
    connected to the AI. Draft script: "Thank you for calling [business]. You will be interacting with our AI
    receptionist. Your audio will be temporarily recorded and processed to provide this service, but we do not retain
@@ -85,13 +80,13 @@ Steps 1–3 are built. Steps 4–9 are new. Steps 10–12 are built and move to 
    that are on, the rules and the collection checklist. The session runs one agent at a time.
 5. The AI requests a tool only for an ability that is on. At most four tool rounds per caller turn. A tool that cannot
    complete tells the agent it failed; the agent does not invent a result. A booking with an unknown outcome is
-   recorded as unknown — never a promise.
+   recorded as unknown.
 6. A silent handoff moves the call to the next agent when needed. The conversation is rebuilt for the new agent; the
    previous agent's tool calls are dropped. Nothing is spoken during the handoff.
 7. If the caller speaks over the AI, the reply in flight is cancelled and the conversation keeps only what was
    actually heard.
 8. If the AI fails partway, the caller hears a fixed message, is transferred to the owner's number if one is set, or
-   the call ends. Never silence.
+   the call ends.
 9. When the call ends, nothing of it is kept. Twilio records the time, length and billable minutes.
 
 ## After the call
@@ -123,12 +118,11 @@ before going live. Chats are not stored.
 ## The call engine
 
 Calls run over a WebSocket to GeekAPI using Twilio ConversationRelay. The AI model sits behind an interface and is
-set by configuration; no model is a default. The provider is confirmed for no data training and no retention
-before any privacy claim is made. Each call uses `store: false` and no user identifier.
+set by configuration; no model is a default. The provider is confirmed for no data training and no retention before
+any privacy claim is made. Each call uses store: false and no user identifier.
 
-One Twilio subaccount per client. The session runs one agent at a time — single-job agents, each with a fixed
-prompt and its own tools, modelled on Vapi's squad design (docs.vapi.ai, 2026-11-17). Handoffs between agents are
-silent.
+One Twilio subaccount per client. The session runs one agent at a time — single-job agents, each with a fixed prompt
+and its own tools, modelled on Vapi's squad design (docs.vapi.ai, 2026-11-17). Handoffs between agents are silent.
 
 Build phases:
 1. Receptionist agent only. Before the rest is built, three Twilio behaviours are proved on a test number: that TwiML
@@ -166,6 +160,6 @@ Railway variables are removed.
 5. Whether spam calls and very short calls are billed.
 6. The wording of the neutral base template.
 
-Before Phase 1: OpenAI Zero Data Retention approval or a different provider; the call model and Twilio voice
-providers; Twilio's AI features addendum; the handoff limit and simultaneous-call cap; whether minutes after a
-transfer to a person are billable; Railway draining time.
+Before the call engine can be built: the AI provider and whether it has approved zero data retention; the call model
+and Twilio voice providers; Twilio's AI features addendum; the handoff limit and simultaneous-call cap; whether
+minutes after a transfer to a person are billable; Railway draining time.

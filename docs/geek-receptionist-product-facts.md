@@ -12,17 +12,23 @@ marked **Live** (built and running today), **Launch** (approved for the first re
 - **Status:** pre-launch. No customers yet. The site is not yet indexed by search engines.
 - Positioning: "The AI receptionist that stores no call recordings or transcripts."
 - The receptionist always tells callers it is an AI.
+- The AI answers Geek @ Your Spot's own line, (561) 865-6990, after the caller presses 1. It only talks: it cannot
+  yet book, take a message, transfer or send anything to the owner. **Live since 2026-11-18; no real call had reached
+  it by 2026-11-19.**
 
 ## Privacy: what is and is not kept
 
-- No call recordings, no transcripts and no call content are stored by Geek-Receptionist. **Policy; the voice AI
-  that would hear calls is not built yet.**
+- No call recordings, no transcripts and no call content are stored by Geek-Receptionist. **Live.** What the AI's
+  providers keep is not yet confirmed: the AI model's provider (OpenAI today) keeps what it is sent for up to 30 days
+  unless it approves zero retention for the account, which it has not, and the phone company (Twilio) may keep the
+  text the AI speaks in its logs for up to 30 days.
 - Kept for billing only: call start and end time, duration, caller ID and the phone company's call ID, used to count
   minutes against the plan and charge overage. **Live** (minutes are recorded from each finished call).
 - A client who wants recordings kept may later send them to the client's own Amazon S3 or Google Cloud Storage
   bucket, switched on by the client. **Later; off by default.**
-- Each AI model and speech provider must be confirmed to keep no data and not train on calls before it is used.
-- The AI model is swappable: it is chosen by a setting, not fixed in the product. **Launch.**
+- Each AI model and speech provider is to be confirmed to keep no data and not train on calls. None is confirmed yet;
+  OpenAI does not train on what it is sent.
+- The AI model is swappable: it is chosen by a setting, not fixed in the product. **Live.**
 - Among the products compared (RingCentral AI Receptionist, GoTo Connect AI Receptionist, Synthflow, Beside, My AI
   Front Desk, Rosie, Vapi), none sold to small businesses stores no call content by default; only Vapi, a developer
   platform, offers zero data retention.
@@ -32,7 +38,8 @@ marked **Live** (built and running today), **Launch** (approved for the first re
 - Before the AI hears anything, the caller hears, and must press 1 to continue: "Thank you for calling [business].
   You will be interacting with our AI receptionist. Your audio will be temporarily recorded and processed to provide
   this service, but we do not retain call recordings or transcripts. To consent and continue, press 1. To decline,
-  press 2." No key press, no AI. **Launch.**
+  press 2." No key press, no AI. **Live since 2026-11-18, on Geek @ Your Spot's line and every client number; not
+  yet tested on a real call.**
 
 ## Who can sign up
 
@@ -94,7 +101,9 @@ porting, CRM connections, outbound reminder calls, reseller and white-label.
 
 ## Things copy must not say
 
-- That calls are answered by AI today (no voice AI is live yet).
+- That the AI books appointments, takes messages, transfers calls or sends anything to the owner today: it only talks.
+- That no one keeps any call content: Geek-Receptionist keeps none, but its AI and phone providers may keep some for
+  up to 30 days (above).
 - That call content is saved, recorded or available to review.
 - "HIPAA compliant": healthcare and HIPAA businesses are excluded, not served.
 - That there is a free trial.

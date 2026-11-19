@@ -54,6 +54,17 @@ Edge-case metering rules (proposed):
   calls per month). Calls exceeding the threshold are rounded up to the full minute.
 - **Post-transfer bridged minutes:** Minutes incurred after a call transfers to the owner count toward the client's
   monthly allowance, since Twilio continues billing the subaccount while bridging the line.
+- **Website chat metering:** 1 completed chat session (or every 10 AI chat turns) counts as 1 billable minute
+  against the client's monthly allowance. Text LLM inference costs a fraction of voice telephony, so this keeps
+  billing simple while improving gross margin on chat sessions.
+
+Proposed tier feature gating:
+
+- **Starter ($30 / 90 min):** Core Receptionist, Booking, Email/Zapier summaries, Google Drive connector
+  (one-click OAuth only). AWS S3 and GCS connectors excluded to avoid cloud-permission support overhead on
+  low-tier accounts.
+- **Standard ($48 / 250 min) and above:** Unlocks AWS S3 and GCS write-only connectors, multi-agent routing
+  (Triage, Booking, Support, Sales agents), and waterfall transfers.
 
 ## Streamlined Onboarding Flow (Proposed)
 
@@ -94,8 +105,11 @@ Four logical stages allow the owner to reach the live browser test call within m
 ### Stage 3: Pre-Payment Validation (Step 7)
 
 7. Live browser test call: before paying, the owner tests the configured receptionist directly in the browser using
-   the same consent step, prompt, and tools as a live phone call. Protected by a strict session and minute allowance
-   to prevent abuse.
+   the same consent step, prompt, and tools as a live phone call. Proposed guardrails: 2 test calls capped at 90
+   seconds each (3 minutes total); the allowance is tied to a verified contact email via a 6-digit OTP before the
+   browser dialer launches; IP rate limit of 2 test sessions per IP per 24 hours. GeekAPI terminates the WebSocket
+   at 90 seconds with a spoken prompt: "Your preview test time is complete — select a plan to take your receptionist
+   live."
 
 ### Stage 4: Activation & Number Provisioning (Steps 8–10)
 
@@ -108,10 +122,14 @@ Four logical stages allow the owner to reach the live browser test call within m
 
 1. **Inbound and spam pre-filter:** Twilio receives the call, checks tenant standing and monthly cap, applies carrier
    spam filtering, and checks answering-hour rules.
-2. **Upfront consent gate:** before the AI engages, the caller hears a disclosure stating they are speaking with an
-   AI, that audio is processed in real time to assist them, and that no recordings or transcripts are retained by the
-   platform. Callers press 1 to continue or 2 to decline. Exact script and active vs. passive consent rules are
-   pending legal review.
+2. **Upfront consent gate (two-mode tenant setting):**
+   - **Default — passive disclosure:** a crisp 4-second opening before the AI greets the caller: "Hi, you've
+     reached [Business Name]'s AI assistant. Calls are processed in real time and not recorded. How can I help you
+     today?" Staying on the line after an unmistakable upfront announcement satisfies implied consent for real-time
+     processing while maximising caller retention.
+   - **Strict mode — active DTMF gate (optional toggle):** retains a "press 1 to continue, press 2 to decline"
+     gate for risk-averse owners or specific call types.
+   - Florida attorney review of the passive script against Fla. Stat. § 934.03 is required before launch.
 3. **Ephemeral ConversationRelay session:** WebSocket connects to GeekAPI. Instructions are assembled in memory from
    the client's accepted profile and enabled tools. Upstream STT, TTS, and LLM providers are verified for zero data
    retention (store: false, no training, no logging).
@@ -119,8 +137,12 @@ Four logical stages allow the owner to reach the live browser test call within m
    specialist agent at a time (Receptionist, Triage, Booking, Support, Sales) with at most four tool rounds per turn.
    Silent handoffs rebuild context without spoken filler. Caller barge-in immediately cancels in-flight audio.
 5. **In-memory dispatch, fallbacks, and purge:**
-   - If the AI fails mid-call, a fixed fallback message plays and transfers to the owner if configured, or ends the
-     call gracefully.
+   - If the AI fails mid-call: when a transfer number is configured, the caller hears "I'm having a quick
+     connection issue on my end — please hold for just a moment while I connect you directly with our team," then
+     transfers immediately via `<Dial>`. When no transfer number is configured, the caller hears "I'm having trouble
+     completing that request right now. Please leave your name, phone number, and a brief message after the tone,
+     and our team will call you right back," followed by voicemail routed to email/BYOS, or a polite hang-up if
+     voicemail is disabled.
    - Upon hang-up, GeekAPI builds the call summary in RAM, pushes concurrently to enabled destinations (email,
      Zapier, Google Drive, S3/GCS), and purges memory.
    - **Dead-letter email fallback:** if a write to Google Drive, S3, or Zapier fails (expired token, revoked key,
@@ -152,7 +174,11 @@ during deploys. One isolated Twilio subaccount per client.
 
 - **Phase 1 (Core loop and Twilio verification):** single Receptionist agent. Prove three undocumented Twilio
   behaviours on a test number first: Connect action URL TwiML execution, WebSocket upgrade URL signature validation,
-  and subaccount auth token signing. Signup remains closed until Phase 1 passes live call testing.
+  and subaccount auth token signing. Signup remains closed until Phase 1 passes live call testing. Before any
+  tenant moves to the new engine: confirm ZDR flags on all upstream providers (store: false on LLM/STT/TTS),
+  disable Twilio call recording and speech logs at the subaccount level, execute Twilio's AI/ML Features Addendum,
+  and set Railway container drain to 600 seconds (SIGTERM stops new WebSocket upgrades; existing calls finish on
+  the old container).
 - **Phase 2 (Multi-agent and live events):** Triage and Booking agents with silent handoffs; real-time dashboard call
   status events via SignalR.
 - **Phase 3 (Expanded routing):** Support agent with cold transfer and Sales agent.
@@ -167,7 +193,7 @@ paths and environment variables are removed.
 
 - Signup stages 1–4 (steps 3–9 are new).
 - Website reading service.
-- Call engine: WebSocket intake, per-tenant voice webhook, ConversationRelay session, agent loop, tools, recorder.
+- Call engine: WebSocket intake, per-tenant voice webhook, ConversationRelay session, agent loop, tools, metadata logger.
 - BYOS connectors: Google Drive OAuth, S3 and GCS write-only credential setup, pre-flight checks, dead-letter
   fallback, periodic health checks.
 - Email sender.
@@ -175,15 +201,10 @@ paths and environment variables are removed.
 - Browser test call (Twilio Voice JavaScript SDK).
 - Migration of Geek @ Your Spot's line to the client routes.
 
-## Remaining Open Questions
+## Remaining Pre-Launch Actions
 
-1. **Consent gate wording and mechanics:** confirming with Florida legal counsel whether active DTMF confirmation
-   (press 1) is required for all-party consent compliance, or whether a shorter upfront disclosure suffices.
-2. **Tier feature gating and website chat metering:** whether BYOS connectors (S3/GCS/Drive) and multi-agent routing
-   are included in Starter or reserved for Standard/Pro, and how website chat sessions map to monthly allowances.
-3. **Browser test call allowance:** the exact duration and attempt cap (e.g. two 2-minute test calls per signup
-   session) to prevent unauthenticated abuse.
-4. **Upstream vendor ZDR and addenda:** confirming signed zero data retention agreements with the chosen LLM, STT,
-   and TTS providers; Twilio's AI features addendum; and Railway's container drain timeout window.
-5. **Failure prompt wording:** the neutral spoken fallback message if an upstream AI or telephony error interrupts
-   a live call.
+- Florida attorney review of the passive consent script against Fla. Stat. § 934.03 before go-live.
+- Confirm ZDR agreements with chosen LLM, STT and TTS providers before any live call.
+- Execute Twilio's AI/ML Features Addendum; disable call recording and speech logs at the subaccount level.
+- Set Railway container drain to 600 seconds on the GeekAPI service.
+- Finalise the call model, Twilio voice and speech providers, and handoff and simultaneous-call limits.

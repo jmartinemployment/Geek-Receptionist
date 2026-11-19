@@ -57,6 +57,16 @@ benchmark for the owner's feature set. Market research covers 52 products in
   is chosen by a setting (`LlmProviders__DefaultProvider`; unset is refused, never a default). Each provider must be confirmed
   for no training and no retention before any privacy claim is made.
 - **A Twilio subaccount per tenant.** Geek @ Your Spot's own account is billing-exempt.
+- **Call engine: Vapi-style agent squads (Jeff, 2026-11-17).** The session runs one agent at a time; each agent has one
+  fixed system prompt and its own tool set and cannot use a tool it was not given. A silent handoff moves the live call to
+  the next agent with no audio gap and the same voice; the previous agent's tool calls and results are dropped from the
+  conversation. Up to four agent types: Receptionist (answers questions), Triage (routes), Booking (calendar), Support
+  (transfer to a person). Modelled on Vapi's squads (docs.vapi.ai, read 2026-11-17). Semantic Kernel runs the tool loop;
+  auto-invoke is off so our code decides what happens.
+- **Model settings enforce ZDR on every call:** `store: false` and no `user` id on every OpenAI call. Semantic Kernel is
+  given no logger because it logs chat content at Trace. OpenAI keeps what it is sent for up to 30 days unless Zero Data
+  Retention is approved for the account; that approval (or a different provider) is required before any tenant moves to
+  the new engine.
 - **Calendars:** Google first (its connector is built), then Outlook, Apple iCloud, Calendly and Cal.com.
 - **Texts** need each client's A2P 10DLC campaign approved. A caller gets a confirmation text only after replying YES.
 - **No CRM** in this plan.
@@ -140,12 +150,20 @@ assistant "never publishes by itself").
 3. Keypad consent, word for word. No key, or 2: the closing message.
 4. ConversationRelay connects the AI. Its instructions are built for this client on every call from five parts only: the base
    template, the facts the owner accepted, the abilities that are on and ready, the rules, and the collection checklist.
-5. The AI may call a tool only for an ability that is on and ready: end the call (always), take a message, check times and
-   book, transfer.
-6. **Open for Jeff:** what the caller hears if the AI fails partway (model or network). The specification's options: ring a
-   person, play a short message, or both; it recommends both. Never silence and never voicemail.
-7. When the call ends, the per-call email is built in memory and sent, and nothing of the call is kept. Twilio's status report
-   records the time, length and billable minutes.
+   The session runs one agent at a time (Receptionist in Phase 1; Triage, Booking and Support in later phases).
+5. The AI may request a tool only for an ability that is on and ready. Our loop decides whether to run it; at most four
+   tool rounds per caller turn. A tool that cannot complete tells the agent it failed; the agent never invents a result.
+   A booking whose outcome is unknown is recorded as unknown — never a promise and never silently retried.
+6. **A silent handoff:** the model calls a handoff function to move the call to the next agent. In one step that cannot be
+   interrupted, the conversation is rebuilt for the new agent; the previous agent's tool calls and results are dropped.
+   Nothing is spoken. The new agent answers the caller's last words in the same voice.
+7. **Interruption:** if the caller talks over the speech, the reply in flight is cancelled and the conversation keeps only
+   what was actually heard. A handoff already completed stands; one not yet completed is abandoned and the current agent
+   takes the caller's words.
+8. **Open for Jeff:** what the caller hears if the AI fails partway (model or network). Options: ring a person, play a
+   short message, or both. Never silence and never voicemail.
+9. When the call ends, the per-call email is built in memory and sent, and nothing of the call is kept. Twilio's status
+   report records the time, length and billable minutes.
 
 ## 5. After the call
 
@@ -246,12 +264,7 @@ Our upper tiers are priced $1 under Rosie with the same minutes. Margins are rai
 
 ## 10. What changes in the code (outline; detailed after the review)
 
-- **Step 0 — Remove Retell (before anything else).** Every client signup today creates a Retell agent. Remove:
-  `RetellProvisioner.cs`, `RetellOptions.cs`, `RetellWebhookController.cs` and its `ApiKeyMiddleware` entry,
-  `RetellCallRecorder.cs`, the Retell steps in `SubscriptionActivation.cs` and `TenantStanding.cs` (suspend/resume/cancel),
-  `retell_agent_id` from the telephony model and repository with a migration that drops the column, the `RETELL_*` Railway
-  variables, and every Retell mention in the docs. Until ConversationRelay is fully built, a new signup gets a number that no
-  AI answers yet; signup stays closed to new clients until it is.
+- **Signup stays closed to new clients until Phase 1 of the call engine is complete and tested.**
 - **Data:** client settings for accepted facts, identity, abilities and what each needs, rules, the collection checklist and
   which calls the AI takes. Several already have columns in `receptionist_configs` that nothing reads today (hours, transfer
   mode and number, emergency keywords). The default script leaves `ReceptionistDefaults`. The content columns left in
@@ -263,6 +276,19 @@ Our upper tiers are priced $1 under Rosie with the same minutes. Margins are rai
   ready abilities; add the message, booking and transfer tools. Booking uses the Google Calendar connector that is already
   built (`list_events`, `suggest_time`, `create_event`). GeekAPI has no email sender today; one is needed.
 - **Browser test call:** not checked. Twilio's Voice JavaScript SDK is to be read first.
+- **Build phases (blueprint, 2026-11-17):**
+  - **Phase 1:** Receptionist agent only, equal to today's. Before building the rest: prove three Twilio behaviours on a
+    test number — that TwiML returned from the `<Connect>` action URL is run (transfer and every failure message depend on
+    it); which URL form signs the WebSocket upgrade; and that a subaccount's number is signed with the subaccount's token.
+    These are not documented in Twilio's public docs.
+  - **Phase 2:** Triage and Booking agents with silent handoffs; migration 0069 (`tenant_agents` table); the SignalR hub
+    and dashboard live call events (`callStarted`, `callAgentChanged`, `callFailed`, `callCompleted` — ids, codes and
+    times only, no caller content).
+  - **Phase 3:** Support agent with cold transfer to a person; Sales agent. Each waits on its form questions (what the
+    receptionist should do, when and to what number to transfer, where new-customer details go).
+- **Railway draining time:** Railway's default gives a stopping instance 0 seconds. Live calls are cut on each deploy
+  today. A draining grace period is needed on the GeekAPI service so a stopping instance can say one sentence and hand
+  each call back before stopping. This needs Jeff's go-ahead as a Railway service change.
 - **The company line:** onto the client routes, then its special code and variables are deleted.
 
 ## 11. Questions still open for Jeff (asked one at a time after the review)

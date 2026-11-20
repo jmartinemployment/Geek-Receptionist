@@ -126,6 +126,10 @@ debts owed to others.
 
 ## Stage 4: reading the tenant's store, and the scheduler that holds nothing
 
+**Depends on `connecting-client-systems.md`.** This stage was first written around Google Calendar because that is the only
+connectable thing, which quietly narrowed outbound to appointment reminders: follow-up, reactivation and invoice calls read
+from a **CRM**, and no CRM connects today. The dependency is named here rather than discovered later.
+
 **Only Google Calendar can be connected today, and the form must not offer what does not exist.** `VoiceMcpProviders` names
 five providers; `outlook`, `cal_com` and `hubspot` are strings in an enum with no OAuth, no client and no tool. Google
 Calendar and Google Drive are the two with code — and Drive is where call *records* are written, not a source of people to

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function VoiceAgentsInMinutesSection() {
+export default function DesignTestLaunchSection() {
   return (
     <>
       <section className="min-h-screen bg-[#023059] text-white py-5 lg:hidden">
@@ -16,7 +16,7 @@ export default function VoiceAgentsInMinutesSection() {
                 Design, Test, and Launch &nbsp; <br />
                 <span className="text-[#C83803]">Minutes</span>
               </h2>
-              <p className="pt-3 text-2xl text-white text-shadow-sm text-shadow-black">
+              <p className="pt-3 text-2xl text-white text-shadow-xs text-shadow-black">
                 Everything you need to configure and launch your voice agents. Customize voices, design conversations, connect telephony, and integrate your systems without managing the underlying infrastructure.              </p>
             </div>
           </div>

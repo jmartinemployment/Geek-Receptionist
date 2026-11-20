@@ -53,11 +53,6 @@ export type SignupState = {
   setupTokenId?: string;
   vaultTokenId?: string;
   phoneNumber?: string;
-  /**
-   * GeekAPI activated this tenant without billing (Geek @ Your Spot's own account, BILLING_EXEMPT_EMAIL), so the PayPal and number
-   * steps are skipped. Setting it in the cookie by hand skips nothing that matters: GeekAPI makes an owner login only for an active tenant.
-   */
-  billingExempt?: boolean;
 };
 
 export type SignupStep = "captcha" | "country" | ExcludedCode | "business" | "plan" | "payment_method" | "number" | "login";
@@ -73,7 +68,6 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
     for (const code of EXCLUDED_CODES) if (!gates.has(code)) return code;
     return "business";
   }
-  if (state.billingExempt) return "login";
   if (!state.subscriptionApproved) return "plan";
   if (!state.vaultTokenId) return "payment_method";
   if (!state.phoneNumber) return "number";
@@ -102,7 +96,6 @@ export function parseSignup(raw: string | undefined): SignupState | null {
     setupTokenId: id("setupTokenId"),
     vaultTokenId: id("vaultTokenId"),
     phoneNumber: typeof v.phoneNumber === "string" && /^\+[1-9]\d{6,14}$/.test(v.phoneNumber) ? v.phoneNumber : undefined,
-    billingExempt: v.billingExempt === true,
   };
 }
 

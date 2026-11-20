@@ -31,7 +31,7 @@ export async function StorageSection() {
         <>
           <p className={ui.status.warn}>Not connected</p>
           <p className={`${ui.muted} mb-4`}>
-            Connect your Google Drive to keep a record of every call in a folder you own. Without it, records are emailed to you instead.
+            Connect your Google Drive to keep a record of every call in a folder you own. Until you connect somewhere to keep them, no record of a call is kept at all.
           </p>
         </>
       )}

@@ -3,7 +3,9 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { clearGates, clearSignup, passGate, readGates, readSignup, writeSignup } from "@/lib/signup/state";
+import { clearGates, clearSignup, passGate, readGates, readSignup, withConfigStepDone, writeSignup, type ConfigStep } from "@/lib/signup/state";
+import { isConsentMode } from "@/lib/receptionist/controls";
+import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
 import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, answersThrough, isExcludedCode, type ExcludedCode } from "@/lib/signup/excluded";
@@ -93,6 +95,141 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
 
   await writeSignup({ tenantId, contactEmail: fields.contactEmail });
   redirect("/signup");
+}
+
+/**
+ * One receptionist step, saved. The answers go to GeekAPI, which writes them on this business's settings row and refuses them once the
+ * business is active; only when it has saved them is the step recorded as done, so a step that failed is asked again rather than skipped.
+ *
+ * <p>Nothing a visitor typed is kept in the cookie — only which step was answered.</p>
+ */
+async function saveConfigStep(
+  step: ConfigStep,
+  answers: Record<string, unknown>,
+  fields: Record<string, string>,
+): Promise<SignupFormState> {
+  const state = await readSignup();
+  if (!state) return { error: signupMessage("signup_expired"), fields };
+
+  const answer = await postOnboarding(
+    "/api/v1/onboarding/receptionist-config",
+    { tenantId: state.tenantId, answers },
+    await headers(),
+  );
+  if (answer.status !== 200) return { error: refusalOf(answer.body, answer.status), fields };
+
+  await writeSignup(withConfigStepDone(state, step));
+  redirect("/signup");
+}
+
+/** The lines of a textarea as a list, with the blank ones dropped. An empty list is the answer "none", which is a real answer. */
+const lines = (form: FormData, name: string): string[] =>
+  text(form, name)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+/** Your greeting: what a caller hears first, whether they press a key for it, and whether they are told about recording. */
+export async function greetingAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const greeting = text(form, "greeting");
+  const consentMode = text(form, "consentMode");
+  const fields = { greeting, consentMode };
+
+  if (!isConsentMode(consentMode)) return { error: "Choose what your callers hear before your receptionist speaks.", fields };
+
+  return saveConfigStep(
+    "greeting",
+    {
+      // Left blank is the other answer the question offers: keep the greeting this receptionist already has, which no field changes.
+      ...(greeting.length > 0 ? { greetingMessage: greeting } : {}),
+      consentMode,
+      recordingDisclosureEnabled: text(form, "recordingDisclosure") === "yes",
+    },
+    fields,
+  );
+}
+
+/** When you're open: the hours the receptionist may give a caller, or none at all. */
+export async function hoursAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const timezone = text(form, "timezone");
+  const shape = text(form, "hoursShape");
+  const fields = { timezone, hoursShape: shape };
+
+  const rows: DayHours[] = DAYS.map((day) => ({
+    day,
+    closed: form.get(`closed-${day}`) === "on",
+    open: text(form, `open-${day}`),
+    close: text(form, `close-${day}`),
+  }));
+
+  const outcome =
+    shape === "always" ? alwaysOpenHours(timezone)
+    : shape === "none" ? noHours()
+    : shape === "set" ? businessHoursOf(timezone, rows)
+    : { ok: false as const, message: "Say whether you keep set hours, are open at all times, or would rather not give hours yet." };
+
+  if (!outcome.ok) return { error: outcome.message, fields };
+  return saveConfigStep("hours", { businessHours: outcome.hours }, fields);
+}
+
+/** What it should ask: the questions every caller is asked, and the words that mean a call cannot wait. */
+export async function questionsAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const questions = text(form, "questions");
+  const keywords = text(form, "keywords");
+
+  return saveConfigStep(
+    "questions",
+    {
+      // An empty list is "ask nothing of your callers beyond what they came to say", and is sent as the answer it is.
+      qualifyingQuestions: lines(form, "questions"),
+      emergencyKeywords: keywords
+        .split(",")
+        .map((word) => word.trim())
+        .filter((word) => word.length > 0),
+    },
+    { questions, keywords },
+  );
+}
+
+/**
+ * What it should know: the business in its own words, from which GeekAPI assembles its receptionist's prompt. The parts are sent, never
+ * an assembled prompt: the business's name, state and industry are already on its record and are not asked for twice.
+ */
+export async function knowledgeAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const fields = {
+    receptionistName: text(form, "receptionistName"),
+    whatTheBusinessDoes: text(form, "whatTheBusinessDoes"),
+    whoItServes: text(form, "whoItServes"),
+    howItPrices: text(form, "howItPrices"),
+    whatToDoWithACaller: text(form, "whatToDoWithACaller"),
+  };
+
+  if (fields.whatTheBusinessDoes.length === 0) {
+    return { error: "Say what your business does, so your receptionist can tell a caller.", fields };
+  }
+
+  return saveConfigStep("knowledge", { knowledge: fields }, fields);
+}
+
+/** After the call: whether a finished call reaches the business, where, and how much of it. */
+export async function messagesAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const wants = text(form, "wantsEmail") === "yes";
+  const destination = text(form, "destinationEmail");
+  const fields = { wantsEmail: wants ? "yes" : "no", destinationEmail: destination };
+
+  if (wants && destination.length === 0) return { error: "Enter the email address a finished call should be sent to.", fields };
+
+  return saveConfigStep(
+    "messages",
+    {
+      messageEmailEnabled: wants,
+      // Empty clears the address when nothing is to be sent; leaving the field out would keep an address nothing uses.
+      messageDestinationEmail: wants ? destination : "",
+      includeTranscript: wants && form.get("includeTranscript") === "on",
+      notifyOnAbandonedCalls: wants && form.get("notifyOnAbandonedCalls") === "on",
+    },
+    fields,
+  );
 }
 
 /** Step 4: the plan. GeekAPI starts a PayPal subscription to it for this tenant and the visitor approves it in PayPal. */

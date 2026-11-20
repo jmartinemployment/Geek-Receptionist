@@ -325,7 +325,7 @@ MessageDestinationEmail, and on tenants: contact_phone and contact_email (with a
 column for owner-login lookups)") and goes straight after B because it touches the rows B writes. The four fields stand;
 the blind-index clause does not, for the reason recorded under F — the lookup it was for happens in another table.
 
-Order: **B (with B2) → F → D → A → C as wording arrives. E deferred.**
+Order: **B (with B2) → F → D → A → C as wording arrives. E deferred.** All of B, D, F and A are executed; C is executed but for its Appointments step (see below).
 
 ### Executed 2026-11-20, in the order B → D → F → A
 
@@ -359,6 +359,51 @@ later. The approved sequence was otherwise unchanged and C is still waiting on J
   contact_email_encrypted = '';` clears it. Nothing deletes a tenant row automatically, by design.
 * Re-enter any bucket connection through the dashboard: existing rows were sealed under the old purposes and the old
   format.
+
+### Executed 2026-11-20: C, five of the six steps
+
+Five steps are built, in the approved names and in this order, between `business` and `plan`: **Your greeting · When you're
+open · What it should ask · What it should know · After the call**. Each is a Server Action posting to B's
+`POST api/v1/onboarding/receptionist-config`; the cookie gains `configDone`, a list of which steps are answered and nothing
+else, so a refresh resumes in the right place and no answer is ever in a cookie. The step is recorded as done only after
+GeekAPI has saved it, so a step that failed is asked again rather than skipped. New: `src/lib/signup/hours.ts` (the week, the
+US time zones, and the one shape the receptionist reads), with its own tests.
+
+**Wording is Jeff's and unchanged by this.** What is built is the wording proposed in `signup-form-questions.md`, which is
+what the plan had to go on; one instruction changes any sentence of it without touching the machinery.
+
+**Three things in C needed the backend, which the plan had scoped to the portal.** Each was found by reading what the code
+does with the answer, not by inspecting the plan:
+
+1. **A plain list of questions was stored and then refused on every call.** `IsQualifyingQuestions` accepted any JSON array,
+   and `ReceptionistConsent.SystemPrompt` read only the area shape — so the list the form collects one-to-a-line validated,
+   saved, and then failed the business's every call, where nobody would ever be told. `SystemPrompt` now reads a list of
+   non-blank strings as questions asked of every caller, and `IsQualifyingQuestions` checks the items rather than the kind.
+2. **The prompt is assembled in GeekAPI, not the portal.** `ReceptionistDefaults.PromptFrom` builds it from what the business
+   said about itself — `ReceptionistKnowledgeAnswers`: what it calls itself, what it does, who it serves, what it charges,
+   what to do with a caller — plus the name, state and industry already on the tenant row. The portal sends the parts. It had
+   to go here: a form assembling the prompt would need those three facts handed to it, which is a second copy of what the
+   tenant row settles. A part left blank is left out of the prompt, never filled in. Answering the prompt as parts *and* as a
+   finished template is refused on both doors rather than resolved in some order.
+3. **Appointments is not built, and is the one step left out.** `BookingSettingController` refuses turning booking on without
+   a calendar that works, and says why: *"A setting saved as on with nothing behind it would show the owner a receptionist
+   that books while every caller is offered a message instead."* At signup there is no calendar — the OAuth round trip needs
+   the owner's token, and the owner's login is the last step of signup — so the only honest answer the step could store is
+   "no". `BookingEnabled` already has a dashboard card, which is where a business can answer it once it has connected a
+   calendar. Either the question moves to first sign-in, or signup records an intention the dashboard acts on, which is a new
+   field and not in this plan. Jeff's call.
+
+**Found while mapping that, not caused by it: B2 has the same bypass.** `ReceptionistConfigWriter` runs no calendar check, so
+`PUT /api/v1/tenants/{id}/receptionist/config` with `bookingEnabled: true` stores booking as on with nothing behind it —
+exactly what `BookingSettingController` refuses on the route beside it. Not fixed here: the fix wires `CalendarTools` into the
+writer and so changes both doors' dependencies, which is a defect in B2 rather than a part of C.
+
+**Verified:** 4,700 GeekBackend tests green (4,644 before; the new ones cover the assembled prompt, a blank part left out, a
+business that says nothing about itself refused, the prompt answered twice refused, the tenant row read once per door, and the
+question list reaching a call). 91 portal tests green, `npm run lint` clean for every file this touched. **`npm run build`
+fails, and already failed before this work** on `src/components/shared/scheduler/contact-drawer.tsx:139` — `vaul`'s `Drawer`
+no longer takes `direction` or `DrawerClose asChild`. Confirmed by stashing: the same two errors, same lines. The portal's
+production build is red on `main` and nothing in C changes that.
 
 Two guardrails carried from the review into the work:
 

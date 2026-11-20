@@ -41,12 +41,32 @@ export function parseGates(raw: string | undefined, key: string): ReadonlySet<Ga
 }
 
 /**
+ * The steps that ask how this business's receptionist should behave, in the order they are asked, between the business step and the
+ * plan: a business sees what it is configuring before it is asked to pay for it. Jeff, 2026-11-20: *"Any and/or every setting needs to
+ * be included in the onboarding multi-step form. The application may have preset defaults, but I am not comfortable making decisions on
+ * behalf of others."*
+ *
+ * Each one's answers go straight to GeekAPI, which writes them on the business's receptionist_configs row. The cookie records only
+ * which of these steps have been submitted, so a refresh resumes in the right place: a greeting, a prompt and a list of questions would
+ * overflow a 4 KB cookie and break resumption silently, and the row already holds them.
+ */
+export const CONFIG_STEPS = ["greeting", "hours", "questions", "knowledge", "messages"] as const;
+
+export type ConfigStep = (typeof CONFIG_STEPS)[number];
+
+export function isConfigStep(value: unknown): value is ConfigStep {
+  return typeof value === "string" && (CONFIG_STEPS as readonly string[]).includes(value);
+}
+
+/**
  * Where a visitor is in /signup, kept in an httpOnly cookie between steps and across the trips to PayPal. It holds ids only (the tenant
- * and what PayPal made for it), never a password, and every one is checked again by GeekAPI and PayPal before anything is bought.
+ * and what PayPal made for it) and which receptionist steps are answered, never an answer and never a password, and every one is
+ * checked again by GeekAPI and PayPal before anything is bought.
  */
 export type SignupState = {
   tenantId: string;
   contactEmail: string;
+  configDone?: ConfigStep[];
   tier?: string;
   subscriptionId?: string;
   subscriptionApproved?: boolean;
@@ -55,7 +75,16 @@ export type SignupState = {
   phoneNumber?: string;
 };
 
-export type SignupStep = "captcha" | "country" | ExcludedCode | "business" | "plan" | "payment_method" | "number" | "login";
+export type SignupStep =
+  | "captcha"
+  | "country"
+  | ExcludedCode
+  | "business"
+  | ConfigStep
+  | "plan"
+  | "payment_method"
+  | "number"
+  | "login";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ID = /^[A-Za-z0-9-]{1,64}$/;
@@ -68,10 +97,22 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
     for (const code of EXCLUDED_CODES) if (!gates.has(code)) return code;
     return "business";
   }
-  if (!state.subscriptionApproved) return "plan";
+  // The receptionist questions, while nothing has been paid for. They are asked only here, and never after the subscription is
+  // approved: GeekAPI refuses them once the business is active, so a visitor sent back to them then would have nowhere to go.
+  if (!state.subscriptionApproved) {
+    const done = state.configDone ?? [];
+    for (const step of CONFIG_STEPS) if (!done.includes(step)) return step;
+    return "plan";
+  }
   if (!state.vaultTokenId) return "payment_method";
   if (!state.phoneNumber) return "number";
   return "login";
+}
+
+/** This signup with one more receptionist step answered. The same step twice is still one step done, not two. */
+export function withConfigStepDone(state: SignupState, step: ConfigStep): SignupState {
+  const done = state.configDone ?? [];
+  return done.includes(step) ? state : { ...state, configDone: [...done, step] };
 }
 
 /** The cookie's state, or null when there is none or it is not what this app wrote: a cookie that does not read is a fresh start. */
@@ -90,6 +131,7 @@ export function parseSignup(raw: string | undefined): SignupState | null {
   return {
     tenantId: v.tenantId,
     contactEmail: v.contactEmail,
+    configDone: Array.isArray(v.configDone) ? CONFIG_STEPS.filter((step) => (v.configDone as unknown[]).includes(step)) : undefined,
     tier: id("tier"),
     subscriptionId: id("subscriptionId"),
     subscriptionApproved: v.subscriptionApproved === true,

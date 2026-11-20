@@ -8,7 +8,17 @@ import { ui } from "@/lib/ui";
 import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, isExcludedCode } from "@/lib/signup/excluded";
 import { choosePlanAction, countryAction, excludedIndustryAction, forgetRobotCheckAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
-import { BusinessForm, LoginForm, NumberForm, RobotCheckButton } from "./signup-forms";
+import {
+  BusinessForm,
+  GreetingForm,
+  HoursForm,
+  KnowledgeForm,
+  LoginForm,
+  MessagesForm,
+  NumberForm,
+  QuestionsForm,
+  RobotCheckButton,
+} from "./signup-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +26,12 @@ const STEPS: { step: SignupStep; title: string }[] = [
   { step: "country", title: "Is Business located in United States?" },
   ...EXCLUDED_CODES.map((code) => ({ step: code as SignupStep, title: EXCLUDED_INDUSTRIES[code].question })),
   { step: "business", title: "Your business" },
+  // The receptionist's own settings, in the owner's words rather than the field names. Approved by Jeff, 2026-11-20.
+  { step: "greeting", title: "Your greeting" },
+  { step: "hours", title: "When you’re open" },
+  { step: "questions", title: "What it should ask" },
+  { step: "knowledge", title: "What it should know" },
+  { step: "messages", title: "After the call" },
   { step: "plan", title: "Choose a plan" },
   { step: "payment_method", title: "Save a payment method" },
   { step: "number", title: "Your receptionist's number" },
@@ -108,6 +124,12 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         )}
 
         {step === "business" && <BusinessForm idSuffix={s} />}
+
+        {step === "greeting" && <GreetingForm idSuffix={s} />}
+        {step === "hours" && <HoursForm idSuffix={s} />}
+        {step === "questions" && <QuestionsForm idSuffix={s} />}
+        {step === "knowledge" && <KnowledgeForm idSuffix={s} />}
+        {step === "messages" && state && <MessagesForm email={state.contactEmail} idSuffix={s} />}
 
         {step === "plan" && (
           <>

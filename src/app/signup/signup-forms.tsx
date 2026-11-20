@@ -4,7 +4,19 @@ import { useActionState, useRef, useState } from "react";
 import { ui } from "@/lib/ui";
 import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
-import { activateAction, businessAction, captchaAction, createLoginAction, type SignupFormState } from "./actions";
+import { DAYS, TIMEZONES } from "@/lib/signup/hours";
+import {
+  activateAction,
+  businessAction,
+  captchaAction,
+  createLoginAction,
+  greetingAction,
+  hoursAction,
+  knowledgeAction,
+  messagesAction,
+  questionsAction,
+  type SignupFormState,
+} from "./actions";
 
 const field =
   "rounded border border-line bg-wash px-3 py-2 text-ink placeholder:text-muted focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-white";
@@ -99,6 +111,398 @@ export function BusinessForm({ idSuffix }: { idSuffix: string }) {
         </button>
         <p className={`${ui.muted} text-sm`}>Nothing is charged in this step. You choose a plan next.</p>
       </div>
+    </form>
+  );
+}
+
+const textarea = `${field} min-h-24`;
+const hint = `${ui.muted} text-sm`;
+
+/** The submit button every receptionist step ends with, so none of them is louder or quieter than the next. */
+function StepButton({ pending, label = "Save and continue" }: { pending: boolean; label?: string }) {
+  return (
+    <button className={`${ui.button} mt-3`} type="submit" disabled={pending}>
+      {pending ? "Saving…" : label}
+    </button>
+  );
+}
+
+/**
+ * One closed question, drawn as the same block every time: the question, then its choices, each with the one fact about itself the
+ * owner is choosing on. Nothing here is marked as recommended. Jeff, 2026-11-20: "I am not comfortable making decisions on behalf of
+ * others." A preset is the choice that arrives already selected, and selecting another is one click.
+ */
+function Choice({
+  name,
+  legend,
+  help,
+  selected,
+  options,
+}: {
+  name: string;
+  legend: string;
+  help?: string;
+  selected: string;
+  options: { value: string; label: string; detail?: string }[];
+}) {
+  return (
+    <fieldset className="flex min-w-0 flex-col gap-2">
+      <legend className={`${label} mb-1`}>{legend}</legend>
+      {help ? <p className={hint}>{help}</p> : null}
+      {options.map((option) => (
+        <label key={option.value} className="flex items-start gap-3">
+          <input type="radio" name={name} value={option.value} defaultChecked={selected === option.value} className="mt-1.5 size-4 accent-[#c83803]" />
+          <span>
+            {option.label}
+            {option.detail ? <span className={`${hint} block`}>{option.detail}</span> : null}
+          </span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+/**
+ * Your greeting. Three answers about the first few seconds of a call: the sentence your receptionist opens with, whether a caller
+ * presses a key before it speaks, and whether they are told the call may be recorded.
+ *
+ * The greeting it already has is the one GeekAPI wrote from this business's name (`ReceptionistDefaults.GreetingTemplate`; the same
+ * words live there, change both together). Leaving the box empty keeps it, and no greeting is sent at all.
+ */
+export function GreetingForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(greetingAction, start({ consentMode: "strict_keypress", recordingDisclosure: "yes" }));
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <label htmlFor={`greeting${idSuffix}`} className={label}>
+          How should your receptionist answer the phone?
+        </label>
+        <p id={`greetingHint${idSuffix}`} className={hint}>
+          Leave this empty to keep the greeting it already has: &ldquo;Thank you for calling [your business]. I&rsquo;m the AI
+          receptionist, and this call may be recorded. How can I help you today?&rdquo;
+        </p>
+        <textarea
+          id={`greeting${idSuffix}`}
+          name="greeting"
+          rows={3}
+          maxLength={600}
+          aria-describedby={`greetingHint${idSuffix}`}
+          defaultValue={state.fields.greeting ?? ""}
+          className={textarea}
+        />
+      </fieldset>
+
+      <Choice
+        name="consentMode"
+        legend="What should a caller do before your receptionist speaks?"
+        help="Every call starts with one of these two. There is no third way and no off."
+        selected={state.fields.consentMode ?? "strict_keypress"}
+        options={[
+          {
+            value: "strict_keypress",
+            label: "Press a key to carry on",
+            detail:
+              "A caller hears that this line is answered by an AI assistant and may be recorded, and presses a key first. Some callers will not, and those calls end there — and a machine dialling you cannot press it, so you are not billed for the minute.",
+          },
+          {
+            value: "passive_disclosure",
+            label: "Carry straight on",
+            detail:
+              "A caller hears the same notice and your receptionist carries on. Nothing is asked of the caller, and nothing is turned away either: a machine dialling you reaches your receptionist, and that minute is billed to you.",
+          },
+        ]}
+      />
+
+      <Choice
+        name="recordingDisclosure"
+        legend="Should callers hear that the call may be recorded?"
+        help="Some states require every party to a call to consent to it being recorded. This is a legal question for your business, not ours."
+        selected={state.fields.recordingDisclosure ?? "yes"}
+        options={[
+          { value: "yes", label: "Yes, tell every caller" },
+          { value: "no", label: "No" },
+        ]}
+      />
+
+      <StepButton pending={pending} />
+    </form>
+  );
+}
+
+/**
+ * When you're open. The hours are the only hours the receptionist may give a caller; a business that gives none has its receptionist
+ * say it does not have them and offer to take a message, which is why "not yet" is a real answer here and not a skipped step.
+ */
+export function HoursForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(hoursAction, start({ hoursShape: "set", timezone: "America/New_York" }));
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+
+      <Choice
+        name="hoursShape"
+        legend="When are you open?"
+        selected={state.fields.hoursShape ?? "set"}
+        options={[
+          { value: "set", label: "These hours", detail: "Fill in the week below." },
+          { value: "always", label: "Open at all times" },
+          {
+            value: "none",
+            label: "I would rather not give hours yet",
+            detail: "Your receptionist will say it does not have your hours and offer to take a message. It will never guess them.",
+          },
+        ]}
+      />
+
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <label htmlFor={`timezone${idSuffix}`} className={label}>
+          Which time zone are your hours in?
+        </label>
+        <select id={`timezone${idSuffix}`} name="timezone" defaultValue={state.fields.timezone ?? "America/New_York"} className={`${field} w-full sm:w-64`}>
+          {TIMEZONES.map((zone) => (
+            <option key={zone.id} value={zone.id}>
+              {zone.label}
+            </option>
+          ))}
+        </select>
+      </fieldset>
+
+      <fieldset className="flex min-w-0 flex-col gap-3">
+        <legend className={`${label} mb-1`}>Your week</legend>
+        <p className={hint}>A closing time earlier than the opening time is a day that runs through the night.</p>
+        {DAYS.map((day) => (
+          <div key={day} className="flex flex-wrap items-center gap-2">
+            <span className="w-24 capitalize">{day}</span>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name={`closed-${day}`} className="size-4 accent-[#c83803]" />
+              <span className={hint}>Closed</span>
+            </label>
+            <label htmlFor={`open-${day}${idSuffix}`} className="sr-only">
+              {day} opening time
+            </label>
+            <input id={`open-${day}${idSuffix}`} name={`open-${day}`} type="time" defaultValue="09:00" className={`${field} w-32`} />
+            <span className={hint}>to</span>
+            <label htmlFor={`close-${day}${idSuffix}`} className="sr-only">
+              {day} closing time
+            </label>
+            <input id={`close-${day}${idSuffix}`} name={`close-${day}`} type="time" defaultValue="17:00" className={`${field} w-32`} />
+          </div>
+        ))}
+      </fieldset>
+
+      <StepButton pending={pending} />
+    </form>
+  );
+}
+
+/**
+ * What it should ask. Both answers may be empty, and an empty answer is sent as the answer it is: no questions beyond what the caller
+ * came to say, and no word that marks a call as an emergency.
+ */
+export function QuestionsForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(questionsAction, start());
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <label htmlFor={`questions${idSuffix}`} className={label}>
+          What should your receptionist ask every caller?
+        </label>
+        <p id={`questionsHint${idSuffix}`} className={hint}>
+          One question per line. Leave it empty to have it ask nothing beyond what the caller came to say.
+        </p>
+        <textarea
+          id={`questions${idSuffix}`}
+          name="questions"
+          rows={5}
+          maxLength={2000}
+          placeholder={"What is the address?\nIs anyone there now?"}
+          aria-describedby={`questionsHint${idSuffix}`}
+          defaultValue={state.fields.questions ?? ""}
+          className={textarea}
+        />
+      </fieldset>
+
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <label htmlFor={`keywords${idSuffix}`} className={label}>
+          What words mean a call cannot wait?
+        </label>
+        <p id={`keywordsHint${idSuffix}`} className={hint}>
+          Separated by commas. Leave it empty if no word should mark a call as an emergency.
+        </p>
+        <input
+          id={`keywords${idSuffix}`}
+          name="keywords"
+          maxLength={400}
+          placeholder="flooding, no heat, gas smell"
+          aria-describedby={`keywordsHint${idSuffix}`}
+          defaultValue={state.fields.keywords ?? ""}
+          className={field}
+        />
+      </fieldset>
+
+      <StepButton pending={pending} />
+    </form>
+  );
+}
+
+/**
+ * What it should know. Until a business answers this, its receptionist runs on the script Geek @ Your Spot LLC wrote for its own
+ * callers — free consultations, three South Florida counties, its own price answer — with this business's name in it. These answers
+ * replace it: GeekAPI assembles the prompt from them, and an answer left empty is left out of the prompt rather than filled in.
+ */
+export function KnowledgeForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(knowledgeAction, start());
+  const value = (name: string) => state.fields[name] ?? "";
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+
+      <p className={ui.muted}>
+        Your receptionist may only tell a caller what you tell it here. Anything you leave out, it says it does not know and offers to
+        take a message — it never guesses.
+      </p>
+
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <label htmlFor={`receptionistName${idSuffix}`} className={label}>
+          What should your receptionist call itself?
+        </label>
+        <p id={`nameHint${idSuffix}`} className={hint}>
+          Leave it empty and it will say it is your AI receptionist.
+        </p>
+        <input
+          id={`receptionistName${idSuffix}`}
+          name="receptionistName"
+          maxLength={60}
+          aria-describedby={`nameHint${idSuffix}`}
+          defaultValue={value("receptionistName")}
+          className={field}
+        />
+      </fieldset>
+
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <label htmlFor={`whatTheBusinessDoes${idSuffix}`} className={label}>
+          What does your business do?
+        </label>
+        <textarea
+          id={`whatTheBusinessDoes${idSuffix}`}
+          name="whatTheBusinessDoes"
+          required
+          rows={4}
+          maxLength={2000}
+          placeholder="What you sell or do, in the words you would use on the phone."
+          defaultValue={value("whatTheBusinessDoes")}
+          className={textarea}
+        />
+
+        <label htmlFor={`whoItServes${idSuffix}`} className={label}>
+          Who do you serve?
+        </label>
+        <textarea
+          id={`whoItServes${idSuffix}`}
+          name="whoItServes"
+          rows={3}
+          maxLength={2000}
+          placeholder="The customers you take, and the area you cover."
+          defaultValue={value("whoItServes")}
+          className={textarea}
+        />
+
+        <label htmlFor={`howItPrices${idSuffix}`} className={label}>
+          What do you charge?
+        </label>
+        <textarea
+          id={`howItPrices${idSuffix}`}
+          name="howItPrices"
+          rows={3}
+          maxLength={2000}
+          placeholder="Prices a caller may be told, or that someone will quote the job."
+          defaultValue={value("howItPrices")}
+          className={textarea}
+        />
+
+        <label htmlFor={`whatToDoWithACaller${idSuffix}`} className={label}>
+          What should it do with a caller?
+        </label>
+        <textarea
+          id={`whatToDoWithACaller${idSuffix}`}
+          name="whatToDoWithACaller"
+          rows={3}
+          maxLength={2000}
+          placeholder="Take a message, book a visit, send them to your website — whatever the call is for."
+          defaultValue={value("whatToDoWithACaller")}
+          className={textarea}
+        />
+      </fieldset>
+
+      <StepButton pending={pending} />
+    </form>
+  );
+}
+
+/**
+ * After the call. Nothing of a call is kept: no recording, no transcript, no copy on our side. So whatever reaches you here is the only
+ * record of it, and a call you ask for nothing about leaves nothing behind.
+ */
+export function MessagesForm({ email, idSuffix }: { email: string; idSuffix: string }) {
+  const [state, action, pending] = useActionState(messagesAction, start({ wantsEmail: "yes", destinationEmail: email }));
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+
+      <p className={ui.muted}>
+        Your receptionist keeps no recording and no transcript of a call. An email sent when the call ends is the only record there is.
+      </p>
+
+      <Choice
+        name="wantsEmail"
+        legend="How do you want to hear about a caller?"
+        selected={state.fields.wantsEmail ?? "yes"}
+        options={[
+          { value: "yes", label: "Email me when a call ends" },
+          { value: "no", label: "Send me nothing", detail: "Nothing is kept and nothing is sent, so a finished call leaves no record at all." },
+        ]}
+      />
+
+      <fieldset className="flex min-w-0 flex-col gap-2">
+        <label htmlFor={`destinationEmail${idSuffix}`} className={label}>
+          Where should it go?
+        </label>
+        <input
+          id={`destinationEmail${idSuffix}`}
+          name="destinationEmail"
+          type="email"
+          autoComplete="email"
+          defaultValue={state.fields.destinationEmail ?? email}
+          className={field}
+        />
+
+        <label className="mt-2 flex items-start gap-3">
+          <input type="checkbox" name="includeTranscript" className="mt-1.5 size-4 accent-[#c83803]" />
+          <span>
+            Include what was said
+            <span className={`${hint} block`}>The email carries the conversation. Nothing is stored because of this; the email is still the only copy.</span>
+          </span>
+        </label>
+
+        <label className="flex items-start gap-3">
+          <input type="checkbox" name="notifyOnAbandonedCalls" className="mt-1.5 size-4 accent-[#c83803]" />
+          <span>
+            Tell me about calls where nobody spoke
+            <span className={`${hint} block`}>A call that connected and ended without the caller saying anything.</span>
+          </span>
+        </label>
+      </fieldset>
+
+      <StepButton pending={pending} />
     </form>
   );
 }

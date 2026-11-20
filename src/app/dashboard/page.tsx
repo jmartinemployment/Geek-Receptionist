@@ -7,6 +7,7 @@ import { signOutAction } from "./actions";
 import { ActionButton } from "@/components/action-button";
 import { BillingSection } from "./billing-section";
 import { CalendarSection } from "./calendar-section";
+import { StorageSection } from "./storage-section";
 import { CardSkeleton } from "./card-skeleton";
 import { NoticeToast } from "./notice-toast";
 
@@ -44,6 +45,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </Suspense>
       <Suspense fallback={<CardSkeleton label="your calendar" />}>
         <CalendarSection />
+      </Suspense>
+      <Suspense fallback={<CardSkeleton label="your call records" />}>
+        <StorageSection />
       </Suspense>
       {notice ? <NoticeToast notice={notice} /> : null}
     </div>

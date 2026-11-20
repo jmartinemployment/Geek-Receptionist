@@ -31,6 +31,17 @@ export async function connectCalendarAction(): Promise<ActionState> {
 }
 
 /**
+ * Connect Google Drive: GeekAPI gives the Google approval address for this owner's tenant, and the browser is sent there. The approval
+ * asks for one permission, which reaches only the folder this application creates.
+ */
+export async function connectStorageAction(): Promise<ActionState> {
+  const result = await callOwnerTenant((tenantId) => `/api/v1/tenants/${tenantId}/oauth/mcp/google_drive/authorize`, { method: "GET" });
+  const target = leaveFor(result, "authorizationUrl");
+  if (typeof target !== "string") return target;
+  redirect(target);
+}
+
+/**
  * Pay now, for one unpaid overage: GeekAPI makes a PayPal order for exactly what is owed and the browser is sent to PayPal to approve it.
  * PayPal sends the owner back to /billing/paid, built from this site's own origin, never from anything the browser sent. The charge is
  * bound to the button on the server; GeekAPI checks again that it is this tenant's and still owed.

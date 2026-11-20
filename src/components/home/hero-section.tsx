@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { SCHEDULER_HERO_LINK_ID } from "@/components/shared/scheduler/scheduler-id";
 
 export default function HeroSection() {
@@ -9,13 +8,12 @@ export default function HeroSection() {
           <div className="grid min-h-screen grid-cols-1 place-items-center">
             <div className="col-span-1">
               <h1 className="font-[var(--font-sora)] text-[12vw] font-black leading-[0.95] text-white shadow-text sm:text-6xl md:text-7xl">
-                AI for South Florida{" "}
+                One Platform. Every Voice&nbsp;
                 <br />
-                <span className="text-[#C83803]">Business</span>
+                <span className="text-[#C83803]">Agent</span>
               </h1>
               <p className="pt-3 text-xl text-white shadow-text">
-                I help small businesses try AI without betting the business on it.
-              </p>
+                Intelligent orchestration, real-time visibility, and enterprise-grade control built to scale.              </p>
               <div className="pt-6">
                 <a href="#consultationAppointment2xl"
                   id={SCHEDULER_HERO_LINK_ID}
@@ -34,12 +32,12 @@ export default function HeroSection() {
           <div className="grid min-h-screen grid-cols-12 place-items-center">
             <div className="col-span-7">
               <h1 className="text-white lg:text-7xl xl:text-[6.5rem] leading-[0.95] font-black font-[var(--font-sora)] shadow-text">
-                AI for South Florida{" "}
+                One Platform. Every Voice&nbsp;
                 <br />
-                <span className="text-[#C83803]">Business</span>
+                <span className="text-[#C83803]">Agent</span>
               </h1>
               <p className="pt-3 text-2xl text-white shadow-text">
-                I help small businesses try AI without betting the business on it.
+                Intelligent orchestration, real-time visibility, and enterprise-grade control built to scale.
               </p>
               <div className="pt-8">
                 <a href="#consultationAppointment2xl"
@@ -50,20 +48,6 @@ export default function HeroSection() {
               </div>
             </div>
             <div className="col-span-5 flex items-center justify-center min-h-screen">
-              {/* The optimizer serves AVIF or WebP by content negotiation and a width-matched variant
-                  from the srcset, so the browser downloads an image sized to this column (about 420px,
-                  up to ~610px on the widest screens) instead of the full 1024px source. `priority`
-                  preloads that responsive variant because this is the desktop hero's LCP image; the
-                  column only shows at lg and up, so the sizes hint falls back to 1px below it. */}
-              <Image
-                src="/images/home-hero.avif"
-                width={1024}
-                height={1024}
-                sizes="(min-width: 1024px) 42vw, 1px"
-                priority
-                alt="A Geek @ Your Spot LLC robot action figure in its package, holding a laptop with a rising chart, beside icons for chat, automation, reporting and a small business storefront."
-                className="h-auto w-full"
-              />
             </div>
           </div>
         </div>

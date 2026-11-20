@@ -107,35 +107,52 @@ sets `KnowledgeRunId`; the no leaves the receptionist with no lookup tool rather
 
 That is sixteen of sixteen. None is left for us to decide.
 
-## Railway holds no client settings, checked 2026-11-20
+## Client settings removed from Railway, 2026-11-20
 
-Asked whether any client setting had been removed from Railway. Nothing was removed, and nothing could have been: every
-Railway call made in this work was a read (`list-projects`, `list-services`, `list-deployments`, `get-logs`,
-`list-variables`). No variable has been set, renamed or deleted.
+Jeff, 2026-11-20: *"REMOVE CLIENT SETTINGS FROM RAILWAY, THIS IS NOT ACCEPTABLE, NOT EVENTUALLY NOW!"* Done, on the
+GeekAPI service, production environment. Four variables deleted:
 
-What is there now, production environment:
+* `COMPANY_NAME` — the business's name
+* `OWNER_CELL` — the number its receptionist rings
+* `TWILIO_NUMBER` — the number its callers dial
+* `CALL_MODE` — whether callers dial it directly or are forwarded to it
 
-* **GeekRepository** — sixteen variables, all infrastructure: `DATABASE_URL`, `MONGO_CRAWLER_URL`, the two API keys, the
-  Railway-injected names. No receptionist or client setting of any kind.
-* **GeekAPI** — the company line's four are present and untouched: `COMPANY_NAME`, `OWNER_CELL`, `TWILIO_NUMBER`,
-  `CALL_MODE`. `RING_SECONDS` and `SCREEN_CALLS` are not set and never were; `ReceptionistOptions.FromConfiguration`
-  reads them as `config["RING_SECONDS"] ?? "18"` and `config["SCREEN_CALLS"] ?? "true"`, so their absence is a code
-  default doing its job, not a missing variable.
+`RING_SECONDS` and `SCREEN_CALLS` were never set: `ReceptionistOptions.FromConfiguration` reads them as
+`config["RING_SECONDS"] ?? "18"` and `config["SCREEN_CALLS"] ?? "true"`, so there was nothing to delete.
 
-Those four are Geek @ Your Spot's own line, which is the single-tenant shortcut the audit flagged — one company's settings
-in a process-wide singleton that cannot hold a second business. The audit *proposed* retiring them once Geek @ Your Spot
-signs up as a real tenant and its number moves onto the tenant path. That is a proposal in a document, not something done,
-and the order matters: the tenant exists first, the variables go last, and the company line never stops answering in
-between. No Railway variable gets changed without Jeff saying so.
+**Kept, because they are platform credentials and not one business's settings:** `TWILIO_ACCOUNT_SID`,
+`TWILIO_AUTH_TOKEN`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_MASTER_ACCOUNT_SID`,
+`TWILIO_MASTER_AUTH_TOKEN`. These are how GeekAPI provisions a subaccount and a number for every tenant that signs up;
+deleting them would stop signup from working for everyone. **GeekRepository holds no client setting of any kind** —
+sixteen variables, all infrastructure.
 
-## Two things to settle before any of it is built
+**Two that are arguably a business's and were left alone, named rather than quietly decided:** `GOOGLE_CALENDAR_ID`,
+the calendar the portal's booking page writes consultations to, and `BILLING_EXEMPT_EMAIL`, the address that signs up
+without paying. Both are Geek @ Your Spot's own rather than a tenant's, and both belong to subsystems outside the
+receptionist's config. Say the word and they go too.
 
-**Where in the flow.** These questions cannot go before `plan`, because an abandoned signup would throw the answers away,
-and they cannot go after `login`, because that is the dashboard. The place that works is between `number` and `login`: the
-tenant exists, the phone number is bought, and the owner has not yet been handed an account. That is a recommendation, not
-a decision.
+### What this costs, stated plainly
 
-**What they post to.** There is no route that writes a whole config. `SaveConfigAsync` takes the entire record and
-`ConsentSettingController` / `BookingSettingController` each write one field by reading the config, changing one value and
-saving it back. A form step needs either a config route under `api/v1/onboarding` (server key, no owner token yet) or one
-per question in the same shape as the two that exist. That is mine to build once the questions are settled.
+The company line 561-865-6990 was configured by those four variables and by nothing else. With them gone,
+`FromConfiguration` fails, `AddReceptionist` catches it and registers `ReceptionistStatus(false, ...)`, and the Twilio
+webhooks answer 503. GeekAPI itself is unaffected and keeps serving everything else — that catch exists so a Twilio
+mistake cannot take the API down.
+
+The running container still holds the old values in memory, because deleting a variable through the CLI did not
+trigger a redeploy. So the line answers until GeekAPI next deploys, and the next push is what ends it. That is a
+grace period, not a reprieve: the settings are out of Railway now, as instructed, and the line goes quiet on the next
+deploy unless it is a tenant by then.
+
+### What has to happen for the line to answer again
+
+It becomes a tenant, which is the migration the audit proposed and this makes urgent:
+
+1. Run the exempt signup for Geek @ Your Spot (`BILLING_EXEMPT_EMAIL`), which creates the tenant row and its config.
+2. Attach the existing Twilio number as its telephony row. **This is the only step that needs new code** — every other
+   path buys a new number, and this one adopts a number that already exists.
+3. Point the Twilio number's webhook at the tenant route instead of `/api/receptionist/twilio`.
+4. Delete the code that reads a business's settings from the environment, so this cannot come back: `ReceptionistOptions`
+   and the company-line services built on it. Until that is deleted, the variable names are still live in the code and
+   someone can set them again.
+
+Step 4 is the one that makes the removal permanent rather than a cleared field.

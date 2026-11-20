@@ -302,9 +302,15 @@ anywhere in this research that is spoken, and it expressly reaches the telephone
 
 Telephonic interpreting is permitted only where there is "no reasonable way to anticipate the need" or an employed
 interpreter is unavailable. Enforced through licensing plus a private right of action with a $250-per-violation floor.
-**M.G.L. c.123 §23A** does the same for hospitals providing acute psychiatric services. These bind private hospitals — but
-a hospital emergency room is a long way from a small business's phone line, and the duty is the hospital's own, not a
-vendor's.
+**M.G.L. c.123 §23A** does the same for hospitals providing acute psychiatric services.
+
+*Corrected on review: this section said "these bind private hospitals". That is not established here.* The statute binds
+acute-care hospitals "as defined in section 25B", and **§25B was not read**, so whether the duty reaches private hospitals
+as well as public ones is unsettled in this research. Two other things are worth stating precisely, because the paragraph
+above reads stronger than the statute is: telephonic interpreting is **not** the mandated method but a *restricted
+fallback* — permitted "only" where there is no reasonable way to anticipate the need for a language, or an inability to
+provide an interpreter in a given instance. Either way a hospital emergency room is a long way from a small business's
+phone line, and the duty is the hospital's own rather than a vendor's.
 
 Also: **c.222 §21** — a non-attorney notary advertising "in a language other than English" must include, "prominently
 displayed in the same language," the statement "I am not an attorney and I have no authority to give advice on

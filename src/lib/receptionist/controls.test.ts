@@ -1,6 +1,13 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { describeBookingFailure, describeBookingSettings, describeDisconnectFailure } from "./controls";
+import {
+  describeBookingFailure,
+  describeBookingSettings,
+  describeConsentFailure,
+  describeConsentSettings,
+  describeDisconnectFailure,
+  isConsentMode,
+} from "./controls";
 
 test("booking on, with a calendar behind it, is read as both", () => {
   assert.deepEqual(describeBookingSettings(200, { enabled: true, calendarConnected: true } as never), {
@@ -60,4 +67,55 @@ test("a booking code this app does not know shows GeekAPI's own words, and says 
 test("a disconnect that failed says the connection is still there", () => {
   assert.match(describeDisconnectFailure(null, null), /still connected/);
   assert.equal(describeDisconnectFailure("http_503", "GeekAPI said this."), "GeekAPI said this.");
+});
+
+test("each consent mode GeekAPI holds is read back as that mode and neither is treated as the fallback", () => {
+  assert.deepEqual(describeConsentSettings(200, { mode: "strict_keypress" } as never), { kind: "settings", mode: "strict_keypress" });
+  assert.deepEqual(describeConsentSettings(200, { mode: "passive_disclosure" } as never), {
+    kind: "settings",
+    mode: "passive_disclosure",
+  });
+});
+
+test("a 200 whose body names no mode this page knows is a problem, never drawn as either mode", () => {
+  for (const body of [null, {}, { mode: "" }, { mode: "keypress" }, { mode: "STRICT_KEYPRESS" }, { mode: true }, { modes: [] }]) {
+    assert.equal(describeConsentSettings(200, body as never).kind, "problem", JSON.stringify(body));
+  }
+});
+
+test("a 200 naming a mode this page does not know keeps GeekAPI's code so an operator can see which one", () => {
+  const state = describeConsentSettings(200, { mode: "spoken_warning", code: "store_unavailable" } as never);
+  assert.equal(state.kind === "problem" && state.code, "store_unavailable");
+});
+
+test("a failing answer is never read as a consent mode", () => {
+  for (const status of [400, 401, 403, 404, 409, 500, 502, 503]) {
+    assert.equal(describeConsentSettings(status, { mode: "strict_keypress" } as never).kind, "problem", String(status));
+  }
+});
+
+test("an ended sign-in on the consent read says so without leaking a status number", () => {
+  const state = describeConsentSettings(401, null);
+  assert.equal(state.kind === "problem" && state.message, "Your sign-in has ended. Sign in again.");
+});
+
+test("a consent problem names the status when GeekAPI sent no words, and uses its words when it did", () => {
+  const silent = describeConsentSettings(503, null);
+  assert.match(silent.kind === "problem" ? silent.message : "", /503/);
+  const spoken = describeConsentSettings(409, { error: "GeekAPI said this." } as never);
+  assert.equal(spoken.kind === "problem" && spoken.message, "GeekAPI said this.");
+});
+
+test("only the two modes are modes", () => {
+  assert.equal(isConsentMode("strict_keypress"), true);
+  assert.equal(isConsentMode("passive_disclosure"), true);
+  for (const value of ["", "keypress", "Strict_Keypress", null, undefined, 1, {}]) {
+    assert.equal(isConsentMode(value), false, JSON.stringify(value) ?? "undefined");
+  }
+});
+
+test("a greeting that could not be saved says the callers are greeted the way they were", () => {
+  assert.match(describeConsentFailure("store_unavailable", null), /greeted the way they were/);
+  assert.match(describeConsentFailure(null, null), /Nothing was altered/);
+  assert.equal(describeConsentFailure("something_new", "GeekAPI said this."), "GeekAPI said this.");
 });

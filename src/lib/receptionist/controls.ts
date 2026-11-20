@@ -1,3 +1,47 @@
+/** The two ways a caller can be greeted before the receptionist engages. GeekAPI holds the same two codes; change both together. */
+export const CONSENT_MODES = ["strict_keypress", "passive_disclosure"] as const;
+
+export type ConsentMode = (typeof CONSENT_MODES)[number];
+
+export type ConsentSettings =
+  | { kind: "settings"; mode: ConsentMode }
+  | { kind: "problem"; message: string; code: string | null };
+
+/** Whether a value GeekAPI sent is one of the two modes this page knows how to describe to an owner. */
+export function isConsentMode(value: unknown): value is ConsentMode {
+  return typeof value === "string" && (CONSENT_MODES as readonly string[]).includes(value);
+}
+
+/**
+ * What the owner is told about how their callers are greeted, from GeekAPI's answer to receptionist/consent. A mode this page cannot
+ * describe is a problem that names its code, never rendered as one of the two: an owner shown the wrong one of these would be told
+ * something false about what every caller hears, and a mode is not a thing that can be guessed from a blank.
+ */
+export function describeConsentSettings(status: number, body: { error?: unknown; code?: unknown } | null): ConsentSettings {
+  const code = typeof body?.code === "string" ? body.code : null;
+  const message = typeof body?.error === "string" && body.error.trim() !== "" ? body.error : null;
+  const mode = (body as { mode?: unknown } | null)?.mode;
+
+  if (status === 200 && isConsentMode(mode)) return { kind: "settings", mode };
+  if (status === 401) return { kind: "problem", message: "Your sign-in has ended. Sign in again.", code };
+  if (status === 200) return { kind: "problem", message: "GeekAPI did not say how your callers are greeted.", code };
+  return { kind: "problem", message: message ?? `How your callers are greeted could not be read (status ${status}).`, code };
+}
+
+/** The words shown when the greeting could not be changed. GeekAPI's codes, each in plain words; an unknown code shows GeekAPI's own message. */
+export function describeConsentFailure(code: string | null, message: string | null): string {
+  switch (code) {
+    case "invalid_request":
+      return "That could not be read. Reload the page and try again.";
+    case "not_found":
+      return "This account could not be found. Sign in again.";
+    case "store_unavailable":
+      return "That could not be saved just now. Your callers are greeted the way they were; try again in a moment.";
+    default:
+      return message ?? "How your callers are greeted could not be changed. Nothing was altered; try again in a moment.";
+  }
+}
+
 export type BookingSettings =
   | { kind: "settings"; enabled: boolean; calendarConnected: boolean }
   | { kind: "problem"; message: string; code: string | null };

@@ -6,7 +6,14 @@ import { REFRESH_COOKIE } from "@/lib/auth/cookies";
 import { publicOrigin } from "@/lib/auth/same-origin";
 import type { ActionState } from "@/lib/action-state";
 import { callOwnerTenant, type TenantCall } from "@/lib/geekapi";
-import { describeBookingFailure, describeDisconnectFailure } from "@/lib/receptionist/controls";
+import {
+  describeBookingFailure,
+  describeConsentFailure,
+  describeConsentSettings,
+  describeDisconnectFailure,
+  isConsentMode,
+  type ConsentMode,
+} from "@/lib/receptionist/controls";
 import { codeOf } from "@/lib/return-trip";
 import { clearSessionCookies, signOut } from "@/services/owner-auth";
 
@@ -77,6 +84,34 @@ export async function setBookingAction(enabled: boolean): Promise<ActionState> {
   if (result.status >= 200 && result.status < 300) redirect(enabled ? "/dashboard?notice=booking_on" : "/dashboard?notice=booking_off");
 
   return { error: describeBookingFailure(codeOf(result.body, result.status), wordsOf(result.body)) };
+}
+
+/**
+ * Choose how this business's callers are greeted before the receptionist engages. Jeff, 2026-11-20: "Client configurable. I don't feel
+ * comfortable making that decision for others." Neither mode is the one this page would pick, and GeekAPI refuses neither: both work for
+ * every business all of the time, so there is nothing to ask and nothing to check before changing it either way.
+ *
+ * The notice names the mode GeekAPI says it saved, read back out of its answer, rather than the one that was asked for: a 2xx that does
+ * not echo a mode this page knows is shown as a failure, because telling an owner their callers are greeted a way nothing confirmed is
+ * the one thing this card must never do.
+ */
+export async function setConsentAction(mode: ConsentMode): Promise<ActionState> {
+  if (!isConsentMode(mode)) return { error: "That could not be read. Reload the page." };
+
+  const result = await callOwnerTenant((tenantId) => `/api/v1/tenants/${tenantId}/receptionist/consent`, {
+    method: "PUT",
+    body: { mode },
+  });
+  if (result.status === 401) redirect("/login");
+  if (result.status >= 200 && result.status < 300) {
+    const saved = describeConsentSettings(result.status, result.body);
+    if (saved.kind !== "settings") {
+      return { error: "GeekAPI did not say how your callers are greeted now. Reload the page to see what it holds." };
+    }
+    redirect(saved.mode === "strict_keypress" ? "/dashboard?notice=consent_keypress" : "/dashboard?notice=consent_passive");
+  }
+
+  return { error: describeConsentFailure(codeOf(result.body, result.status), wordsOf(result.body)) };
 }
 
 /**

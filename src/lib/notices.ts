@@ -22,6 +22,8 @@ const NOTICES: Record<string, string> = {
   payment_restored: "Thank you, your payment is recorded and your receptionist is active and answering calls again.",
   booking_on: "Booking is on. Callers can now book an appointment and your receptionist puts it in your Google Calendar.",
   booking_off: "Booking is off. Your receptionist takes a message instead of booking, and you call the caller back.",
+  consent_keypress: "Your callers now hear the notice and press a key before your receptionist speaks. A machine dialling you cannot press one.",
+  consent_passive: "Your callers now hear the notice and your receptionist carries straight on. Nothing is asked of the caller.",
   calendar_disconnected: "Your Google Calendar is disconnected. Booking is off, and your receptionist takes a message instead.",
   drive_disconnected: "Your Google Drive is disconnected. Nothing more is written to it; what is already there stays yours.",
   bucket_disconnected: "Your bucket is removed, with the key and secret that were saved for it. Nothing more is written there.",

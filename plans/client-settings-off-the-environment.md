@@ -82,6 +82,19 @@ collects can currently be stored.
   it is configuring before it is asked to pay.
 * Validation is not duplicated. `IVoiceStore.SaveConfigAsync` already holds the rules (transfer mode needing a number,
   email shape, consent mode) and its refusal is returned with its own code.
+* **No database access is added to GeekAPI.** `IVoiceStore` there is `HttpVoiceRepository`
+  (`GeekAPI/HttpClients/HttpVoiceRepository.cs`); `SaveConfigAsync` already crosses to GeekRepository over internal
+  HTTP, and `ConsentSettingController` uses it that way today.
+* The route accepts **any subset** of the fields, so whether the portal asks one setting per screen or groups them is a
+  form decision, not a route constraint.
+
+#### B2. The same writer for an owner who has already paid
+
+An active tenant's owner has no way to change fourteen of the settings either, and B's gate refuses active tenants
+on purpose. So the same service gets a second door: `PUT /api/v1/tenants/{tenantId}/receptionist/config`, owner-token
+authenticated, in the shape of `ConsentSettingController` (`[Authorize(ReceptionistAuth.Scheme)]`,
+`OwnerTenantClaim.Refuse`). Same merge, same validation, different gate. Built in the same pass as B because it is the
+same code; without it, every answer given at signup is permanent.
 
 ### C. The questions become form steps
 
@@ -89,8 +102,10 @@ Portal, per question, following the machinery already there: add to the `SignupS
 (`src/app/signup/page.tsx:15-22`), add the ordering branch in `stepOf` (`src/lib/signup/state.ts:70`), add a form
 component beside `BusinessForm`/`NumberForm` (`src/app/signup/signup-forms.tsx`), add a Server Action beside
 `businessAction` (`src/app/signup/actions.ts`) posting to the route from B, add any new failure code's sentence to
-`src/lib/signup/messages.ts`. The cookie needs one field recording which config questions are answered, so a refresh
-resumes in the right place.
+`src/lib/signup/messages.ts`. **The cookie records step progress only, never an answer.** Answers are written to
+`receptionist_configs` by the route from B as each step is submitted; the cookie gains one small field saying which
+config steps are done, so a refresh resumes in the right place. A greeting, a description or a list of questions
+would overflow a 4 KB cookie and silently break resumption; the database already holds them.
 
 Sixteen settings, sixteen questions, listed with proposed wording in
 `Geek-Receptionist/plans/signup-form-questions.md`. **Wording and order are Jeff's, one short instruction at a time.**
@@ -139,6 +154,28 @@ like every other client's.
 This is a product decision about the sales page — it removes "book a consultation" from `/` until the tenant exists —
 and is included so the plan is complete, **flagged for Jeff rather than decided**.
 
+### F. Encrypt the per-business PII the config and tenant rows hold
+
+Jeff, 2026-11-20: *"the variables are client data, shouldn't they be encrypted?"*
+
+What is already encrypted (credentials): `tenant_telephony.twilio_auth_token_encrypted`, both OAuth tokens in
+`tenant_mcp_connections`, through `VoiceCredentialProtector` keyed by `VOICE_ENCRYPTION_KEY`. GeekRepository stores
+ciphertext it never decrypts; the key lives in GeekAPI.
+
+What is not (PII, plaintext today): `receptionist_configs.transfer_target_number`,
+`receptionist_configs.message_destination_email`, `tenants.contact_email`, `tenants.contact_phone`.
+
+F encrypts those four at the same boundary and with the same protector, so the repository stays blind and GeekAPI
+has the clear value where it needs it — a number to dial, an address to send to. What this costs: `ValidateConfig`'s
+shape checks (E.164, email) move to GeekAPI before encryption, since the repository can no longer read the value;
+`contact_email` is also the owner-login lookup key, so it needs a deterministic HMAC blind-index column beside the
+ciphertext for `WHERE` lookups. Migration adds the ciphertext and index columns, a one-time backfill encrypts existing
+rows, the plaintext columns are dropped — three migrations, applied in order, each idempotent. **Not** the behavioural
+flags, hours, greeting or prompt: they are read on every call and are not secrets.
+
+Moving the key into GeekRepository, as the external review suggested, would be a new architecture decision — it
+reverses which service is trusted with plaintext — and is not part of this plan.
+
 ### Out of scope, stated rather than assumed
 
 Adopting the existing number 561-865-6990 onto the tenant path is **not** in this plan. It needs code that does not
@@ -149,9 +186,23 @@ piece of work, and Jeff has said the number going unanswered during development 
 
 ## Order
 
-A, B, D are independent of each other. C depends on B. E depends on Jeff's decision. Suggested: **B, D, A, E, then C
-as wording arrives** — B first because it is the only piece that unblocks anything else; A after D because it is
-the largest diff and reviews best on its own; E only once decided.
+Approved by Jeff, 2026-11-20: *"Execute the plan in the agreed order (B -> D -> A -> C, deferring E until Geek @ Your
+Spot LLC is onboarded as a tenant)."* F was approved in the same message ("Tier 2 (Encrypt): TransferTargetNumber,
+MessageDestinationEmail, and on tenants: contact_phone and contact_email (with a deterministic HMAC-SHA256 blind-index
+column for owner-login lookups)") and goes straight after B because it touches the rows B writes.
+
+Order: **B (with B2) → F → D → A → C as wording arrives. E deferred.**
+
+Two guardrails carried from the review into the work:
+
+* **`IncludeTranscript` (#12) must not become retention.** It already means "include the in-RAM transcript in the
+  end-of-call email the business opted into", and nothing is persisted (`CallSummaryRequest`). The form step and the
+  owner route expose it with that meaning and no other; no code path may write a transcript anywhere because the flag
+  is on.
+* **BYOS and calendar credentials stay in companion tables.** `storage_connections` (0079) and `tenant_mcp_connections`
+  hold the secrets, encrypted in GeekAPI; `VoiceReceptionistConfig` never carries one. Any onboarding or dashboard step
+  for them writes to those tables, never to an environment variable or a cookie. F's audit of `0079` confirms every
+  credential column there is ciphertext.
 
 ## Why this is the shape, in one line
 
@@ -166,8 +217,12 @@ environment (A, D, E).
 * `dotnet build` clean for GeekAPI and GeekRepository; `dotnet test GeekBackend.Tests` green (4,644 tests today).
 * New tests for B: each field written in isolation leaves the other fifteen untouched; `""` clears a nullable answer
   and null leaves it; an active tenant is refused; a bad consent mode is refused with `SaveConfigAsync`'s own code.
-* A grep proving the deleted variable names return zero hits across every `.cs` file — the same bar `5a72445` set for
-  the Markdown retirement: a surviving name is read as a live claim.
+* A grep proving the deleted variable names return zero hits across every `.cs`, `.ts`, `.tsx`, `.json`, `.md` and
+  `.env*` file in both repos — the same bar `5a72445` set for the Markdown retirement: a surviving name is read as a
+  live claim. No commented-out code, no stubbed fallback, no doc comment describing the old path.
+* `TwilioSignatureFilter` is deleted only because `TenantTwilioWebhook.VerifyAsync` (`Services/Voice/Calls/`) already
+  checks every tenant POST against the tenant's own subaccount token with an `AccountSid` match and cannot be turned
+  off — confirmed by reading it, not assumed. The tenant path's check is strictly stronger than the one being removed.
 * `railway variable list --service GeekAPI --environment production` showing no per-business value remains: the
   seven not yet deleted (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`,
   `BILLING_EXEMPT_EMAIL`; `RING_SECONDS` and `SCREEN_CALLS` were never set) are deleted by Jeff — the permission

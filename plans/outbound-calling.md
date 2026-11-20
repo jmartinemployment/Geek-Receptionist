@@ -1,6 +1,12 @@
-# Outbound calling, against collections as the first use case
+# Outbound calling, against the use cases Jeff has named
 
-Jeff, 2026-11-20: *"I do not wish to exclude outboard calls"*, then *"Outbound calls - One Use Case example Collections"*.
+Jeff, 2026-11-20: *"I do not wish to exclude outboard calls"*, then *"Outbound calls - One Use Case example Collections"*,
+then *"Joe's TV owes me 10K"*, then *"Call to confirm"*. Two use cases, and the second is much the lighter.
+
+**Read the two sections at the end before the middle ones.** The regulatory weight below is third-party *consumer*
+collections. Neither case Jeff has named is that: one is his own commercial invoice, the other is an appointment
+confirmation. The heavy sections stay because they are what a *tenant* doing consumer collections would face, and the form
+would have to find out which kind a tenant is.
 
 This is research, not a plan to build. Nothing here is approved and no code exists: there is no call origination anywhere in
 this product. It exists because collections is the heaviest-regulated outbound case there is, and because the constraints
@@ -66,11 +72,15 @@ Items 4, 5 and 6 are retained state by construction, and 6 is permanent. That is
 `GeekBackend/docs/Geek-Receptionist-zero-data-retention.md` **by name**, the same treatment the retry-after-failure case
 already got (`use-cases-against-zero-data-retention.md`). It is not a quiet addition.
 
-The fork, and it decides the whole build: **do we hold that ledger, or does the tenant's own system hold it and we ask at
-call time?** The second is the bring-your-own-storage posture applied to outbound and keeps the product's claim intact; it
-needs the tenant to have a system worth asking, and it makes us dependent on their answer being right when the consequence
-of a wrong one is a federal violation. The first is a real database of consumer debt contact history, which is a different
-company than the one described on the sales page.
+The fork: **do we hold that ledger, or does the tenant's own system hold it and we ask at call time?** The second is the
+bring-your-own-storage posture applied to outbound and keeps the product's claim intact; it needs the tenant to have a system
+worth asking, and it makes us dependent on their answer being right when the consequence of a wrong one is a federal
+violation. The first means storing consumer debt contact history, a heavier retention commitment than the one currently
+documented.
+
+**It is only open for third-party consumer collections.** For the confirmation case it is already answered — the appointment
+lives in the tenant's calendar — and for a first-party commercial invoice most of the ledger is not required at all. Both are
+below.
 
 ## Who is left to sell this to — a market question, not an outbound rule
 
@@ -116,11 +126,75 @@ Each of these came from compliance-vendor blogs, not a primary source, and the t
   stricter state law, so these bind wherever they apply.
 - **State debt-collector licensing**, per state.
 
+## Case 1: a first-party commercial invoice — "Joe's TV owes me 10K"
+
+Jeff, 2026-11-20. This is the case he actually has, and almost none of the above reaches it.
+
+**It is not an FDCPA debt, so Regulation F does not apply.** 15 U.S.C. § 1692a(5) defines a debt as an obligation *"of a
+consumer"* from a transaction for *"personal, family, or household purposes."* Joe's TV is a business and the invoice is
+commercial, so it is outside the Act — and Reg F implements the Act. No 7-in-7, no 8 a.m.–9 p.m. presumption, no Reg F
+cease-communication duty. Separately, § 1692a(6) reaches people collecting debts *"owed or due another"*, and this is his own
+money, so he is a creditor rather than a debt collector on two independent grounds.
+
+**The trap is in the same paragraph, and it is a naming decision.** § 1692a(6) ends: the term *"includes any creditor who, in
+the process of collecting his own debts, uses any name other than his own which would indicate that a third person is
+collecting or attempting to collect such debts."* So a receptionist that introduces itself as a recovery or collections
+agency pulls a first-party creditor into the FDCPA — and the whole of Reg F with it — by its name alone.
+
+That lands on a field this product already has. The signup form asks *"What should your receptionist call itself?"*
+(`src/app/signup/signup-forms.tsx`, the knowledge step), free text, no constraint. Lily or Dana is fine; "Acme Recovery
+Services" is a tenant volunteering for a federal statute. If outbound collections is built, that field needs a constraint or
+at least a warning for tenants doing it, and the assembled prompt must not let the receptionist describe itself as a
+third-party collector either.
+
+**The TCPA still applies, and it turns on what kind of line Joe answers.** Read from 47 U.S.C. § 227(b)(1):
+
+- **(b)(1)(B)** prohibits an artificial or prerecorded voice *"to any residential telephone line"* without prior express
+  consent. It does not reach business lines.
+- **(b)(1)(A)(iii)** reaches *"any telephone number assigned to a paging service, cellular telephone service, specialized
+  mobile radio service"*, and any service where the called party is charged — **regardless of whether the line is business or
+  residential** — and (b)(1)(A) requires prior express consent for a call using an artificial or prerecorded voice.
+
+So an AI call to Joe's TV's **landline** is not caught by either clause. An AI call to Joe's **mobile** is caught by
+(b)(1)(A)(iii) and needs prior express consent, business number or not. In practice most small businesses answer a mobile, so
+the mobile path is the one to design for, and the product cannot tell which a number is without a lookup.
+
+**Not verified:** whether a number the debtor gave the creditor in the course of business constitutes prior express consent
+for calls about that debt. The FCC has long been understood to take that position for debt-collection calls to numbers the
+debtor provided, but that was not read first-hand and it is the load-bearing assumption for this whole case. It is the next
+thing to check, before any code.
+
+## Case 2: a call to confirm — the one to build first
+
+Jeff, 2026-11-20: *"Call to confirm"*. An appointment confirmation, and it is the lightest outbound case there is.
+
+**It needs no new retained store, which is why it should go first.** The appointment is already in the tenant's Google
+Calendar, which this product already reads over MCP for booking. So *who to call and why* comes from the tenant's own system
+at call time: read the event, call the number on it, confirm or rebook, write the outcome back to the event. Nothing is held
+between calls, and no new table exists for a regulator or a reader to find. That is the bring-your-own-storage shape the
+product already uses, applied to outbound — and it is what `use-cases-against-zero-data-retention.md` already filed
+pre-appointment reminders under: *"compatible only if the state lives in the client's system."* So this case is consistent
+with what is written rather than an exception to it.
+
+It is also not debt collection, so the FDCPA and Reg F are irrelevant to it entirely.
+
+**What it still needs:** the TCPA consent basis, same as any outbound AI call to a mobile. Here the story is strongest in the
+product: the customer gave the number when booking, for the purpose of that appointment, and where they booked through the
+receptionist itself they had already heard the AI disclosure and consented to it before speaking. Whether that is sufficient
+prior express consent is the same unverified question as above, and it is worth settling once for both cases.
+
+**What it shares with case 1, and is the reason to build it first:** the mechanism. Placing a call, identifying the business,
+disclosing the AI, honouring a request not to be called again, and handing the conversation to the relay that already exists.
+Build that once for confirmations, where the retained state is nobody's but the tenant's, and the collections cases are the
+same machinery plus a ledger — rather than the ledger being the first thing built.
+
 ## Sources
 
 Primary: [FCC 24-17 Declaratory Ruling](https://docs.fcc.gov/public/attachments/FCC-24-17A1.pdf) ·
 [12 CFR 1006.14](https://www.law.cornell.edu/cfr/text/12/1006.14) ·
-[12 CFR 1006.6](https://www.law.cornell.edu/cfr/text/12/1006.6).
+[12 CFR 1006.6](https://www.law.cornell.edu/cfr/text/12/1006.6) ·
+[15 U.S.C. 1692a](https://www.law.cornell.edu/uscode/text/15/1692a) ·
+[47 U.S.C. 227](https://www.law.cornell.edu/uscode/text/47/227).
 Secondary, and the reason the section above exists:
 [Reg F 2026 operator's guide](https://www.sedric.ai/arm-resources/cfpb-reg-f-2026-operators-guide) ·
 [AI voice agents and the TCPA, October 2026](https://econsent.org/posts/ai-voice-agents-tcpa-rules-october-2026/).

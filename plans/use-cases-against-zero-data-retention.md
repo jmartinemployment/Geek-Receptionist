@@ -10,13 +10,22 @@ That distinction decides every row below.
 ## What is actually built, verified by reading the code
 
 Answer an inbound call over ConversationRelay, take consent, work out what the caller wants, answer
-questions from the business's own indexed site, book into Google Calendar, take a message, transfer
-to a configured number, and write a call record to the client's own Drive or bucket. That is all.
+questions from the business's own indexed site, book into Google Calendar, take a message, and write
+a call record to the client's own Drive or bucket. That is all.
 
-Three findings worth keeping:
+**Corrected 2026-11-20: "transfer to a configured number" was in that list and is not built.** This
+document's whole job is to say what is real, and it carried the one claim that mattered most to a
+caller. Nothing in the codebase dials: the only Twilio `<Dial>` was the company line's and went with
+it. `TransferMode` and `TransferTargetNumber` save with a 200 and are honoured by nothing. Worse,
+until `833dae87` a business with a number stored had its caller told *"please hold for just a moment
+while I connect you directly with our team"* on a mid-call failure, and the next thing sent ended the
+call. The sentence is gone; the capability was never there. Transfer is approved for Standard and
+above (`client-and-app-plan.md:30,62`, waterfall transfers) and is unbuilt, not shipped.
 
-- **There is no outbound calling anywhere.** No call origination exists in the codebase. That single
-  absence accounts for five of the thirteen.
+Findings worth keeping:
+
+- **No call origination exists in the codebase.** Nothing places a call, inbound-only is what is
+  written today, and that single absence accounts for five of the thirteen.
 - **`EmergencyKeywords` is stored, validated and round-tripped, and read by nothing.** No
   call-handling code touches it. An owner could fill it in and no call would change. It reads as a
   live feature and is not one.
@@ -39,15 +48,30 @@ back to *their* destination, holding nothing between calls. The bring-your-own-s
 precedent: it is the same shape.
 
 **In conflict.** Waitlists (a stored list of callers waiting for a slot), self-built spam blocklists
-(retained caller identifiers), MMS photos (Twilio keeps the media), retry queues (someone's number
-held overnight), and payment tied to a caller.
+(retained caller identifiers), MMS photos (Twilio keeps the media), and payment tied to a caller.
+
+Retry queues were listed here too, as "someone's number held overnight", and that contradicted the
+decision three paragraphs down, where Jeff allowed the narrow retry-after-failure case. The decision
+is the later one and it wins; the row is removed rather than left for someone to cite against it.
 
 ### The structural point under all of section 3
 
 An inbound call is anonymous to us: somebody dialled, we answered, we forgot. Outbound inverts it.
 We must know who to call, and why, *before* a call exists. Every outbound use case holds a person's
-number and a reason by definition. That is not a detail to engineer around; it is the opposite
-posture from the one this product is sold on.
+number and a reason by definition.
+
+**This was written as a reason not to do outbound. That conclusion is withdrawn — Jeff, 2026-11-20:
+*"I do not wish to exclude outboard calls."*** The observation above stands as a description: outbound
+does need a number and a reason held before the call, and that is a genuine exception to Zero Data
+Retention. What does not follow is that it is therefore out of scope. It is in scope, and the
+exception gets written into the policy document by name — the same treatment the retry-after-failure
+case already got in the decisions below, which is the precedent this paragraph had already been
+overtaken by.
+
+So the design constraint is *how little is held and for how long*, not whether outbound exists: a
+number and a reason code, held until the call succeeds or expires, and nothing of what was said. Where
+a client's own system can hold the list instead, it does. No outbound code exists yet, and nothing
+here authorises a particular use case — the thirteen are still sorted as they are below.
 
 ## Decisions, Jeff, 2026-11-20
 

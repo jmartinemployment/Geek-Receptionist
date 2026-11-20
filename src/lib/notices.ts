@@ -20,6 +20,11 @@ const NOTICES: Record<string, string> = {
   payment_recorded: "Thank you, your payment is recorded.",
   signup_complete: "Welcome. Your receptionist is set up and answering on your new number.",
   payment_restored: "Thank you, your payment is recorded and your receptionist is active and answering calls again.",
+  booking_on: "Booking is on. Callers can now book an appointment and your receptionist puts it in your Google Calendar.",
+  booking_off: "Booking is off. Your receptionist takes a message instead of booking, and you call the caller back.",
+  calendar_disconnected: "Your Google Calendar is disconnected. Booking is off, and your receptionist takes a message instead.",
+  drive_disconnected: "Your Google Drive is disconnected. Nothing more is written to it; what is already there stays yours.",
+  bucket_disconnected: "Your bucket is removed, with the key and secret that were saved for it. Nothing more is written there.",
 };
 
 const one = (value: string | string[] | undefined) => (typeof value === "string" && CODE.test(value) ? value : null);

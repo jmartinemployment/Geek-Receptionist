@@ -12,7 +12,7 @@ export type TenantCall = { status: number; body: { error?: unknown; code?: unkno
  */
 export async function callOwnerTenant(
   route: (tenantId: string) => string,
-  init: { method: "GET" | "POST" | "PUT"; body?: unknown },
+  init: { method: "GET" | "POST" | "PUT" | "DELETE"; body?: unknown },
 ): Promise<TenantCall> {
   const authError = await getAuthError();
   if (authError) {

@@ -7,6 +7,14 @@ test("a known notice shows its fixed sentence", () => {
   assert.match(noticeFrom({ notice: "payment_restored" })!.text, /answering calls again/);
 });
 
+test("every withdrawal says what has stopped happening, not only that it was done", () => {
+  assert.match(noticeFrom({ notice: "booking_off" })!.text, /takes a message/);
+  assert.match(noticeFrom({ notice: "calendar_disconnected" })!.text, /Booking is off/);
+  assert.match(noticeFrom({ notice: "drive_disconnected" })!.text, /Nothing more is written/);
+  assert.match(noticeFrom({ notice: "bucket_disconnected" })!.text, /Nothing more is written/);
+  assert.match(noticeFrom({ notice: "booking_on" })!.text, /can now book/);
+});
+
 test("an error code shows its fixed sentence and wins over a notice", () => {
   const shown = noticeFrom({ notice: "payment_recorded", payment_error: "payment_not_completed" });
   assert.equal(shown?.tone, "bad");

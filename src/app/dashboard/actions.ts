@@ -6,6 +6,7 @@ import { REFRESH_COOKIE } from "@/lib/auth/cookies";
 import { publicOrigin } from "@/lib/auth/same-origin";
 import type { ActionState } from "@/lib/action-state";
 import { callOwnerTenant, type TenantCall } from "@/lib/geekapi";
+import { describeBookingFailure, describeDisconnectFailure } from "@/lib/receptionist/controls";
 import { codeOf } from "@/lib/return-trip";
 import { clearSessionCookies, signOut } from "@/services/owner-auth";
 
@@ -58,6 +59,61 @@ export async function payOverageAction(chargeId: string): Promise<ActionState> {
   const target = leaveFor(result, "approvalUrl");
   if (typeof target !== "string") return target;
   redirect(target);
+}
+
+/**
+ * Turn booking on or off for this business. It starts off and stays off until the owner asks for it, so the receptionist never puts an
+ * appointment in a calendar nobody asked it to write to. GeekAPI refuses to turn it on without a calendar that works, and that refusal
+ * is shown in the owner's words rather than swallowed; turning it off is never refused, because it is the owner withdrawing permission.
+ */
+export async function setBookingAction(enabled: boolean): Promise<ActionState> {
+  if (typeof enabled !== "boolean") return { error: "That could not be read. Reload the page." };
+
+  const result = await callOwnerTenant((tenantId) => `/api/v1/tenants/${tenantId}/receptionist/booking`, {
+    method: "PUT",
+    body: { enabled },
+  });
+  if (result.status === 401) redirect("/login");
+  if (result.status >= 200 && result.status < 300) redirect(enabled ? "/dashboard?notice=booking_on" : "/dashboard?notice=booking_off");
+
+  return { error: describeBookingFailure(codeOf(result.body, result.status), wordsOf(result.body)) };
+}
+
+/**
+ * Disconnect Google Calendar. GeekAPI turns booking off at the same time, because a receptionist that may book with nothing to book
+ * into would be a claim this product cannot honour; the dialog in front of this says so before the owner confirms.
+ */
+export async function disconnectCalendarAction(): Promise<ActionState> {
+  return withdraw((tenantId) => `/api/v1/tenants/${tenantId}/oauth/mcp/google_calendar`, "calendar_disconnected");
+}
+
+/** Disconnect Google Drive. Nothing more is written to the owner's Drive folder; what is already in it stays, and this app cannot read it. */
+export async function disconnectStorageAction(): Promise<ActionState> {
+  return withdraw((tenantId) => `/api/v1/tenants/${tenantId}/oauth/mcp/google_drive`, "drive_disconnected");
+}
+
+/** Remove the owner's own bucket, with the access key and secret GeekAPI holds for it. Nothing more is written there. */
+export async function disconnectBucketAction(): Promise<ActionState> {
+  return withdraw((tenantId) => `/api/v1/tenants/${tenantId}/storage/bucket`, "bucket_disconnected");
+}
+
+/**
+ * One withdrawal: GeekAPI is asked to remove the connection and says whether it removed one. An answer that removed nothing is not read
+ * as success — the owner is told the page is behind what GeekAPI holds, rather than being shown a disconnection that did not happen.
+ */
+async function withdraw(route: (tenantId: string) => string, notice: string): Promise<ActionState> {
+  const result = await callOwnerTenant(route, { method: "DELETE" });
+  if (result.status === 401) redirect("/login");
+  if (result.status >= 200 && result.status < 300) {
+    if (result.body?.removed === true) redirect(`/dashboard?notice=${notice}`);
+    return { error: "There was nothing to disconnect. Reload the page to see what is connected now." };
+  }
+  return { error: describeDisconnectFailure(codeOf(result.body, result.status), wordsOf(result.body)) };
+}
+
+/** GeekAPI's own words from a tenant call's body, when it sent any. */
+function wordsOf(body: { error?: unknown } | null): string | null {
+  return typeof body?.error === "string" && body.error.trim() !== "" ? body.error : null;
 }
 
 /** The https address in GeekAPI's answer to send the browser to, or the failure to show. A signed-out owner goes to /login. */

@@ -156,3 +156,83 @@ It becomes a tenant, which is the migration the audit proposed and this makes ur
    someone can set them again.
 
 Step 4 is the one that makes the removal permanent rather than a cleared field.
+
+## Outbound calling, asked as a connection to the client's own store
+
+Jeff, 2026-11-20: *"Outbound calling I envision connecting to client/users data store. The Multi-step form should ask
+exactly in that manner."*
+
+That is an architecture decision as well as a form decision, and it is the one the research document had left open: **we hold
+no list of who to call.** The person, the number, the reason and the time live in the client's system, and the product reads
+them when a call is due. No queue, no ledger, no contact history here. Written up in `outbound-calling.md`; the consequence
+for this document is that the questions below ask about *their* store rather than asking them to type a list into ours.
+
+**What can actually be connected today, verified rather than listed.** `VoiceMcpProviders` names five providers, and only two
+have any code behind them: `GoogleConnections.All` is Google Calendar and Google Drive. `outlook`, `cal_com` and `hubspot`
+are strings in an enum with no OAuth, no client and no tool — a grep for each outside that enum returns nothing. So the form
+can offer a Google Calendar today and must not list the other three, or it promises connections that do not exist. Drive is
+where call records are written, not a source of people to call: a read source and a write target are different questions and
+should not be merged into one.
+
+### The proposed questions, for Jeff to change, reorder or throw out
+
+Nothing here is decided. They follow the shape of the six approved steps: the owner's words, one closed question where there
+is a closed answer.
+
+**O1. Should your receptionist make calls, as well as answer them?** Yes / No. A no ends this section and nothing below is
+asked.
+
+**O2. What should it call about?** Choose any: confirm an appointment · remind someone of an appointment · follow up after a
+visit · chase an unpaid invoice. Each one is a reason the receptionist states at the start of the call, and the only thing it
+does on that call.
+
+**O3. Where do we read that from?** Your Google Calendar / Somewhere else. Only Google Calendar can be connected today;
+"somewhere else" takes a note of what they use and asks nothing it cannot honour. **We keep no copy of your customers.**
+
+**O4. Connect it now.** The same Google sign-in the appointments step uses. Until it is connected nothing is called, and the
+dashboard says so rather than queuing.
+
+**O5. When should each call go out?** Per reason chosen in O2: the day before · the morning of · a set number of days after ·
+only when you ask. Needs a time zone, and it is the customer's that governs the legal window, not the business's.
+
+**O6. Where is your do-not-call list?** In the system above / You will tell us one by one / You do not have one. This is the
+one that cannot fail silently: a request not to be called again has to outlive the call it was made on, and if their store
+holds it we must be able to read it before every call. An honest answer of "you do not have one" is a reason not to turn
+outbound on, not a default to work around.
+
+**O7. May it say what the invoice is for, and how much?** Yes / Only that there is an unpaid invoice. Asked only if they chose
+invoices in O2. Whoever answers the phone may not be the person who owes the money.
+
+**O8. What language should it speak?** See the language question below — it is not outbound-specific and is the seventeenth
+setting.
+
+### Two constraints from the research that bear on questions already live
+
+- **The receptionist's name.** A creditor collecting its own debts becomes a debt collector under 15 U.S.C. § 1692a(6) if it
+  uses a name suggesting a third party collects. The existing "What should your receptionist call itself?" is free text with
+  no constraint, so a tenant chasing its own invoices could name its way into the FDCPA.
+- **No pitching on an outbound call.** 47 CFR 64.1200(a)(2) needs signed written consent for a call carrying an advertisement
+  or constituting telemarketing; (a)(1) needs only prior express consent for everything else. One upsell sentence moves the
+  call between them. So the outbound prompt cannot reuse the inbound one, and the owner-supplied "What should it do with a
+  caller?" and "What do you charge?" have to be re-scoped for outbound.
+
+## The seventeenth setting: what language it speaks
+
+Jeff asked, 2026-11-20: *"How Many languages can we speak?"*
+
+**Today: one, and nobody chose it.** `ReceptionistConsent.Connect` builds `new ConversationRelay(url, welcomeGreeting)` and
+sets nothing else, so no `language`, `ttsLanguage` or `transcriptionLanguage` reaches Twilio and every call runs on
+ConversationRelay's default. `VoiceReceptionistConfig` has no language field at all — zero occurrences — so there is nothing
+for a tenant to set and nothing for the form to ask. The same is true of the voice: no `voice` attribute is set either, while
+"10+ voices and custom agent name" is on the approved launch list.
+
+**What is available without new infrastructure:** Twilio's default-voice table for ConversationRelay lists **37 language
+codes**, including regional variants (`en-US`, `en-GB`, `fr-CA`) and a `multi` code, each with a default ElevenLabs, Google or
+Deepgram voice. Twilio also states that ElevenLabs v4 "supports 90+ languages with native accents" — that is a claim about
+the text-to-speech model, not about ConversationRelay, and the page does not give an overall ConversationRelay figure. Not
+verified: ConversationRelay's default language when the attribute is absent, what the `multi` code does, and whether the
+language can change mid-call.
+
+So the answer is a configuration value this product does not yet carry. It is the seventeenth setting, it belongs on
+`receptionist_configs` beside the other sixteen, and it is a question for the client like the rest: a business in Hialeah may
+want Spanish first and a business in Boston may not want the option at all.

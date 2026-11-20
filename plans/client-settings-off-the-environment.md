@@ -81,6 +81,20 @@ line's (`ReceptionistEndpoints.cs:101-108`, dialling `o.OwnerCell` from the envi
 (`ReceptionistRelaySession.cs:77,275`). So after A, no code anywhere transfers a caller to a person. This bears on C's
 Q7d and is flagged there, not decided here.
 
+**That sentence was a promise to the caller, and it is fixed, 2026-11-20 (`833dae87`).** The branch above did not merely
+pick wording: at a business with a transfer number stored, a mid-call failure spoke *"please hold for just a moment while I
+connect you directly with our team"* and then sent `{"type":"end"}`. The caller was told to hold and hung up on, and nothing
+told the business either. Reachable today, not hypothetical — `PUT /receptionist/config` takes `TransferMode` and a number, so
+an owner can turn warm transfer on and every failing call says it from then on. The test asserted that exact sequence, which
+pinned the promise instead of catching it. There is one failure line now; `FailureWithTransfer` and the `TransferConfigured`
+flag that chose it are deleted rather than left unreachable, and come back with the code that dials.
+
+**What is still open, and is the decision Q7d waits on.** `TransferMode`, `TransferTargetNumber` and `TransferCallerIdMode`
+can still be saved through the owner's route and are honoured by nothing — a 200 for a setting that does nothing, which is
+the clean-looking state § 2 forbids. Two ways: build transfer on the tenant path (a `<Dial>` with the caller-ID mode, warm
+and cold, and the relay handing the call over mid-conversation), or refuse those three answers with a code until it exists.
+Building it is what makes Q7d askable and the sixteenth setting real. Jeff's.
+
 **Surfaced while mapping this, not caused by it:** the tenant SMS webhook has never worked. `TwilioProvisioner.cs:147`
 points every tenant number at `/api/receptionist/twilio/sms/incoming/{tenantId}`; `ReceptionistEndpoints.cs:223`
 maps that route *without* the `{tenantId}` segment. It 404s for every tenant today. Deleting the path regresses

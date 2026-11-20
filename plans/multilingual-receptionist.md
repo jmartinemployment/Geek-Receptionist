@@ -314,9 +314,9 @@ other than English.** Checked against primary sources, with these specifics:
 
 - **Title VI (42 U.S.C. § 2000d) does not mention language at all** and binds only recipients of federal financial assistance. The
   language duty lives in 28 CFR § 42.405(d)(1), which binds those recipients.
-- **Executive Order 13166 — the LEP access order — was revoked.** EO 14224, 90 FR 11363 (6 March 2025), § 3(b) revokes it outright.
-  **Any document citing it as live law is wrong**, and it is worth checking that none of ours does. It bound federal agencies anyway, not
-  businesses.
+- **Executive Order 13166 — the LEP access order — was revoked.** EO 14224 § 3(b), signed 1 March 2025 and published at 90 FR 11363 on
+  6 March, revokes it outright. **Any document citing it as live law is wrong**, and it is worth checking that none of ours does. It
+  bound federal agencies anyway, not businesses.
 - **47 CFR § 64.1200 — the TCPA rule — contains no occurrence of "language", "Spanish" or "English."** No federal requirement for the
   language of a greeting, voicemail or IVR menu. The one federal Spanish-telephone mandate, 47 CFR § 64.603(a), binds carriers and relay
   providers.
@@ -325,18 +325,50 @@ other than English.** Checked against primary sources, with these specifics:
 - The exceptions that exist are almost all **written documents**: California's Translation Act (Civ. Code § 1632, five languages, eight
   transaction types) requires a written translation and contains **zero occurrences of "telephon"**; same for Texas Fin. Code
   § 341.502(a-1) and the FTC's used-car and door-to-door rules.
-- **Two real oral mandates, neither reaching this product's customers:** NY Education Law § 6829 obliges **chain pharmacies** (8+ under
-  one owner) to give free oral interpretation "on an immediate basis", which "need not be provided in-person" — the clearest
-  private-business spoken-language duty found. Cal. H&S Code § 1259 obliges **general acute care hospitals** to have interpreters
-  "accessible by telephone" 24 hours. Healthcare is already refused at signup.
-- **Debt collection is permissive, not mandatory:** 12 CFR § 1006.34(e)(1) says a collector *"may"* send a translated validation notice.
-  And NYC's rule is disclose-don't-provide — but note its definition of language access services includes *"a service that interprets
-  phone conversations in real time"*, so **advertising this feature could turn it into an enforceable representation** for a collections
-  tenant. That ties straight into `outbound-calling.md`.
+- **Three real oral mandates, none reaching this product's customers.** NY Education Law § 6829 (implemented at 8 NYCRR 63.11, hardship
+  waiver available) obliges **chain pharmacies** of eight or more under one owner to give free oral interpretation "on an immediate
+  basis", which "need not be provided in-person" — the clearest private-business spoken-language duty found. Cal. H&S Code § 1259
+  obliges **general acute care hospitals** to have interpreters "accessible by telephone" 24 hours. And **Cal. 28 CCR § 1300.67.04**
+  reaches licensed **health care service plans**: its enabling statute, H&S Code § 1367.04(b), requires plans "to provide for
+  translation and interpretation for medical services, as indicated", and the regulation is reported to define point of contact to
+  include telephonic contact. *Single-sourced and not re-verified — the official CCR publisher has no stable citable URL for it — so
+  treat the regulation's wording as unconfirmed.* All three are licensed, size-gated entity classes and all three concern interpreters
+  during care or plan access, not answering a general business line. Healthcare is refused at signup regardless.
+- **Debt collection is permissive on access, mandatory on conformity.** 12 CFR § 1006.34(e)(1) says a collector *"may"* send a
+  translated validation notice, and the FDCPA statute itself (15 U.S.C. §§ 1692–1692p) is a clean negative; the CFPB's 2021 LEP
+  Statement is expressly non-binding (86 FR 6306: *"Nor does this Statement mandate any particular approach to serving LEP
+  consumers"*). **But see the conformity rule below — it is the one that bites us.** NYC's rule is disclose-and-record rather than
+  provide (live provisions **6 RCNY §§ 5-77 and 2-193**; § 2-191 was repealed by a DCWP final rule in February 2026), and
+  § 5-77(f)(3)(ii) turns spoken contact in another language into a **mailed** validation notice in that language within five days.
+  Its definition of language access services includes *"a service that interprets phone conversations in real time"*, so
+  **advertising this feature could turn it into an enforceable representation** for a collections tenant.
+- **Clean negatives, checked so they are not re-litigated:** NY DFS mortgage servicers is **3 NYCRR Part 419** (Title 3, Banking — not
+  23 NYCRR, which was a wrong citation) and has **no** language-access requirement; its four "language" hits are all "plain language",
+  a readability standard. NY Insurance Law §§ 3217-a(a)(15) / 4324(a)(15) require **disclosure only** — a description of how the insurer
+  addresses non-English speakers. NY General Business Law has no enacted requirement. Cal. Ins. Code § 10133.8 requires translated
+  materials and a written notice of the availability of interpretation but **does not specify telephone**; the CDI regulations that
+  might carry point-of-contact detail were not read, which is the remaining insurer-side gap.
 
-Not verified, and left open rather than claimed as negatives: California Knox-Keene (H&S § 1367.04, Ins. Code § 10133.8) and NY DFS
-Part 419, both of which returned 403 to automated reading and are the most likely remaining source of a genuine private-sector
-telephone-interpreter mandate — though both bind health plans and insurers, who cannot sign up here anyway.
+### The rule that does reach us, and it is the principle this product already built
+
+**12 CFR § 1006.18(e)(4) (Regulation F): a debt collector "must make the disclosures … in the same language or languages used for the
+rest of the communication."** The commentary's example is explicit — if the initial communication takes place in Spanish, the
+mini-Miranda must be in Spanish.
+
+This is a language-**conformity** rule, not an access rule. It never requires serving anyone in Spanish. It requires that **if you do,
+the mandated disclosure follows the language of the call.** Which is exactly the rule `ReceptionistLanguages` enforces, arrived at from
+Jeff's objection rather than from the CFR: a disclosure in a language the caller does not speak is not a disclosure. Here it is federal
+regulation for one class of call, and it means a collections tenant whose receptionist takes a Spanish call **must** have the disclosure
+in Spanish — so the registry's refusal to offer a language without its reviewed wording is not merely prudent for that tenant, it is the
+only compliant arrangement. Cross-referenced into `outbound-calling.md`.
+
+### Still unverified, listed so nobody reads silence as a negative
+
+A multi-state sweep of "negotiated in another language" contract statutes never reported: **Arizona, Oregon, Illinois (815 ILCS
+375/405), Florida, New Jersey, Washington, Massachusetts, New Mexico, Nevada** — unverified, including whether those section numbers
+exist. Only California and Texas were confirmed. Also unchecked: state-level recorded-greeting and IVR language rules, and the status of
+the July 2024 Reg X NPRM (RIN 3170-AB04) proposing mandatory Spanish translations — 12 CFR Part 1024's current text has zero "Spanish"
+hits, so it is not law today, but whether that proposal was withdrawn or is pending rests on secondary summaries.
 
 ## What is now built
 

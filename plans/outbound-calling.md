@@ -243,6 +243,23 @@ scheduler that reads the tenant's calendar at the moment it runs holds nothing b
 queue of who to call and when is the ledger again, by another name — worth saying now, because it is the obvious way to build
 it and it is the thing that quietly reintroduces retention.
 
+### The language of the call decides the language of the disclosure
+
+**12 CFR § 1006.18(e)(4): a debt collector "must make the disclosures … in the same language or languages used for the rest of the
+communication."** The commentary's example: if the initial communication takes place in Spanish, the mini-Miranda must be in Spanish.
+
+It requires nobody to be served in Spanish. It requires that a collector who *does* conduct the call in Spanish gives the mandated
+disclosure in Spanish. So for a collections tenant the receptionist's language and its disclosure cannot come apart — which is the rule
+`ReceptionistLanguages` already enforces for every tenant (`multilingual-receptionist.md`), and here it is federal regulation rather than
+good practice.
+
+Two consequences for a collections build. A tenant that takes a Spanish call must have the Spanish disclosure, so **a language cannot be
+offered to a collections tenant before its wording is reviewed** — the registry's refusal is the compliant arrangement, not a
+limitation. And NYC adds a written leg on top: 6 RCNY § 5-77(f)(3)(ii) turns spoken contact in another language into a **mailed**
+validation notice in that language within five days, and its definition of language access services includes *"a service that interprets
+phone conversations in real time"* — so **advertising multilingual calling could make it an enforceable representation** for a tenant
+collecting in New York City.
+
 ### What this settles, and what is still open
 
 **Settled, from the rule:** none of Jeff's four cases needs written consent, because none of them is telemarketing or carries

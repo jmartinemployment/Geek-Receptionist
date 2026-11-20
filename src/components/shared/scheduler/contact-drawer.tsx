@@ -136,7 +136,7 @@ export function ContactDrawer({
   const countdown = formatCountdown(msRemaining);
 
   return (
-    <Drawer direction="right" open={open} onOpenChange={handleOpenChange}>
+    <Drawer swipeDirection="right" open={open} onOpenChange={handleOpenChange}>
       <DrawerContent className="flex flex-col">
         <DrawerHeader className="bg-[#023059]">
           <DrawerTitle className="text-white text-xl font-bold">
@@ -230,13 +230,8 @@ export function ContactDrawer({
             >
               {submitState === "submitting" ? "Booking…" : "Confirm booking"}
             </Button>
-            <DrawerClose asChild>
-              <Button
-                id="booking-cancel"
-                variant="outline"
-              >
-                Cancel
-              </Button>
+            <DrawerClose render={<Button id="booking-cancel" variant="outline" />}>
+              Cancel
             </DrawerClose>
           </DrawerFooter>
         </form>

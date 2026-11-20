@@ -1,174 +1,189 @@
-# Plan: implementing languages, from one to several
+# Plan: implementing languages, so the page can say it
 
-Jeff, 2026-11-20: *"Create a plan to implement languages."*
+Jeff, 2026-11-20: *"Create a plan to implement languages"*, then the correction this document was rewritten under:
+***"I told you languages is for marketing & can't say and not do."***
 
-**What this is for:** a business in Hialeah should be able to buy a receptionist that answers in Spanish, and a business in
-Boston should never be asked about it. This plan is how that becomes true, in the order the pieces have to land.
+**What this is for: the sales page sells a receptionist that speaks the caller's language, so a caller who speaks that
+language has to get it.** Not a setting an owner could turn on. The claim is made to the caller, so the capability has to
+reach the caller, and that single sentence reorders everything below.
 
-The research behind it is `multilingual-receptionist.md` (Twilio's real limits, the census ranking, the dialect decisions)
-and `multilingual-language-access-law.md` (no US law requires a private business to answer in another language, so every
-language here is a product decision and not a compliance one). Neither is repeated. This document is only the build.
+The first version of this plan got that backwards. It staged the owner's language setting first and *how a caller reaches
+their own language* last, as an open question — which would have left the page's claim unsupported for as long as it took to
+answer. That is the say-and-not-do, built into a plan. The ordering here is the correction.
 
-## What is already built, and therefore not in this plan
+Research behind it, not repeated: `multilingual-receptionist.md` (Twilio's real limits, the census, the dialect decisions)
+and `multilingual-language-access-law.md`.
 
-The seventeenth setting shipped on 2026-11-20. `receptionist_configs.language` stores a code; `ReceptionistLanguages`
-(GeekAPI) holds **every sentence a caller hears** in each language; both relay halves, the `<Say>` consent gate, the closing
-message and the mid-call failure line all read from it; a code with no reviewed wording is refused everywhere it could be
-used and nothing falls back to English. Codes live in `GeekApplication.VoiceLanguages`, words in GeekAPI, and a test asserts
-the two lists are identical.
+## The claim is the specification
 
-So **the engineering question "how does a second language reach a caller" is closed.** What is open is everything around it:
-the wording itself, the owner's ability to pick, the caller's ability to be served, and three holes that would let a second
-language fail quietly.
+**`src/components/home/what-ai-receptionist-does.tsx:143` says "Speaks 20+ Languages".** The product speaks one, `en-US`.
 
-## The gate, and it is not engineering
+That is the gap this plan closes, and it is the thing to plan *from*. Everything below is scoped by what the page says,
+rather than the page being written later to describe whatever got built.
 
-A language exists in this product when four sentences exist in it, reviewed:
+**The good news is the window is open.** The site is `noindex, nofollow` by default, there are no customers, and the card is
+in an uncommitted working copy. Nothing has been published to anybody. So this is a draft claim to be made true before
+launch, not a live misrepresentation to be withdrawn — provided it is true *before* `ALLOW_INDEXING` is set.
 
-| Slot | What it is | Why review, not translation |
+**The rule that follows, and it is a release gate rather than an opinion:** the number on that card may not exceed the number
+of languages in `ReceptionistLanguages`. One list is the marketing claim, the other is the registry, and the registry is the
+one that answers a phone.
+
+### Advertising it is what creates the duty
+
+Worth knowing, because it is the legal shape of "can't say and not do". The multi-state sweep found **no US law requiring a
+private business to answer its phone in a non-English language** — so every language here is a product decision.
+
+But advertising the capability is a different act from having it. NYC's debt-collection rule defines language access services
+to include *"a service that interprets phone conversations in real time"* (6 RCNY § 5-77), so **advertising multilingual
+calling can make it an enforceable representation** for a tenant collecting there. And generally, a capability advertised and
+not delivered is a deceptive-advertising question under the FTC Act and state UDAP statutes — for us about our tenants, and
+for our tenants about their callers. The claim does not merely describe the product; it creates an obligation that the
+product did not otherwise have.
+
+## What the claim costs, and it is not engineering
+
+The engineering shipped on 2026-11-20. `receptionist_configs.language` stores a code, `ReceptionistLanguages` holds **every
+sentence a caller hears** in each language, both relay halves and the `<Say>` consent gate read from it, and a code with no
+reviewed wording is refused everywhere with no fallback to English. **Adding a language is one entry in three files plus
+tests.**
+
+So the bill for "20+" is wording, and it is four sentences per language:
+
+| Slot | What it is | Who signs it off |
 |---|---|---|
-| `Disclosure` | the ConversationRelay welcome greeting on a passive-disclosure call | it is the recording notice under Fla. Stat. 934.03 — a legal act, not a string |
-| `Consent` | spoken by `<Say>` inside `<Gather>` on a strict-keypress call | same, plus it instructs a keypress that has to be unambiguous |
-| `Unanswered` | spoken when the call cannot be taken at all | the caller must know to call back, not think they were hung up on |
-| `Failure` | sent over the relay when the model fails mid-call | promises only what this product can do — the one that already went wrong once in English |
+| `Disclosure` | the welcome greeting on a passive-disclosure call | **counsel** — it is the recording notice under Fla. Stat. 934.03 |
+| `Consent` | `<Say>` inside `<Gather>` on a strict-keypress call | **counsel** — same, plus it instructs a keypress that must be unambiguous |
+| `Unanswered` | spoken when the call cannot be taken at all | a competent translator |
+| `Failure` | sent when the model fails mid-call | a competent translator |
 
-**Everything below Stage 1 is blocked on these four sentences existing in the target language, and that is Jeff's to procure,
-not mine to generate.** A machine translation of a consent disclosure is the thing `ReceptionistLanguages` was built to make
-impossible; nothing in this plan weakens that.
+**Twenty languages is 40 counsel-reviewed legal sentences and 40 translated operational ones.** That is the real number
+behind the card, and it is the only part of this that cannot be engineered away — by design, because it is the rule that
+makes a machine translation of a consent disclosure impossible to ship.
 
-## Stage 1: close three holes that would make a second language fail quietly
+**What the census says about the number itself**, so the bill is paid deliberately: of 27.4M people in the US who cannot
+conduct a call in English, **Spanish alone is 63%**, **seven languages are 80%**, and **ten are 84%** — the curve is flat
+after that. Twenty is a marketing number, not a coverage requirement. Whether to pay for twenty, ten or seven is Jeff's, and
+the page is written to whichever is paid for. Twilio is not the constraint either way: its default-voice table carries 36
+locales plus `multi`, all speakable and transcribable.
 
-These are independent of which language comes next and should land before one does. All three are currently invisible
-failures, which is the shape this project does not ship.
+## Stage 1: how a caller reaches their own language — first, because the claim is made to them
 
-**1a. `<Connect>` has no `action` URL, so Twilio's language errors are never seen.** An unsupported
-`transcriptionProvider`/`speechModel` or `ttsProvider`/`voice` pair means ConversationRelay **does not connect to our
-WebSocket** and ends the session with **error 64101**; an unsupported language/voice pair is **64106**. Twilio reports both
-to the `<Connect>` `action` URL — which `ReceptionistConsent.Connect` does not set. Today, with one language and default
-everything, nothing can produce them. The moment a second language or any explicit voice is set, a misconfiguration becomes
-a caller hearing silence and an operator seeing a normal-looking call record. Set the `action` URL, log the error code
-against the tenant, and treat 64101/64106 as a failed call rather than a completed one.
+A tenant-level setting does not support the card. A Spanish-speaking caller who dials a business whose owner picked English
+hears English, and the page promised otherwise. So the caller-facing mechanism is the deliverable, and there are three ways:
 
-**1b. The dashboard cannot offer a language it is not told about.** `ReceptionistConfigController.Answered` returns a
-`choices` block — `transferModes`, `transferCallerIdModes`, `consentModes` — so a page never carries its own copy of a list.
-`language` is not in it. The PUT already accepts `Language` and the writer already refuses an unreviewed code, so the write
-path is done and only the read path lies: a dashboard built today would have to hardcode the list and would drift from
-GeekAPI the first time a language is added. Add `languages = ReceptionistLanguages.All` (code and English name, not the
-wording) to `choices`.
+| Option | What the caller does | Serves two languages on one number? |
+|---|---|---|
+| One language per number | nothing — the business chose | **No.** Supports "available in 20+", never "speaks to your caller" |
+| **Keypad branch** | "para español, oprima dos" before the consent gate | **Yes**, with both disclosures intact |
+| `multi` auto-detection | nothing — Twilio detects per utterance | **Not on its own** — see below |
 
-**1c. No `voice` is set, and the default moves when the language does.** We set `ttsLanguage` and `transcriptionLanguage`
-and leave `voice` unset, so each language gets Twilio's default voice for it. That is correct for one language and wrong for
-several: Twilio's own documentation shows a switch from en-GB male to es-ES *"may result in a female voice"*, and the default
-table bears it out — `da-DK` and `multi` share a voice ID, as do `bg-BG` and `ru-RU`. A business that picked a voice in
-English and hears a different gender in Spanish was not asked. So `Language` gains a `Voice` member alongside its four
-sentences, chosen per language rather than inherited, and it is set explicitly on the relay. **Note what this is not:** it is
-not the "10+ voices and custom agent name" line on the launch list — that is a separate per-tenant choice, and it will have to
-be expressed as *voice per language*, because a voice ID does not survive a language change.
+**`multi` cannot carry the disclosure, which is what rules it out as the whole answer.** It detects the language of the
+conversation, and the consent disclosure is spoken *before the caller has said anything*. So auto-detection can choose the
+language of what follows the gate but never of the gate itself — which is precisely the arrangement Jeff rejected: *"Thats
+lame, and one could claim one didn't understand."* It also forces `Deepgram` + `ElevenLabs`, has **no failover backup at
+all**, and reports only a primary tag (`"en"`, not `"en-US"`).
 
-## Stage 2: add Spanish — the mechanical change, once the wording exists
+**So the build is the keypad branch**, and `multi` is at most an addition after the gate, never a replacement for it. What it
+needs that no existing wording covers: **the bilingual opening is its own reviewed sentence**, not two existing ones played
+back to back — it is the first thing every caller hears, in every language the tenant offers, and at three or more languages
+it is a menu that has to stay short enough to listen to. That is a wording decision with a product limit inside it, and it is
+worth knowing before the number on the card is chosen: **twenty languages do not fit in one spoken menu.**
 
-**It is `es-US`, never `es-ES`.** Twilio offers both with an ElevenLabs voice and Deepgram `nova-3-general`, so it is a free
-choice, and the census decides it: of 69.98M Hispanic or Latino people (ACS 2025, Table B03001) **56.9% are of Mexican
-origin and 1.5% are Spaniards**. Castilian — *vosotros*, *distinción* — is the one variety the US market does not call for.
-This is already recorded in `ReceptionistLanguages`' own doc comment, because that is the file someone opens to do this.
+That last point is the one place the claim and the mechanism genuinely collide, and it resolves cleanly: a *tenant* offers
+the two or three languages its callers speak, chosen at signup; the *product* offers twenty to choose from. The card can
+truthfully say the receptionist speaks 20+ languages once twenty are reviewed and any tenant can pick from them. It cannot
+say every caller to every line is understood in twenty.
 
-The change, in full:
+## Stage 2: three holes that make a second language fail quietly
 
-1. `GeekAPI/Services/Receptionist/Relay/ReceptionistLanguages.cs` — one `Language` entry with the four reviewed sentences
-   and (after 1c) its voice; add it to `ByCode`, `All` and `Codes`.
-2. `GeekApplication/Models/Voice/VoiceRecords.cs` — add `"es-US"` to `VoiceLanguages.All`, so GeekRepository validates it.
+Independent of which language comes next, and each is invisible today only because there is one language and no explicit
+voice. All three land before a second language does.
+
+**2a. `<Connect>` has no `action` URL, so Twilio's language errors are never seen.** An unsupported
+`transcriptionProvider`/`speechModel` or `ttsProvider`/`voice` pair means ConversationRelay **never connects to our
+WebSocket** and ends with **error 64101**; a bad language/voice pair is **64106**. Both are reported to the `<Connect>`
+`action` URL, which `ReceptionistConsent.Connect` does not set. Today nothing can produce them. The moment a second language
+exists, a misconfiguration is a caller hearing silence and an operator seeing a normal call record.
+
+**2b. The dashboard cannot offer a language it is not told about.** `ReceptionistConfigController.Answered` returns a
+`choices` block — `transferModes`, `transferCallerIdModes`, `consentModes` — and `language` is not in it. The PUT already
+accepts `Language` and the writer already refuses an unreviewed code, so only the read path lies. Add
+`languages = ReceptionistLanguages.All` (code and English name, not the wording).
+
+**2c. No `voice` is set, so the default moves when the language does.** Twilio's own documentation shows a switch from en-GB
+male to es-ES *"may result in a female voice"*, and the default table bears it out — `da-DK` and `multi` share a voice ID, as
+do `bg-BG` and `ru-RU`. A business that picked a voice in English and hears a different gender in Spanish was never asked.
+`Language` gains a `Voice` member alongside its sentences. Note this is not the "10+ voices and custom agent name" launch
+item — that is a per-tenant choice, and it will have to be expressed as *voice per language*, because a voice ID does not
+survive a language change.
+
+## Stage 3: Spanish, and it is the one that moves the number most
+
+**It is `es-US`, never `es-ES`.** Twilio offers both with an ElevenLabs voice and Deepgram `nova-3-general`, so it is free to
+choose, and the census decides: of 69.98M Hispanic or Latino people (ACS 2025, Table B03001) **56.9% are of Mexican origin
+and 1.5% are Spaniards**. Castilian — *vosotros*, *distinción* — is the one variety the US market does not call for.
+
+The change in full, once the four sentences exist:
+
+1. `ReceptionistLanguages.cs` — one `Language` entry with the reviewed sentences and its voice; add to `ByCode`, `All`, `Codes`.
+2. `VoiceRecords.cs` — add `"es-US"` to `VoiceLanguages.All`, so GeekRepository validates it.
 3. `src/lib/receptionist/languages.ts` — add `{ code: "es-US", name: "Spanish (United States)" }`.
-4. Tests: the existing drift test binds `VoiceLanguages.All` to `ReceptionistLanguages.Codes` and will fail on step 1 without
-   step 2, which is the point. Add the Spanish wording assertions the way the English ones are asserted — verbatim, so a
-   reviewed sentence cannot be edited without a test saying so.
+4. Tests — the drift test fails on step 1 without step 2, which is the point; assert the Spanish wording verbatim the way the
+   English is asserted, so reviewed text cannot be edited without a test objecting.
 
-No migration. `0085` added the column with no CHECK constraint deliberately: two lists drifting is how the last format
-migration broke, and the one list that governs is the code's.
+No migration: `0085` deliberately has no CHECK constraint, because two lists drifting is how the last format migration broke.
 
-**Deliberately not in this stage:** nothing decides that a tenant gets Spanish. Adding it to the registry makes it
-*offerable*. Stage 3 is what offers it.
+## Stage 4: the owner picks which of them their line offers
 
-## Stage 3: the owner chooses — and the question is Jeff's
+Now worth asking, and not before — `languages.ts` says so itself: a step whose only option is the one already stored asks a
+visitor to confirm something they cannot change.
 
-`src/lib/receptionist/languages.ts` says there is deliberately no signup step yet, because a step whose only option is the one
-already stored asks a visitor to confirm something they cannot change. **That reasoning expires the moment Stage 2 lands.**
+- **Signup**, with the other receptionist questions, before PayPal. `ReceptionistConfigAnswers.Language` and
+  `ApplyDuringSignupAsync` already carry it. With Stage 1 built the question is no longer "which language" but "which
+  languages", and that wording is Jeff's.
+- **Dashboard**, a section like `consent-section.tsx`, reading `choices.languages` from 2b and showing
+  `describeLanguageFailure` on refusal. That failure text is already written.
 
-Two places, and they are not the same question:
+Worth saying on both: changing this changes every word a caller hears, including the recording notice. An owner who thinks
+they are picking an accent is picking the language of a legal disclosure.
 
-- **Signup.** The seventeenth setting, shown with the other receptionist questions, before PayPal. Proposed wording sits in
-  `signup-form-questions.md` as the language section; it is a proposal and Jeff changes, reorders or throws it out. The
-  mechanics are the same as every other step: `ReceptionistConfigAnswers.Language` already exists and
-  `ApplyDuringSignupAsync` already writes it.
-- **Dashboard.** An owner changing it afterwards. The PUT exists; what is missing is a section like `consent-section.tsx`,
-  reading `choices.languages` from Stage 1b and showing `describeLanguageFailure` on a refusal. The failure text is already
-  written.
+## Stage 5: languages 3 to N, each on its own decision
 
-**What changes about the call when they change it:** everything a caller hears, including the recording notice. That is worth
-saying on the page, because an owner who thinks they are picking an accent is picking the language of a legal disclosure.
-
-## Stage 4: how a caller reaches their own language — the decision this plan cannot make
-
-Stages 1–3 give a tenant **one** language. A business in Miami may want to serve English and Spanish callers on the same
-number, and there are exactly three ways, with different costs and different failure modes. **This is a question about how a
-business's customers are greeted, so it is a form question for Jeff and not a default.** Set out so it can be answered:
-
-| Option | What the caller does | What it costs us | What it costs the caller |
-|---|---|---|---|
-| **One language per number** | nothing — the business picked | nothing; built after Stage 3 | an English caller to a Spanish line is stuck |
-| **Keypad branch** | "para español, oprima dos" before the consent gate | a second `<Gather>` branch; both prompts must be reviewed in both languages | one keypress, and a bilingual opening every caller hears |
-| **`multi` auto-detection** | nothing — Twilio detects per utterance | **forces `Deepgram` + `ElevenLabs`**, has **no failover backup at all**, and reports only the primary tag (`"en"`, not `"en-US"`) | nothing, when it works |
-
-The trap in the third is the one worth stating plainly: `multi` detects the *conversation's* language, and the consent
-disclosure is spoken **before** anyone has said anything. So auto-detection cannot choose the language of the disclosure —
-only of what follows it — and that is the exact arrangement Jeff already rejected: *"Thats lame, and one could claim one
-didn't understand."* If `multi` is ever used, the gate still has to be answered some other way, which collapses it back into
-option 2 with extra moving parts.
-
-Option 2 is the only one that serves two languages with both disclosures intact. It needs the bilingual opening reviewed as
-its own piece of wording, not assembled from two existing ones.
-
-## Stage 5: beyond Spanish, if the numbers say so
-
-From ACS 2025 Table B16001, ranked by people who **cannot conduct a call in English** (27.4M total):
-
-**Spanish alone covers 63%. Seven languages cover 80%. Ten cover 84%, and the curve is flat after that** — so "twenty
-languages" is a marketing number, not a product requirement. After Spanish the seven are Chinese, Vietnamese, Korean,
-Tagalog, Arabic and Haitian Creole.
-
-Three of those are not a simple registry entry and should not be costed as one:
+After Spanish the seven that reach 80% are Chinese, Vietnamese, Korean, Tagalog, Arabic and Haitian Creole. Three are not a
+simple registry entry and must not be costed as one:
 
 - **Chinese is two languages.** Mandarin and Cantonese are not mutually intelligible in speech, and **2.1M people reported
-  only "Chinese"**, so the variety cannot be inferred — it has to be detected or asked at the start of the call.
+  only "Chinese"** — the variety cannot be inferred, so it has to be asked in the Stage 1 menu.
 - **Haitian Creole is not French** (`hat` belongs to no macrolanguage), the markets barely overlap, and its LEP rate is nearly
-  double French's. For a South Florida product it outranks French decisively — **FL 461,611, 4.73% of the Miami metro**.
+  double French's. For a South Florida product it outranks French decisively: **FL 461,611, 4.73% of the Miami metro**.
 - **Arabic has no spoken standard.** Of 1.3M speakers, **1,257,000 said "Arabic" and exactly 373 said "Standard Arabic."** A
   receptionist speaking MSA sounds like a newsreader, and MSA recognition performs poorly on dialectal speech.
 
-Each added language is four reviewed sentences plus one voice decision. The marginal engineering is near zero by design; the
-marginal cost is translation review, and that is the number to decide on.
+## The acceptance test, which is also the release gate
 
-## What is deliberately not here
+**A caller who speaks language X dials a tenant offering X and is disclosed to, consented from, and conversed with entirely
+in X.** Until that passes for a language, the language is not offered. Until it passes for N languages, the card does not say
+N, and `ALLOW_INDEXING` does not go on with a number the registry cannot back.
 
-- **No machine translation anywhere, at any hop.** There is nowhere in the type to put one, and that is the design.
-- **No mid-call language switching.** Twilio supports it (`{"type":"language",...}`), it is more capable than this product
-  needs, and a language added mid-call gets **no defaults filled in** — every part must be sent in full. Not now.
-- **No per-language pricing.** No published Twilio rate has a language dimension: ConversationRelay is $0.07/min flat. If a
-  language ever costs more it will be because its only available voice is in a dearer tier, which is a voice decision.
-- **SSML `<phoneme>` is not an option outside English** — it works only on `en-US` and not at all on ElevenLabs v3/v4. So
-  "make it pronounce our business name right" has no tool in Spanish, and nobody should promise one.
+That is the whole of "can't say and not do", expressed as something that can be checked.
 
 ## Order
 
-1. Stage 1a, 1b, 1c — independent of any language, and each closes a silent failure.
-2. Jeff procures the four Spanish sentences.
-3. Stage 2 — one entry in three files plus tests.
-4. Stage 3 — the form step and the dashboard section, from Jeff's wording.
-5. Stage 4 — only once he has answered how a caller picks.
-6. Stage 5 — language by language, each on its own decision.
+1. Jeff picks the number the card will carry, knowing it is 2 counsel-reviewed sentences per language.
+2. Stage 2a–2c — three silent failures, independent of any language.
+3. Stage 1 — the keypad branch and its bilingual opening. Before Spanish, because it decides what the opening wording is.
+4. Procure the Spanish four, plus the opening.
+5. Stage 3 — Spanish.
+6. Stage 4 — the form step and the dashboard section, in Jeff's words.
+7. Stage 5 — language by language, until the registry matches the card.
 
-## Verification, at each stage
+## What is deliberately not here
 
-GeekBackend's suite is green at 4,730 and the drift test fails loudly if the two code lists part. The portal is green at 98.
-Neither number is the test that matters here: **the test that matters is that a call placed to a tenant set to a language
-with no reviewed wording never reaches a caller**, and that is already asserted at the writer, the prompt build and
-`Find`. Stage 1a adds the only path not yet covered — Twilio refusing the session before our WebSocket opens.
+- **No machine translation at any hop.** There is nowhere in the type to put one, and that is the design.
+- **No mid-call language switching.** Twilio supports it; a language added mid-call gets **no defaults filled in**, so every
+  part must be sent in full. Not needed for a keypad branch chosen before the call starts.
+- **No per-language pricing.** ConversationRelay is $0.07/min flat with no language dimension on any published page. If a
+  language ever costs more it is because its only voice sits in a dearer tier — a voice decision, not a language one.
+- **No `<phoneme>` outside English.** It works only on `en-US`, and not at all on ElevenLabs v3/v4 — so "make it pronounce
+  our business name right" has no tool in Spanish, and nobody should promise one.

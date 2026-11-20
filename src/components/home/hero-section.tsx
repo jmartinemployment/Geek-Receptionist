@@ -31,10 +31,12 @@ export default function HeroSection() {
         <div className="container min-h-screen">
           <div className="grid min-h-screen grid-cols-12 place-items-center">
             <div className="col-span-7">
-              <h1 className="text-white lg:text-7xl xl:text-[6.5rem] leading-[0.95] font-black font-[var(--font-sora)] text-shadow-sm text-shadow-black">
-                One Platform. Every Voice&nbsp;
+              <h1 className="text-white text-[12vw] sm:text-6xl md:text-7xl lg:text-[4.25rem] xl:text-[5rem] 2xl:text-[5.5rem] leading-[0.95] font-black font-[var(--font-sora)] text-shadow-sm  text-shadow-black">
+                AI Receptionist That Calls,&nbsp;
                 <br />
-                <span className="text-[#C83803]">Agent</span>
+                Texts, Emails&nbsp;< br/>
+                Every&nbsp;< br/>
+                <span className="text-[#C83803]">& Chats</span>
               </h1>
               <p className="pt-3 text-2xl text-white test-shadow-sm text-shadow-black">
                 Intelligent orchestration, real-time visibility, and enterprise-grade control built to scale.

@@ -293,6 +293,37 @@ the blind-index clause does not, for the reason recorded under F — the lookup 
 
 Order: **B (with B2) → F → D → A → C as wording arrives. E deferred.**
 
+### Executed 2026-11-20, in the order B → D → F → A
+
+**D moved ahead of F, for one reason:** F had to touch `BillingExemption.cs:41`, which compared a tenant's contact email
+in the clear, and D deletes that file. Doing F first would have meant writing a decrypt call into a file deleted an hour
+later. The approved sequence was otherwise unchanged and C is still waiting on Jeff's wording.
+
+| Piece | Commit | What landed |
+|---|---|---|
+| B + B2 | `67f7b2a5` | `ReceptionistConfigAnswers`, `ReceptionistConfigWriter` with both doors, `POST api/v1/onboarding/receptionist-config`, `GET`/`PUT api/v1/tenants/{id}/receptionist/config`, 45 tests |
+| D | `672d5a32` (+ portal `198af6a`) | The billing exemption deleted end to end, both repositories, zero hits |
+| F | `43ba28ec` | Four personal details sealed, migration `0082`, format byte, storage purposes, shape rules moved to GeekAPI |
+| A | `eec24917` | `ReceptionistOptions` and the company line deleted, zero hits for all eleven names |
+
+**Three things done differently from what is written above, each for a reason found in the code:**
+
+1. **No blind index** (recorded under F): the lookup it was approved for happens in `owner_logins`, not `tenants`.
+2. **`ReceptionistConfigStep` became `ReceptionistConfigWriter`**, because one class now serves the signup step and the
+   owner's dashboard, and a name saying "step" would have described half of what it does.
+3. **F gained two prerequisites** before encrypting anything: a format byte, since the key could not otherwise ever be
+   rotated, and storage-specific purposes, since the bucket keys were sealed under the MCP OAuth purposes.
+
+**Operator steps this leaves, none of them done by code:**
+
+* Delete the seven remaining per-business variables from Railway on GeekAPI, plus `BILLING_EXEMPT_EMAIL`. Nothing reads
+  any of them now. The assistant cannot delete credentials.
+* Delete the pre-launch test tenants. Migration `0082` adds the sealed columns empty and does **not** backfill, because
+  the database holds no key and SQL cannot encrypt; a tenant written before it has contact details that will not open, and
+  GeekAPI fails loudly on one rather than substituting a blank address. Nothing deletes a tenant row automatically.
+* Re-enter any bucket connection through the dashboard: existing rows were sealed under the old purposes and the old
+  format.
+
 Two guardrails carried from the review into the work:
 
 * **`IncludeTranscript` (#12) must not become retention.** It already means "include the in-RAM transcript in the

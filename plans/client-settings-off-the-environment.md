@@ -227,8 +227,10 @@ What is not (PII, plaintext today): `receptionist_configs.transfer_target_number
 F encrypts those four at the same boundary and with the same protector, so the repository stays blind and GeekAPI
 has the clear value where it needs it — an address to send to now, a number to dial once transfer exists. What this
 costs: `ValidateConfig`'s shape checks (E.164, email) move to GeekAPI before encryption, since the repository can no
-longer read the value. Migration adds the ciphertext columns, a one-time backfill encrypts existing rows, the plaintext
-columns are dropped — three migrations, applied in order, each idempotent. **Not** the behavioural flags, hours, greeting
+longer read the value. Migration adds the ciphertext columns and drops the plaintext ones. There is no
+backfill step, because this is a development database with nothing in it to carry over: Jeff, 2026-11-20, *"we are in
+development?"* and *"what data existed to backfill, its development?"* A backfill is what this would need against real
+rows, and that is the thing to write before this product has any. **Not** the behavioural flags, hours, greeting
 or prompt: they are read on every call and are not secrets.
 
 #### The blind index was approved on a premise the code does not support
@@ -318,9 +320,11 @@ later. The approved sequence was otherwise unchanged and C is still waiting on J
 
 * Delete the seven remaining per-business variables from Railway on GeekAPI, plus `BILLING_EXEMPT_EMAIL`. Nothing reads
   any of them now. The assistant cannot delete credentials.
-* Delete the pre-launch test tenants. Migration `0082` adds the sealed columns empty and does **not** backfill, because
-  the database holds no key and SQL cannot encrypt; a tenant written before it has contact details that will not open, and
-  GeekAPI fails loudly on one rather than substituting a blank address. Nothing deletes a tenant row automatically.
+* Delete the one stale tenant row, or ignore it. Migration `0082` added the sealed columns empty, so a row written
+  before it reads back blank and GeekAPI refuses it rather than substituting an address. That is one row, from the single
+  `validate-eligibility` call that succeeded on 2026-11-16 by curl; its activation returned `400` and its three
+  owner-login attempts `404`, so it has no subscription, no number and no login. `delete from geek_voice.tenants where
+  contact_email_encrypted = '';` clears it. Nothing deletes a tenant row automatically, by design.
 * Re-enter any bucket connection through the dashboard: existing rows were sealed under the old purposes and the old
   format.
 

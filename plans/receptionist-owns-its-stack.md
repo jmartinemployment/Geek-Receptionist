@@ -30,7 +30,11 @@ reading the deployment.
   *data* in it, not its own copy of it.
 - **It does not use the crawler's corpus or its signed-manifest asset routes.** Those are built
   around crawl provenance; a phone receptionist should not inherit either.
-- **GeekAPI is out of the path.** Not the embedder's home, not the call loop's home.
+- **GeekAPI is not the home for this product's own stack.** Jeff, 2026-11-19 after the decision:
+  *"It's not all vps or all GeekAPI"* — this is not all-or-nothing, and which pieces stay shared has
+  not been decided. What was rejected was building the receptionist's tables and embeddings into
+  GeekAPI by default, without being told what they were for. Settle each piece with him rather than
+  reading a blanket rule into this.
 
 ## The duplicate to delete
 
@@ -59,3 +63,13 @@ Read the deployment before proposing a build. `docker-compose.yml` answered this
 was not opened for hours of building. The existing memory rule — *check what already exists before
 building; say "not checked" rather than assert an inference* — was applied to third-party vendors
 and never to this estate, which is where it mattered more.
+
+Second, and Jeff's own reading of why this went wrong: *"I never would had rejected if you
+communicated embeddings for Ai to answer questions."* The proposal was put as a runtime and a
+package in a service, and never as what it was for — the receptionist answering a caller from the
+business's own information. He rejects a mechanism he cannot see the purpose of, and would not have
+rejected the purpose. Lead with what a thing is for.
+
+Third, a line in a `CLAUDE.md` is not a law. *"GeekAPI is the only Geek service this app calls"* was
+read as settled architecture when it was a description of current wiring, and it shaped hours of
+work. Check a written rule against the system before building on it.

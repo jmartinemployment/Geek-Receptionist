@@ -6,9 +6,12 @@ is written under, and the reason it was made.
 ## The one thing to know
 
 **Geek-Receptionist is its own application.** Its own service, its own database tables, its own
-Qdrant collection and embeddings. **GeekAPI is out of the path.** Everything listed under "Built
-this session" below lives in GeekBackend and is therefore on the wrong side of that line — it is
-the thing to move, not to extend.
+Qdrant collection and embeddings — rather than those being built into GeekAPI by default.
+
+**This is not all-or-nothing.** Jeff, 2026-11-19: *"It's not all vps or all GeekAPI"*. Which pieces
+stay shared is not decided; settle each with him rather than reading a blanket rule into it. What
+was rejected was duplicating infrastructure that already runs, and proposing where to put a thing
+without saying what it was for.
 
 **Qdrant and the embedder are already deployed** on the Hostinger VPS: Qdrant v1.13.4 on 6333 and
 `BAAI/bge-small-en-v1.5` running in-process in the RAG API, behind Caddy, alongside Mongo. Nothing

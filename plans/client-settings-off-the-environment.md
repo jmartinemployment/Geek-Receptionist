@@ -205,7 +205,7 @@ implementation and internal route, and the portal's `billingExempt` branch in `s
 Geek @ Your Spot signs up at `/signup` like any client, pays like any client, and is handed a new number by the path
 that already works. Jeff, 2026-11-20: *"I AM A CLIENT/USER!"*
 
-### E. The same defect on Vercel: the portal's scheduler
+### E. WITHDRAWN. The portal's scheduler is not the same defect
 
 The inventory found four per-business values in the portal's environment, all in the booking scheduler copied from
 geekatyourspot.com, none in the README's variables table:
@@ -230,8 +230,18 @@ subsystem that bypasses GeekAPI. The receptionist product already has the per-te
 five variables from Vercel. Once Geek @ Your Spot is a tenant, its consultation booking is its receptionist's booking,
 like every other client's.
 
-This is a product decision about the sales page — it removes "book a consultation" from `/` until the tenant exists —
-and is included so the plan is complete, **flagged for Jeff rather than decided**.
+**E is withdrawn, 2026-11-20.** Jeff: *"why do think it needs deleted over all the other things you can break?"* It
+does not. E reached its conclusion by pattern-match: an inventory found per-business values in an environment, the Railway
+ones were a real defect, so the Vercel ones were written up as the same defect. They are not the same. The Railway
+variables were a *multi-tenant product's* configuration pinned to one business, which is a defect by definition. The
+scheduler is Geek @ Your Spot's own sales tool, where being single-tenant is simply what it is.
+
+What was left after that was the duplicate-implementation argument: the receptionist has a per-tenant booking path, so
+the copied one is a second way to do the same thing. That is tidiness, not a defect, and it is working code that takes
+Jeff's consultations. Deleting it would also remove "book a consultation" from the sales page.
+
+Kept for the record because the five values are still worth knowing about, and because the reasoning is the thing to
+avoid repeating: *the same shape is not the same problem.* Nothing here is to be executed.
 
 ### F. Encrypt the per-business PII the config and tenant rows hold
 
@@ -310,7 +320,7 @@ piece of work, and Jeff has said the number going unanswered during development 
 ## Order
 
 Approved by Jeff, 2026-11-20: *"Execute the plan in the agreed order (B -> D -> A -> C, deferring E until Geek @ Your
-Spot LLC is onboarded as a tenant)."* F was approved in the same message ("Tier 2 (Encrypt): TransferTargetNumber,
+Spot LLC is onboarded as a tenant" — E has since been withdrawn outright, see E)."* F was approved in the same message ("Tier 2 (Encrypt): TransferTargetNumber,
 MessageDestinationEmail, and on tenants: contact_phone and contact_email (with a deterministic HMAC-SHA256 blind-index
 column for owner-login lookups)") and goes straight after B because it touches the rows B writes. The four fields stand;
 the blind-index clause does not, for the reason recorded under F — the lookup it was for happens in another table.

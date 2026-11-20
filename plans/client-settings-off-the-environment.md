@@ -18,6 +18,11 @@ becomes the place they do live. Jeff, 2026-11-20: *"Any and/or every setting nee
 multi-step form. The application may have preset defaults, but I am not comfortable making decisions on behalf of
 others."*
 
+**Status, 2026-11-20 (afternoon).** B has started: `ReceptionistConfigAnswers.cs` and `ReceptionistConfigStep.cs` exist
+in GeekBackend, untracked. No route, no B2, no tests, nothing else begun. The sections below were re-read against the code
+after the external review's full thread, and eight places where the plan was wrong or silent are now recorded in place,
+each with the file that shows it.
+
 **Explicitly not a goal:** keeping the company line 561-865-6990 answering during this work. Jeff, 2026-11-20:
 *"I DO NOT CARE WHETHER AN UNPUBLISHED NUMBER GOES UNANSWERED DURING DEVELOPMENT."* No step is ordered around
 protecting it, and no temporary restoration of the deleted variables is proposed.
@@ -38,8 +43,18 @@ the services built on it go:
   `VALIDATE_TWILIO_SIGNATURE`
 * `ReceptionistEndpoints.cs` — `/api/receptionist/twilio/*`, registration and the `ReceptionistStatus` gate
 * `TwilioSignatureFilter.cs`, `Sms.cs`, `InboundSms.cs`, `MissedCallService` — the company line's behaviour
-* the registration site in `GeekAPI/Program.cs:236`
-* `GeekBackend.Tests/Receptionist/VoiceWebhookTests.cs` and any test naming the deleted variables
+* the two registration sites in `GeekAPI/Program.cs`: `AddReceptionist(builder.Configuration)` at `:238` and
+  `app.MapReceptionist()` at `:438`. (`:236` is the comment above the first, and the method is `MapReceptionist`, not
+  `MapReceptionistEndpoints` — this plan named both wrongly before.)
+* `GeekBackend.Tests/Receptionist/VoiceWebhookTests.cs` and `ConsentAndRelayTests.cs` (the latter names `CALL_MODE` twice)
+* the prose: `docs/Geek-Receptionist.md` carries all twelve variable names, `Architecture.md` carries
+  `TWILIO_ACCOUNT_SID`, and `OnboardingController.cs`'s doc comment carries `BILLING_EXEMPT_EMAIL`. A surviving name is
+  read as a live claim, so these come out with the code rather than after it.
+
+**No dead startup binding is left behind.** Checked, because the review asked: there is no `ValidateOnStart`, no
+`IValidateOptions`, no `AddOptions` binding and no health check or hosted service on any of these types.
+`ReceptionistOptions.FromConfiguration` throws, `AddReceptionist` catches and registers `ReceptionistStatus(false, ...)`,
+and `MapReceptionist` is the only reader of that status. Removing the two `Program.cs` lines removes the whole path.
 
 **Not deleted:** `GeekAPI/Services/Receptionist/Relay/*` (`ReceptionistRelaySession`, `LlmReceptionistModel`,
 `RelayTickets`, `ReceptionistConsent`), registered separately by `AddReceptionistRelay()` (`Program.cs:240`). These
@@ -59,6 +74,13 @@ keypad screening). The tenant path never rings a human and has no SMS at all —
 `smsEnabled: false` and refuses `EnableSmsNotifications: true` (`SubscriptionActivation.cs:75-76`). This is a real
 capability going away, not a migration, and it is named here rather than discovered later.
 
+**And with it, transfer — which the tenant path never had.** The only Twilio `<Dial>` in the codebase is the company
+line's (`ReceptionistEndpoints.cs:101-108`, dialling `o.OwnerCell` from the environment). On the tenant path
+`TransferTargetNumber` is never dialled: it is read once as a boolean, `transferConfigured` at
+`TenantCallController.cs:189`, which only chooses which failure sentence the relay speaks
+(`ReceptionistRelaySession.cs:77,275`). So after A, no code anywhere transfers a caller to a person. This bears on C's
+Q7d and is flagged there, not decided here.
+
 **Surfaced while mapping this, not caused by it:** the tenant SMS webhook has never worked. `TwilioProvisioner.cs:147`
 points every tenant number at `/api/receptionist/twilio/sms/incoming/{tenantId}`; `ReceptionistEndpoints.cs:223`
 maps that route *without* the `{tenantId}` segment. It 404s for every tenant today. Deleting the path regresses
@@ -72,29 +94,46 @@ Fourteen of the sixteen settings in `VoiceReceptionistConfig` have no write path
 and `BookingSettingController` exist, each writing one field behind an owner's token. So no answer a signup form
 collects can currently be stored.
 
-* New `GeekAPI/Services/Voice/Onboarding/ReceptionistConfigStep.cs` — a request record whose every field is optional
-  (null = not asked on this step, so the current answer stands; `""` / `[]` = the business answered "none"), and a
-  service that reads the tenant, reads the config, writes the answered fields over it and saves.
-* New route on the existing `OnboardingController` (`[RequireApiKey]`, rate-limited, portal-server-facing).
+* `GeekAPI/Services/Voice/Onboarding/ReceptionistConfigAnswers.cs` — **written, untracked.** Fifteen optional fields
+  (null = not asked on this step, so the current answer stands; `""` / `[]` = the business answered "none"), with
+  `AnswersAnything` refusing an empty step and `AppliedTo(config)` doing the merge. **`KnowledgeRunId` is deliberately
+  not a field**: it is a crawl, not an answer, and a form field accepting any run id would point one business's
+  receptionist at another business's pages. The knowledge flow sets it.
+* `GeekAPI/Services/Voice/Onboarding/ReceptionistConfigStep.cs` — **written, untracked.** `ApplyAsync` reads the tenant,
+  gates on `pending_payment` with `ActivationFailureCodes.TenantNotPending`, reads the config, merges and saves.
+* **Still to write:** the `POST api/v1/onboarding/receptionist-config` action on `OnboardingController`
+  (`[RequireApiKey]`, rate-limited and `[Route("api/v1/onboarding")]` already on the class, so the action inherits both),
+  the DI registration in `VoiceServiceRegistration.AddVoiceOnboarding`, and B2's controller.
 * **Gate: tenant must be `pending_payment`.** The caller is the portal's server key, not a signed-in owner, so this
   must not be able to touch a running business; once active, settings change through the owner's own token. This also
   fixes the step's place in the flow — the questions sit after `business` and before `plan`, so a business sees what
   it is configuring before it is asked to pay.
-* Validation is not duplicated. `IVoiceStore.SaveConfigAsync` already holds the rules (transfer mode needing a number,
-  email shape, consent mode) and its refusal is returned with its own code.
-* **No database access is added to GeekAPI.** `IVoiceStore` there is `HttpVoiceRepository`
-  (`GeekAPI/HttpClients/HttpVoiceRepository.cs`); `SaveConfigAsync` already crosses to GeekRepository over internal
-  HTTP, and `ConsentSettingController` uses it that way today.
+* Validation is not duplicated. `ValidateConfig` (`GeekRepository/Repositories/Voice/VoiceRepository.cs:718-730`) holds
+  the rules — greeting and prompt not blank, hours and questions valid JSON of the right shape, transfer and caller-id
+  modes known, `TransferTargetNumber` E.164 if present, no blank emergency keyword, a real `MailAddress` when message
+  email is on, a known consent mode — and `SaveConfigAsync` refuses with its own code. It checks nothing on the four
+  booleans or the GUID, which is correct: there is nothing to check.
+* **No database access is added to GeekAPI, and no repository change is needed either.** `IVoiceStore` in GeekAPI is
+  `HttpVoiceRepository` (`GeekAPI/HttpClients/HttpVoiceRepository.cs:44-48`), which `PUT`s
+  `internal/v1/tenants/{tenantId}/config` to `VoiceTenantController`, behind the internal-service policy. The upsert
+  behind it writes **all sixteen** columns (`VoiceRepository.cs:326-353`), insert list and `DO UPDATE SET` alike, so
+  every field a form can answer already has a column and a write. The review's worry that GeekRepository might not
+  expose all sixteen is answered: it does.
 * The route accepts **any subset** of the fields, so whether the portal asks one setting per screen or groups them is a
   form decision, not a route constraint.
 
 #### B2. The same writer for an owner who has already paid
 
 An active tenant's owner has no way to change fourteen of the settings either, and B's gate refuses active tenants
-on purpose. So the same service gets a second door: `PUT /api/v1/tenants/{tenantId}/receptionist/config`, owner-token
-authenticated, in the shape of `ConsentSettingController` (`[Authorize(ReceptionistAuth.Scheme)]`,
-`OwnerTenantClaim.Refuse`). Same merge, same validation, different gate. Built in the same pass as B because it is the
-same code; without it, every answer given at signup is permanent.
+on purpose. So the same service gets a second door: `GET`/`PUT /api/v1/tenants/{tenantId}/receptionist/config`,
+owner-token authenticated, in the shape of `ConsentSettingController`
+(`[Authorize(AuthenticationSchemes = ReceptionistAuth.Scheme)]` on the class, the full path on each action,
+`OwnerTenantClaim.Refuse(User, tenantId)` as the first line of both, errors through `CalendarController.StatusFor`).
+Same merge via `ReceptionistConfigAnswers.AppliedTo`, same validation, different gate. Built in the same pass as B
+because it is the same code; without it, every answer given at signup is permanent.
+
+One defect in the controller being copied, so it is not copied: `BookingSettingController`'s PUT returns
+`calendarConnected = true` unconditionally (`:98`), including when booking is being turned off. B2 returns what it read.
 
 ### C. The questions become form steps
 
@@ -111,6 +150,17 @@ Sixteen settings, sixteen questions, listed with proposed wording in
 `Geek-Receptionist/plans/signup-form-questions.md`. **Wording and order are Jeff's, one short instruction at a time.**
 Nothing in C is built ahead of him saying it.
 
+**One question cannot be asked honestly yet.** Q7d offers "Transfer to a number", and after A nothing dials
+(see A). Asking it would promise a capability the product does not have and store a number no code reads. Either transfer
+is built on the tenant path first — separate work, not in this plan — or Q7d ships with the message choice only until it
+is. Jeff's call; the form is not built ahead of it either way.
+
+**The review's grouping suggestion, recorded rather than taken.** It proposes three or four thematic steps — call
+handling, greeting and voice, notifications, booking and consent — each showing the preset already filled in, instead of
+sixteen consecutive screens, on the grounds that a sixteen-step wizard before payment loses small-business owners. The
+route accepts any subset of fields, so this costs nothing to adopt and nothing to decline. It changes no code in C and no
+setting goes unasked under it. It is Jeff's to take.
+
 ### D. Delete the billing exemption
 
 `BILLING_EXEMPT_EMAIL` is one client's email in Railway deciding that client's billing, which is the same defect as
@@ -118,6 +168,13 @@ the four already deleted. It is also broken on its own terms: `ActivateWithoutBi
 subscription nor a telephony row (`VoiceRepository.cs:154-194`), while every inbound call calls `GetStandingAsync`,
 which joins `tenant_subscriptions` and fails without a row (`VoiceBillingRepository.cs:405-418`). An exempt tenant's
 phone can never be answered. The path does not work and has never been exercised.
+
+**It is worse than not working: it overwrites settings before it refuses.** `BillingExemption.cs:48-53` saves
+`ReceptionistDefaults.ConfigFor(...)` over the tenant's config **first**, and the only `pending_payment` gate is inside
+`ActivateWithoutBillingAsync` afterwards. So calling it a second time for an already-active exempt tenant resets that
+business's consent mode, booking flag, knowledge run and the rest to the defaults, and *then* returns 409. A route that
+mutates a live business on its way to refusing is the opposite of fail-closed, and it is the last argument for deleting
+this rather than repairing it.
 
 Deleted: `BillingExemptionOptions` and `BillingExemption` (`GeekAPI/Services/Voice/Onboarding/BillingExemption.cs`),
 the `billing-exemption` route (`OnboardingController.cs:55`), `IVoiceBillingExemption` and its repository
@@ -159,19 +216,61 @@ and is included so the plan is complete, **flagged for Jeff rather than decided*
 Jeff, 2026-11-20: *"the variables are client data, shouldn't they be encrypted?"*
 
 What is already encrypted (credentials): `tenant_telephony.twilio_auth_token_encrypted`, both OAuth tokens in
-`tenant_mcp_connections`, through `VoiceCredentialProtector` keyed by `VOICE_ENCRYPTION_KEY`. GeekRepository stores
-ciphertext it never decrypts; the key lives in GeekAPI.
+`tenant_mcp_connections`, and both bucket keys in `storage_connections` — `access_key_id_encrypted` and
+`secret_access_key_encrypted` (migration 0079), sealed in `StorageController.cs:91,93` before the HTTP hop and opened in
+`S3CompatibleCallRecordStorage.cs:45,47`. All through `VoiceCredentialProtector`, AES-256-GCM, keyed by
+`VOICE_ENCRYPTION_KEY`. GeekRepository stores ciphertext it never decrypts; the key lives in GeekAPI.
 
 What is not (PII, plaintext today): `receptionist_configs.transfer_target_number`,
 `receptionist_configs.message_destination_email`, `tenants.contact_email`, `tenants.contact_phone`.
 
 F encrypts those four at the same boundary and with the same protector, so the repository stays blind and GeekAPI
-has the clear value where it needs it — a number to dial, an address to send to. What this costs: `ValidateConfig`'s
-shape checks (E.164, email) move to GeekAPI before encryption, since the repository can no longer read the value;
-`contact_email` is also the owner-login lookup key, so it needs a deterministic HMAC blind-index column beside the
-ciphertext for `WHERE` lookups. Migration adds the ciphertext and index columns, a one-time backfill encrypts existing
-rows, the plaintext columns are dropped — three migrations, applied in order, each idempotent. **Not** the behavioural
-flags, hours, greeting or prompt: they are read on every call and are not secrets.
+has the clear value where it needs it — an address to send to now, a number to dial once transfer exists. What this
+costs: `ValidateConfig`'s shape checks (E.164, email) move to GeekAPI before encryption, since the repository can no
+longer read the value. Migration adds the ciphertext columns, a one-time backfill encrypts existing rows, the plaintext
+columns are dropped — three migrations, applied in order, each idempotent. **Not** the behavioural flags, hours, greeting
+or prompt: they are read on every call and are not secrets.
+
+#### The blind index was approved on a premise the code does not support
+
+Jeff approved F as *"contact_email (with a deterministic HMAC-SHA256 blind-index column for owner-login lookups)"*, and
+the plan said `contact_email` "is also the owner-login lookup key". **It is not.** Owner login reads a different table:
+`geek_voice.owner_logins.email` (migration 0061, unique index `uq_voice_owner_logins_email`, looked up by
+`VoiceOwnerRepository.FindOwnerLoginByEmailAsync`). `tenants.contact_email` has **no index at all** — the only index on
+`geek_voice.tenants` is the primary key — and appears in **no `WHERE` clause** in either repository. Its one non-storage
+use is the in-memory compare at `BillingExemption.cs:41`, which D deletes.
+
+So a blind index on it would be a column nothing reads, added to serve a lookup that happens somewhere else. That is the
+dead-identifier failure the parent `CLAUDE.md` is built around: it would be grepped later and read as evidence that owner
+login goes through `tenants`. **The blind index is dropped from F.** Four fields encrypted, no index column.
+
+The real plaintext-PII-used-as-a-lookup-key is `owner_logins.email`, which is unique-indexed and queried on every
+sign-in. Encrypting *that* is what would need a deterministic HMAC. It is named here and **not** done: it is the login
+path, it was not what Jeff approved, and it is a separate decision.
+
+#### Two gaps in the protector that F has to close first
+
+* **The sealed value carries no version, so the key can never be rotated.** `VoiceCredentialProtector` stores
+  nonce(12) + tag(16) + ciphertext as one base64 string with nothing identifying the key or format, and `Unprotect`
+  tries the single current key — its own error says a changed key cannot read what the old key wrote. The review asked
+  for a `key_version`. F adds a one-byte format version at the front of the sealed blob and checks it on open, refusing
+  an unknown version rather than guessing. Multi-key rotation itself is not built here; the byte is what makes it
+  possible later. Pre-launch, so existing sealed rows are re-sealed or their test tenants deleted, not read through a
+  dual-key fallback.
+* **The bucket keys are sealed under borrowed purposes.** The purpose string is GCM associated data, which is what keeps
+  one kind of secret from opening as another — but `StorageController` reuses `VoiceSecretPurposes.McpAccessToken` and
+  `McpRefreshToken` for the two bucket keys. So an OAuth ciphertext from `tenant_mcp_connections` would open as a bucket
+  credential, and the reverse. F adds `StorageAccessKeyId` and `StorageSecretAccessKey` and switches both the write and
+  the read site. This is the answer to "verify storage_connections follows the same pattern": the columns are ciphertext,
+  the purposes are wrong.
+
+#### Logs were audited rather than assumed
+
+The review asked that no PII reach the logs. Checked across GeekAPI and GeekRepository: no log statement in the Voice,
+Onboarding or OwnerAuth code carries a contact email, contact phone, transfer number or destination email, and those
+files say so in their own comments. The four statements that do log a phone number are all company-line SMS code
+(`Sms.cs:27,34`, `InboundSms.cs:77,79`) and are deleted by A. No logging work is needed; this is recorded so it is not
+re-audited.
 
 Moving the key into GeekRepository, as the external review suggested, would be a new architecture decision — it
 reverses which service is trusted with plaintext — and is not part of this plan.
@@ -189,7 +288,8 @@ piece of work, and Jeff has said the number going unanswered during development 
 Approved by Jeff, 2026-11-20: *"Execute the plan in the agreed order (B -> D -> A -> C, deferring E until Geek @ Your
 Spot LLC is onboarded as a tenant)."* F was approved in the same message ("Tier 2 (Encrypt): TransferTargetNumber,
 MessageDestinationEmail, and on tenants: contact_phone and contact_email (with a deterministic HMAC-SHA256 blind-index
-column for owner-login lookups)") and goes straight after B because it touches the rows B writes.
+column for owner-login lookups)") and goes straight after B because it touches the rows B writes. The four fields stand;
+the blind-index clause does not, for the reason recorded under F — the lookup it was for happens in another table.
 
 Order: **B (with B2) → F → D → A → C as wording arrives. E deferred.**
 
@@ -220,9 +320,18 @@ environment (A, D, E).
 * A grep proving the deleted variable names return zero hits across every `.cs`, `.ts`, `.tsx`, `.json`, `.md` and
   `.env*` file in both repos — the same bar `5a72445` set for the Markdown retirement: a surviving name is read as a
   live claim. No commented-out code, no stubbed fallback, no doc comment describing the old path.
+* New tests for F: a value sealed under one purpose refuses to open under another, specifically a bucket key against the
+  MCP purposes; an unknown format-version byte is refused rather than parsed; a config round-trips its transfer number
+  and destination email through GeekAPI with the repository holding only ciphertext.
 * `TwilioSignatureFilter` is deleted only because `TenantTwilioWebhook.VerifyAsync` (`Services/Voice/Calls/`) already
-  checks every tenant POST against the tenant's own subaccount token with an `AccountSid` match and cannot be turned
-  off — confirmed by reading it, not assumed. The tenant path's check is strictly stronger than the one being removed.
+  checks every tenant POST, confirmed by reading it rather than assumed: the token is the tenant's own subaccount token,
+  decrypted from `TwilioAuthTokenEncrypted` through the protector, not `TWILIO_AUTH_TOKEN`; the signature is validated by
+  Twilio's `RequestValidator` over `PUBLIC_BASE_URL` plus the request path and query; the form's `AccountSid` must equal
+  the stored subaccount SID or the request is refused `AccountMismatch`; a missing signature header and an unset
+  `PUBLIC_BASE_URL` are both refusals, the latter a 503. There is no bypass flag — `VALIDATE_TWILIO_SIGNATURE` reaches
+  only the company-line filter being deleted. The tenant path's check is strictly stronger than the one being removed,
+  and the review's suggestion to validate against `TWILIO_MASTER_*` would reject every legitimate call, because Twilio
+  signs a subaccount's webhook with that subaccount's token.
 * `railway variable list --service GeekAPI --environment production` showing no per-business value remains: the
   seven not yet deleted (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`,
   `BILLING_EXEMPT_EMAIL`; `RING_SECONDS` and `SCREEN_CALLS` were never set) are deleted by Jeff — the permission

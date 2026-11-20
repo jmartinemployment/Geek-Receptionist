@@ -60,11 +60,30 @@ dashboard control can fix it.
 
 ## 2. Fixed in this pass
 
-**`0078` named a table that does not exist.** It altered `geek_voice.mcp_connections`; the table is
-`geek_voice.tenant_mcp_connections` (`0060:84`). A missing table raises 42P01, and `SqlMigrationRunner` calls
-`StopApplication()` and rethrows — so this would not have failed one migration, it would have **stopped
-GeekRepository from starting**, taking `0079`, `0080` and `0081` with it. Applying the migrations was step one
-of making the product testable; it would have taken the service down.
+**`0078` named a table that does not exist, and it had already taken production down.** It altered
+`geek_voice.mcp_connections`; the table is `geek_voice.tenant_mcp_connections` (`0060:84`).
+
+This is written in the past tense because Railway's logs settled it. `0078` was committed at 19:46 on
+2026-11-19, and from that moment **GeekRepository crash-looped on every boot for seventeen hours**:
+`42P01: relation "geek_voice.mcp_connections" does not exist` → *"Auth SQL migration failed — stopping
+startup"* → unhandled exception, at `SqlMigrationRunner.cs:103`. It recovered at 12:52 on 2026-11-20, when the
+fix deployed and `0078`, `0079`, `0080` and `0081` applied in order. The commit message for that fix says the
+bug "would have" stopped the service; that was written before the logs were read, and it is wrong. It did.
+
+Two things worth keeping from how it was missed:
+
+- **Railway reported every crashed deploy as SUCCESS.** The 12:31 deployment died at 12:33:12 and its status
+  still reads `SUCCESS`. In this project a deployment status means a container started, not that the service is
+  running. It is not evidence of health and must not be read as any.
+- **Fail-loud worked; nothing was listening.** The runner refused to start rather than continuing on a
+  half-applied schema, which is exactly what `CLAUDE.md` §2 asks for. The rule did its job and the outage still
+  lasted seventeen hours, because no alert watches the one signal it produces.
+
+What saved the phone line was the defect this document is about: GeekAPI is a separate service that does not run
+the migration runner, and the company line builds its config from compiled constants and environment variables
+rather than from GeekRepository. So the one business whose configuration is hardcoded is the one business that
+kept answering calls while every tenant path was unreachable. That is not an argument for the hardcoding — it is
+the same single-tenant shortcut showing up as luck instead of as a bug.
 
 The constraint name was wrong the same way. `0060` declares the CHECK inline, so Postgres names it
 `tenant_mcp_connections_provider_check`; dropping `mcp_connections_provider_check` matched nothing. Had only the

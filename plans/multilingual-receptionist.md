@@ -61,10 +61,40 @@ time, not ours.
 That reframes the whole exercise: **the engineering is a config value and one prompt line; the cost is legal translation of
 two sentences, times twenty.** A plan that budgets for the first and not the second has the proportions backwards.
 
-An honest intermediate exists, and it is worth putting to Jeff rather than deciding: ship the *conversation* in many
-languages while keeping the *consent gate* in the languages whose wording has been reviewed, starting with Spanish. A caller
-who hears the disclosure in English and then speaks Spanish to the receptionist is still disclosed to; a caller who hears a
-machine-translated legal sentence is in a worse position than either.
+**An intermediate was proposed here and is withdrawn.** It read: ship the conversation in many languages while keeping the
+consent gate in English until each language's wording is reviewed. Jeff, 2026-11-20: *"Thats lame, and one could claim one
+didn't understand."* He is right, and the objection is fatal rather than aesthetic. Consent that was not understood is not
+consent, and a disclosure spoken in a language the caller does not speak is **worse** than none: it leaves a record that
+looks like a disclosure and would not survive the caller saying "I did not understand it." The proposal kept the mechanism
+and discarded the only thing the mechanism exists for.
+
+So the legal translation is not deferrable and not engineerable around. **A language we offer is a language whose disclosure
+has been reviewed in that language.** Twenty languages is twenty reviewed disclosures, up front, and that is the honest price
+of the marketing claim.
+
+### What the objection forces, which is an ordering problem
+
+If the disclosure must be understood, it must be in the caller's language. But today it is the **first thing on the call** —
+`DisclosureText` is passed as ConversationRelay's `welcomeGreeting` (`TenantCallController.cs:119`), spoken before the caller
+has said a word. There is nothing to detect a language from yet. That is the real design constraint, and it was invisible
+while the intermediate was on the table.
+
+The ways out, none of them chosen here:
+
+1. **The tenant picks.** One language per receptionist, set in the form. A bilingual business buys a second number or we
+   support a per-number language. Simplest, no detection, and the disclosure is always the reviewed one.
+2. **A language menu before the disclosure.** *"For English press 1. Para español, oprima 2."* Then the reviewed disclosure
+   in that language. The mechanism already exists — `strict_keypress` mode runs a `<Gather>` today — but it puts a keypress
+   in front of every caller, which is a decision about how a business greets its customers and therefore Jeff's.
+3. **A bilingual disclosure.** Both languages spoken up front. Works for two, not for twenty, and doubles the opening.
+4. **Detect, then disclose.** A neutral opening, detect the language from the caller's first words, then the reviewed
+   disclosure. Requires live detection — whether ConversationRelay's `multi` code does this, and how reliably, is one of the
+   things still out for verification — and it means the caller speaks before being disclosed to, which may itself be the
+   problem being solved.
+
+Option 1 costs nothing to decide and is the tenant's call, which is where this product puts such questions anyway. It is also
+the one that makes the per-language legal review arrive incrementally — a language is reviewed before it is offered, and no
+tenant can select one that has not been.
 
 ## Two language settings, not one
 

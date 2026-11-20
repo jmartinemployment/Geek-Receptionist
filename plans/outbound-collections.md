@@ -72,12 +72,18 @@ needs the tenant to have a system worth asking, and it makes us dependent on the
 of a wrong one is a federal violation. The first is a real database of consumer debt contact history, which is a different
 company than the one described on the sales page.
 
-## Who could use it, which the signup already partly answers
+## Who is left to sell this to — a market question, not an outbound rule
+
+**Nothing in this section is a constraint on outbound calling.** Outbound is governed by the TCPA and Regulation F above,
+and by state law. What follows is who can be a tenant at all, which is the same question for inbound and settled already;
+it is here only because it decides how much of the collections market this use case could reach, and that bears on whether
+to build it. An earlier version of this section sat unlabelled and read as though HIPAA governed outbound calls. It does not.
 
 **Medical debt is already refused, and that is most of third-party collections.** `/signup` asks *"Does the business handle
 patient health information for a healthcare provider or health plan?"* (`src/lib/signup/excluded.ts:39`) and a yes ends the
-signup. A medical-debt collector working for a provider is a HIPAA business associate and answers yes. So the existing gate
-excludes them without a word being added.
+signup. A medical-debt collector working for a provider is a HIPAA business associate and answers yes. That exclusion is
+deliberate — Jeff chose the eight industry questions on 2026-11-18 — and it already does this work, whichever direction the
+calls go.
 
 What the form does **not** ask, and would have to: whether the business collects debts owed to others (FDCPA applies), and
 whether it holds the state collection-agency licences its calls require. Not verified: which states require what. Those are

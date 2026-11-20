@@ -1,9 +1,23 @@
-# Geek-Receptionist owns its own stack
+# Where Geek-Receptionist lives
 
-Decided by Jeff, 2026-11-19, after he found this session building into GeekAPI and duplicating
-infrastructure that was already running. Verbatim: *"I think this application needs its own DB
-tables, embeddings etc, and removal of duplicate crap"*, then *"DO NOT USE GEEK API THATS FUCKING
-STUPID"*.
+Written after Jeff found this session duplicating infrastructure that was already running. Verbatim,
+2026-11-19: *"I think this application needs its own DB tables, embeddings etc, and removal of
+duplicate crap"*, then *"DO NOT USE GEEK API THATS FUCKING STUPID"*. Corrected 2026-11-20, when he
+read what had been written down and said the service's address was never what he was objecting to:
+*"Service located inside Geek-API, documents data in Mongo in Hostinger VPS"*.
+
+This note was first called "Geek-Receptionist owns its own stack", which asserted the half that was
+wrong. The title went with the claim.
+
+## Where each kind of data lives
+
+| What | Where |
+|---|---|
+| Service logic | **GeekAPI** — `Services/Receptionist/*`, `Services/Voice/*`, `Controllers/Voice/*` |
+| Client, tenant, billing, config | **Postgres `geek_voice`** through GeekRepository, hosted on **Supabase** |
+| A business's own documents | **Mongo** on the Hostinger VPS |
+| Their vectors | **Qdrant** on the same box, reached through the Library over HTTP |
+| Call content — audio, transcript, what was said | **Nowhere.** Zero Data Retention; billing metadata only |
 
 ## What is already running, verified by reading the deployment
 
@@ -30,11 +44,11 @@ reading the deployment.
   *data* in it, not its own copy of it.
 - **It does not use the crawler's corpus or its signed-manifest asset routes.** Those are built
   around crawl provenance; a phone receptionist should not inherit either.
-- **GeekAPI is not the home for this product's own stack.** Jeff, 2026-11-19 after the decision:
-  *"It's not all vps or all GeekAPI"* — this is not all-or-nothing, and which pieces stay shared has
-  not been decided. What was rejected was building the receptionist's tables and embeddings into
-  GeekAPI by default, without being told what they were for. Settle each piece with him rather than
-  reading a blanket rule into this.
+- **The service stays in GeekAPI, like every other product here.** Jeff, 2026-11-20: *"Service
+  located inside Geek-API, documents data in Mongo in Hostinger VPS"* — that is the structure he
+  asked to have researched, and it is what Geek-Crawler, Geek-Crawler-Rag and Content Creator all
+  do. `GccGroundingResolver` is GeekAPI calling the Library over HTTP; GeekAPI is the caller, not
+  the thing being routed around.
 
 ## The duplicate to delete
 
@@ -44,20 +58,25 @@ reading the deployment.
 `.cs` file in GeekBackend returns one comment and nothing else. That search has never run and could
 not. It is a second vector store next to a working one, and it goes.
 
-## What is on the wrong side of the line
+## Where the code lives, which is where it belongs
 
-Everything built for this product in this session lives in GeekBackend and must move, not grow:
+In GeekAPI, with the rest. `GeekAPI/Services/Receptionist/*`, `GeekAPI/Services/Voice/*`,
+`GeekAPI/Controllers/Voice/*` and the `geek_voice` schema are in the right place and are extended
+there, not moved.
 
-- `GeekAPI/Services/Receptionist/*` — the ConversationRelay session, the agent loop, consent,
-  the end-of-call record.
-- `GeekAPI/Services/Voice/*` — telephony, billing, onboarding, MCP calendar, storage connectors.
-- `GeekAPI/Controllers/Voice/*` — the tenant call, OAuth, calendar and storage routes.
-- `GeekRepository` — the `geek_voice` schema and `VoiceRepository`.
-
-The portal's `CLAUDE.md` still describes the current wiring, which is real today: the Next.js app
-calls GeekAPI and nothing else. That is a statement of where the code is, not of where it belongs.
+An earlier version of this note said all of it "must move" out of GeekBackend. That was wrong and
+nobody asked for it: it read "its own tables and embeddings" — a statement about this product not
+duplicating a vector store that already ran — as a mandate to extract the whole product into a
+separate service. No such decision was made. Deleted rather than softened, because a migration
+nobody ordered is exactly the kind of claim a later reader acts on.
 
 ## Standing rules this breached, for whoever reads next
+
+Do not read an instruction about one thing as a mandate about everything. "Its own tables and
+embeddings" meant this product should not stand up a second vector store beside a working one. It
+did not mean a new service, a new deployment, or moving code that is already where it belongs. The
+first version of this note made exactly that leap, and a plan file asserting a migration is how an
+unordered migration gets started.
 
 Read the deployment before proposing a build. `docker-compose.yml` answered this in one read, and
 was not opened for hours of building. The existing memory rule — *check what already exists before

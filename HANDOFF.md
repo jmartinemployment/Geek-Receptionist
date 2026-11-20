@@ -1,12 +1,14 @@
 # Geek-Receptionist handoff — 2026-11-19
 
-Read `plans/receptionist-owns-its-stack.md` first. It holds the architecture decision this handoff
+Read `plans/where-the-receptionist-lives.md` first. It holds the architecture decision this handoff
 is written under, and the reason it was made.
 
 ## The one thing to know
 
-**Geek-Receptionist is its own application.** Its own service, its own database tables, its own
-Qdrant collection and embeddings — rather than those being built into GeekAPI by default.
+**The service lives in GeekAPI, like every other product here.** Jeff, 2026-11-20: *"Service
+located inside Geek-API, documents data in Mongo in Hostinger VPS"*. An earlier version of this
+handoff said the opposite — that the product was to be extracted from GeekAPI — and it was wrong.
+What was actually rejected was a duplicate vector store, not the code's address.
 
 **This is not all-or-nothing.** Jeff, 2026-11-19: *"It's not all vps or all GeekAPI"*. Which pieces
 stay shared is not decided; settle each with him rather than reading a blanket rule into it. What

@@ -393,17 +393,24 @@ does with the answer, not by inspecting the plan:
    calendar. Either the question moves to first sign-in, or signup records an intention the dashboard acts on, which is a new
    field and not in this plan. Jeff's call.
 
-**Found while mapping that, not caused by it: B2 has the same bypass.** `ReceptionistConfigWriter` runs no calendar check, so
-`PUT /api/v1/tenants/{id}/receptionist/config` with `bookingEnabled: true` stores booking as on with nothing behind it —
-exactly what `BookingSettingController` refuses on the route beside it. Not fixed here: the fix wires `CalendarTools` into the
-writer and so changes both doors' dependencies, which is a defect in B2 rather than a part of C.
+**Found while mapping that, and fixed: B2 had the same bypass.** `ReceptionistConfigWriter` ran no calendar check, so
+`PUT /api/v1/tenants/{id}/receptionist/config` with `bookingEnabled: true` stored booking as on with nothing behind it —
+exactly what `BookingSettingController` refuses on the route beside it, in a doc comment that explains why. Two routes write
+the same column and the rule held on one of them. The writer now takes `CalendarTools` and asks the business's calendar the
+same question a call would, on both doors, in that one direction only: turning booking **off** is the business withdrawing
+permission and asks no calendar at all, and neither does any answer that is not about booking. `calendar_required` is defined
+once, on the writer, and the controller reads it from there so the two cannot answer with different codes.
 
-**Verified:** 4,700 GeekBackend tests green (4,644 before; the new ones cover the assembled prompt, a blank part left out, a
-business that says nothing about itself refused, the prompt answered twice refused, the tenant row read once per door, and the
-question list reaching a call). 91 portal tests green, `npm run lint` clean for every file this touched. **`npm run build`
-fails, and already failed before this work** on `src/components/shared/scheduler/contact-drawer.tsx:139` — `vaul`'s `Drawer`
-no longer takes `direction` or `DrawerClose asChild`. Confirmed by stashing: the same two errors, same lines. The portal's
-production build is red on `main` and nothing in C changes that.
+**Also fixed, and nothing to do with C: the portal's production build was red on `main`.** `22bbac4` replaced
+`src/components/ui/drawer.tsx` with the Base UI version and left `contact-drawer.tsx` on vaul's API — `direction` is
+`swipeDirection` there, and a `Close` wrapping another component takes `render` rather than `asChild`. Two type errors, one
+file, the drawer behaving exactly as before. `vaul` now has no importer; its `package.json` entry is left alone.
+
+**Verified:** 4,705 GeekBackend tests green, from 4,644 — the assembled prompt, a blank part left out, a business that says
+nothing about itself refused, the prompt answered twice refused, the tenant row read once per door, a plain question list
+reaching a call and a malformed one refused, and booking refused without a calendar on both doors while off and every other
+answer ask no calendar at all. 91 portal tests green, `npm run lint` clean on every file this touched, `npm run build` green
+and `npm run typecheck` clean — both were red on `main` before this, on the drawer above.
 
 Two guardrails carried from the review into the work:
 

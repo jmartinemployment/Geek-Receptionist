@@ -7,6 +7,7 @@ import { Dialog } from "@/components/dialog";
 import { DAYS, TIMEZONES } from "@/lib/signup/hours";
 import {
   activateAction,
+  appointmentsAction,
   businessAction,
   captchaAction,
   createLoginAction,
@@ -501,6 +502,43 @@ export function MessagesForm({ email, idSuffix }: { email: string; idSuffix: str
           </span>
         </label>
       </fieldset>
+
+      <StepButton pending={pending} />
+    </form>
+  );
+}
+
+/**
+ * Appointments. The answer is recorded now and acted on at first sign-in: booking needs a calendar connected, which needs the login
+ * created at the end of this form, so a yes here cannot switch booking on yet. The step says so rather than implying it is already
+ * working, and a no is left alone — the dashboard never asks again.
+ */
+export function AppointmentsForm() {
+  const [state, action, pending] = useActionState(appointmentsAction, start({ wantsBooking: "no" }));
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+
+      <Choice
+        name="wantsBooking"
+        legend="Should your receptionist book appointments in your calendar?"
+        help="Letting it see when you are free and letting a caller put something in your calendar are two different things. This is the second."
+        selected={state.fields.wantsBooking ?? "no"}
+        options={[
+          {
+            value: "yes",
+            label: "Yes, let callers book",
+            detail:
+              "You connect your Google Calendar the first time you sign in, and booking switches on then. Until it is connected your receptionist takes a message, because a receptionist that books into nothing is worse than one that says it will pass the message on.",
+          },
+          {
+            value: "no",
+            label: "No, take a message instead",
+            detail: "Your receptionist takes the caller's details and you call them back. You can change this whenever you want.",
+          },
+        ]}
+      />
 
       <StepButton pending={pending} />
     </form>

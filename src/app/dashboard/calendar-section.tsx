@@ -121,7 +121,23 @@ export async function CalendarSection() {
           </>
         )}
 
-        {booking.kind === "settings" && !booking.enabled && (
+        {/*
+          Booking off while the business asked for it at signup. It is not the same as a business that chose to take messages, and
+          showing both the same way would tell an owner who asked for appointments that nothing was recorded. The answer is on their
+          settings row; connecting a calendar switches booking on without them having to find this switch.
+        */}
+        {booking.kind === "settings" && !booking.enabled && booking.requested && !booking.calendarConnected && (
+          <>
+            <p className={ui.status.warn}>Waiting for your calendar</p>
+            <p className={`${ui.muted} mb-4`}>
+              You asked for appointments when you signed up. Connect your Google Calendar above and booking switches on by itself.
+              Until then your receptionist takes a message, because one that books into nothing is worse than one that says someone
+              will call back.
+            </p>
+          </>
+        )}
+
+        {booking.kind === "settings" && !booking.enabled && !(booking.requested && !booking.calendarConnected) && (
           <>
             <p className={ui.status.warn}>Off</p>
             <p className={`${ui.muted} mb-4`}>

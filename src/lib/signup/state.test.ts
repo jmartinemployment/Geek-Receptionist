@@ -35,6 +35,7 @@ test("the receptionist questions are asked in order, each once, and only before 
   assert.equal(stepOf({ ...base, configDone: ["greeting", "hours"] }, none), "questions");
   assert.equal(stepOf({ ...base, configDone: ["greeting", "hours", "questions"] }, none), "knowledge");
   assert.equal(stepOf({ ...base, configDone: ["greeting", "hours", "questions", "knowledge"] }, none), "messages");
+  assert.equal(stepOf({ ...base, configDone: ["greeting", "hours", "questions", "knowledge", "messages"] }, none), "appointments");
 
   // A later step answered does not let an earlier one be skipped.
   assert.equal(stepOf({ ...base, configDone: ["messages", "knowledge"] }, none), "greeting");

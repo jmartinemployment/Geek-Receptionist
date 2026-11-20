@@ -9,36 +9,46 @@ import {
   isConsentMode,
 } from "./controls";
 
-test("booking on, with a calendar behind it, is read as both", () => {
-  assert.deepEqual(describeBookingSettings(200, { enabled: true, calendarConnected: true } as never), {
+test("booking on, with a calendar behind it, is read as all three", () => {
+  assert.deepEqual(describeBookingSettings(200, { enabled: true, requested: true, calendarConnected: true } as never), {
     kind: "settings",
     enabled: true,
+    requested: true,
     calendarConnected: true,
   });
 });
 
 test("booking off is a setting the owner can see, not a problem", () => {
-  const state = describeBookingSettings(200, { enabled: false, calendarConnected: false } as never);
+  const state = describeBookingSettings(200, { enabled: false, requested: false, calendarConnected: false } as never);
   assert.equal(state.kind, "settings");
   assert.equal(state.kind === "settings" && state.enabled, false);
 });
 
+test("a business that asked for booking at signup and has no calendar yet is all three facts, apart", () => {
+  const state = describeBookingSettings(200, { enabled: false, requested: true, calendarConnected: false } as never);
+  assert.equal(state.kind, "settings");
+  assert.equal(state.kind === "settings" && state.enabled, false);
+  assert.equal(state.kind === "settings" && state.requested, true);
+  assert.equal(state.kind === "settings" && state.calendarConnected, false);
+});
+
 test("booking on with no calendar behind it is kept as two separate facts", () => {
-  const state = describeBookingSettings(200, { enabled: true, calendarConnected: false } as never);
+  const state = describeBookingSettings(200, { enabled: true, requested: true, calendarConnected: false } as never);
   assert.equal(state.kind, "settings");
   assert.equal(state.kind === "settings" && state.enabled, true);
   assert.equal(state.kind === "settings" && state.calendarConnected, false);
 });
 
 test("a 200 that does not say whether booking is on is a problem, never on and never off", () => {
-  for (const body of [null, {}, { enabled: "true", calendarConnected: true }, { enabled: true }]) {
+  // An answer missing any of the three is a problem: a missing `requested` would be shown as a business that never asked.
+  for (const body of [null, {}, { enabled: "true", requested: true, calendarConnected: true }, { enabled: true }, { enabled: true, calendarConnected: true }]) {
     assert.equal(describeBookingSettings(200, body as never).kind, "problem", JSON.stringify(body));
   }
 });
 
 test("a failing answer is never read as a setting", () => {
   for (const status of [400, 401, 403, 404, 409, 500, 502, 503]) {
-    assert.equal(describeBookingSettings(status, { enabled: true, calendarConnected: true } as never).kind, "problem", String(status));
+    assert.equal(describeBookingSettings(status, { enabled: true, requested: true, calendarConnected: true } as never).kind, "problem", String(status));
   }
 });
 

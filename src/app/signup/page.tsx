@@ -9,6 +9,7 @@ import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, isExcludedCode } from "@/lib/signu
 import { choosePlanAction, countryAction, excludedIndustryAction, forgetRobotCheckAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
 import {
+  AppointmentsForm,
   BusinessForm,
   GreetingForm,
   HoursForm,
@@ -32,6 +33,7 @@ const STEPS: { step: SignupStep; title: string }[] = [
   { step: "questions", title: "What it should ask" },
   { step: "knowledge", title: "What it should know" },
   { step: "messages", title: "After the call" },
+  { step: "appointments", title: "Appointments" },
   { step: "plan", title: "Choose a plan" },
   { step: "payment_method", title: "Save a payment method" },
   { step: "number", title: "Your receptionist's number" },
@@ -130,6 +132,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         {step === "questions" && <QuestionsForm idSuffix={s} />}
         {step === "knowledge" && <KnowledgeForm idSuffix={s} />}
         {step === "messages" && state && <MessagesForm email={state.contactEmail} idSuffix={s} />}
+        {step === "appointments" && <AppointmentsForm />}
 
         {step === "plan" && (
           <>

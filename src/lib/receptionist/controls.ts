@@ -43,23 +43,30 @@ export function describeConsentFailure(code: string | null, message: string | nu
 }
 
 export type BookingSettings =
-  | { kind: "settings"; enabled: boolean; calendarConnected: boolean }
+  | { kind: "settings"; enabled: boolean; requested: boolean; calendarConnected: boolean }
   | { kind: "problem"; message: string; code: string | null };
 
 /**
- * What the owner is told about booking, from GeekAPI's answer to receptionist/booking. Both facts are read, because "booking is on" and
- * "a call could actually book" are different things and an owner needs to see when they have come apart. An answer this app cannot read
- * is a problem that names its code: it is never shown as on and never shown as off, because either would be a claim about what happens
- * on the next call that nothing checked.
+ * What the owner is told about booking, from GeekAPI's answer to receptionist/booking. Three facts are read, because they can all come
+ * apart: whether booking is on, whether the business asked for it at signup, and whether a call could actually book. An answer this app
+ * cannot read is a problem that names its code: it is never shown as on and never shown as off, because either would be a claim about
+ * what happens on the next call that nothing checked.
+ *
+ * <p>
+ * `requested` is the signup form's answer, kept because booking could not be switched on there: no business has a calendar during
+ * signup. It is what lets this page say "your yes is waiting on a calendar" rather than showing booking plainly off to an owner who
+ * remembers asking for it.
+ * </p>
  */
 export function describeBookingSettings(status: number, body: { error?: unknown; code?: unknown } | null): BookingSettings {
   const code = typeof body?.code === "string" ? body.code : null;
   const message = typeof body?.error === "string" && body.error.trim() !== "" ? body.error : null;
   const enabled = (body as { enabled?: unknown } | null)?.enabled;
+  const requested = (body as { requested?: unknown } | null)?.requested;
   const calendarConnected = (body as { calendarConnected?: unknown } | null)?.calendarConnected;
 
-  if (status === 200 && typeof enabled === "boolean" && typeof calendarConnected === "boolean") {
-    return { kind: "settings", enabled, calendarConnected };
+  if (status === 200 && typeof enabled === "boolean" && typeof requested === "boolean" && typeof calendarConnected === "boolean") {
+    return { kind: "settings", enabled, requested, calendarConnected };
   }
   if (status === 401) return { kind: "problem", message: "Your sign-in has ended. Sign in again.", code };
   if (status === 200) return { kind: "problem", message: "GeekAPI did not say whether booking is on.", code };

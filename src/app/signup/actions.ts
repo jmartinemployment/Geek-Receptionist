@@ -232,6 +232,25 @@ export async function messagesAction(_previous: SignupFormState, form: FormData)
   );
 }
 
+/**
+ * Appointments: whether this business wants its receptionist to book into its calendar.
+ *
+ * <p>
+ * This answers `bookingRequested` and never `bookingEnabled`. Booking itself is refused without a calendar that works, and no business
+ * has one during signup — connecting a calendar is a Google sign-in that needs the owner's token, and the login is the last step. So a
+ * yes here is the business's answer on the record; the first sign-in asks for the calendar and GeekAPI switches booking on when it
+ * arrives. Sending `bookingEnabled` would have the visitor refused for answering honestly.
+ * </p>
+ */
+export async function appointmentsAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const wants = text(form, "wantsBooking");
+  if (wants !== "yes" && wants !== "no") {
+    return { error: "Say whether your receptionist should book appointments.", fields: { wantsBooking: wants } };
+  }
+
+  return saveConfigStep("appointments", { bookingRequested: wants === "yes" }, { wantsBooking: wants });
+}
+
 /** Step 4: the plan. GeekAPI starts a PayPal subscription to it for this tenant and the visitor approves it in PayPal. */
 export async function choosePlanAction(tier: string): Promise<{ error: string | null }> {
   const state = await readSignup();

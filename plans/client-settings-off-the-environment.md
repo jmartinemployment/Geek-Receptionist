@@ -205,6 +205,17 @@ implementation and internal route, and the portal's `billingExempt` branch in `s
 Geek @ Your Spot signs up at `/signup` like any client, pays like any client, and is handed a new number by the path
 that already works. Jeff, 2026-11-20: *"I AM A CLIENT/USER!"*
 
+**Nothing replaces it, decided 2026-11-20.** Jeff: *"No i don't think I want to comp an account."* Three ways to keep the
+capability were put to him — pay the subscription like any client, a fifth tier at `$0.00` with its own
+`PAYPAL_PLAN_*` id, or a comped flag per tenant set by an admin route and writing a real subscription row. He took the first.
+So there is no comped account in this product, and a route, a tier, a flag or a variable for one is not to be proposed again.
+
+**And testing never needed one.** `PAYPAL_BASE_URL`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` and the four
+`PAYPAL_PLAN_*` ids are Railway variables precisely so that sandbox and live can differ — `PayPalSignup.cs:12`: *"The sandbox
+and the live account have different plans, so they are variables and not code."* Pointed at sandbox, the whole flow runs for
+nothing: subscription, vault, activation, a real Twilio number, the owner login. Going live is those five variables, not a
+code change. The cost of being tenant #1 afterwards is PayPal's own cut of a real $30 — about $1.17 a month.
+
 ### E. WITHDRAWN. The portal's scheduler is not the same defect
 
 The inventory found four per-business values in the portal's environment, all in the booking scheduler copied from

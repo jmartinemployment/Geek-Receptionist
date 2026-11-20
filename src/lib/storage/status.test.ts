@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { describeStorageCheck, describeStorageFailure } from "./status";
 
 test("a working connection is connected", () => {
-  assert.deepEqual(describeStorageCheck(200, { connected: true }), { kind: "connected" });
+  assert.deepEqual(describeStorageCheck(200, {}), { kind: "connected" });
 });
 
 test("a business that has connected nothing is told so, not shown an error", () => {

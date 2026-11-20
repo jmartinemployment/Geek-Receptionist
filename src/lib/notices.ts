@@ -16,6 +16,7 @@ const CODE = /^[a-z0-9_]{1,64}$/;
 const NOTICES: Record<string, string> = {
   calendar_connected: "Your calendar is connected. The receptionist can now see when you are free and book appointments.",
   storage_connected: "Your Google Drive is connected. Call records are written to a Geek-Receptionist Logs folder in your own Drive.",
+  bucket_connected: "Your bucket is connected. Call records are written there from now on.",
   payment_recorded: "Thank you, your payment is recorded.",
   signup_complete: "Welcome. Your receptionist is set up and answering on your new number.",
   payment_restored: "Thank you, your payment is recorded and your receptionist is active and answering calls again.",

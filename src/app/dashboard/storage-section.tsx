@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { callOwnerTenant } from "@/lib/geekapi";
 import { describeStorageCheck } from "@/lib/storage/status";
 import { ui } from "@/lib/ui";
-import { connectStorageAction } from "./actions";
+import { bucketPolicyAction, connectStorageAction } from "./actions";
+import { BucketForm } from "./bucket-form";
 import { ActionButton } from "@/components/action-button";
 
 /** The Google Drive card: where this owner's call records are written, read from GeekAPI on the server while the page streams. */
@@ -56,6 +57,15 @@ export async function StorageSection() {
           pendingLabel="Opening Google…"
         />
       )}
+
+      <details className="mt-6">
+        <summary className="cursor-pointer font-semibold">Use my own S3 or Cloud Storage bucket instead</summary>
+        <p className={`${ui.muted} mt-2 mb-4`}>
+          Part of Standard and above. Records are written with a key that may only add a file: it cannot read, list or delete anything
+          in your bucket.
+        </p>
+        <BucketForm policyFor={bucketPolicyAction} />
+      </details>
     </section>
   );
 }

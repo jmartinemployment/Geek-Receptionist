@@ -237,11 +237,106 @@ a lost customer", citing 44.9M US Spanish speakers at home) — **made by seller
 it.** That does not make it worthless — a column you lack is a column a competitor uses — but it argues for Spanish done properly over
 twenty done thinly.
 
-## Still being verified
+## Which languages, from the census rather than from a round number
 
-US census data on which languages Americans actually speak at home, and with limited English proficiency, was sent for checking and has
-not come back. That is the piece that would turn "twenty" from a round number into a ranked list, so it gets its own section when it
-lands.
+Pulled from data.census.gov during this session: **ACS 2025 1-year, Table B16001** (released 29 October 2026, the newest vintage) and
+**ACS 2020-2024 5-year** for anything below state level. Table B16001 collapses 1,333 coded languages into 42 categories and bottoms out
+at Navajo, so there is no padding — the list below is what the data contains.
+
+Of 323.6M people aged 5+, **74.2M (22.9%) speak a language other than English at home** and **27.4M (8.5%) speak English less than
+"very well."** That second number is the one that matters: a business needs another language for the customer who *cannot* do the call
+in English.
+
+### Ranked by limited English proficiency, which is the ranking to build from
+
+| # | Language | Cannot do the call in English | LEP rate |
+|---|---|---|---|
+| 1 | **Spanish** | **17,282,610** | 38.5% |
+| 2 | Chinese (Mandarin + Cantonese) | 1,822,427 | 48.3% |
+| 3 | Vietnamese | 923,334 | **55.6%** |
+| 4 | Korean | 571,648 | 48.7% |
+| 5 | Tagalog / Filipino | 558,360 | 28.3% |
+| 6 | Arabic | 434,663 | 31.8% |
+| 7 | Haitian Creole | 414,710 | 44.3% |
+| 8 | Russian | 382,764 | 38.2% |
+| 9 | Portuguese | 340,131 | 32.8% |
+| 10 | French (incl. Cajun) | 282,472 | 23.1% |
+
+**The finding that answers "20 or so": you do not need twenty.**
+
+- **Spanish alone covers 63%** of everyone in the US who cannot conduct a call in English.
+- **Seven languages cover 80%** (Spanish, Chinese, Vietnamese, Korean, Tagalog, Arabic, Haitian Creole = 22.0M of 27.4M).
+- **Ten cover 84%.** The next ten add roughly five points between them.
+
+So twenty is a marketing number, and the data says the curve is almost flat after ten. Ranking by LEP rather than by raw speakers also
+reorders things usefully: Hindi falls from 9th by speakers to **24th** by LEP (14.8% — Hindi speakers in the US overwhelmingly speak
+English well), German 12th to 29th, Telugu 16th to 33rd. Haitian Creole rises to 7th, Vietnamese to 3rd.
+
+The sharpest single statistic: **5,708,182 limited-English-speaking households (4.3%)** — households where *nobody* aged 14+ can take
+the call in English. Spanish is 3.41M of them, 60%.
+
+### Where they are, which matters for a product sold by locality
+
+- **Spanish**: CA 10.5M, TX 7.9M, FL 4.8M. By share, McAllen TX metro **79.8%**, El Paso 61.3%, Miami 39.8%, LA 34.4%.
+- **Haitian Creole**: the most geographically concentrated large language in the country — **FL 461,611, and 4.73% of the Miami metro**.
+  Jeff's South Florida instinct is confirmed by the data.
+- **Chinese**: SF Bay metro **6.98%**, the highest concentration of any language in any metro except Spanish.
+- **Portuguese**: **MA 3.41%, RI 2.91%** — southeastern New England, not Florida, though FL has 180,522.
+- **Arabic**: **Detroit metro 3.16%**, MI 1.81%.
+- **Hmong**: the premise needs refining — CA 75,831 and MN 71,858 are *statistically indistinguishable* on count (overlapping margins),
+  but by share **MN 1.33% vs CA 0.20%**, and Minneapolis-St Paul is 1.82%. So Minnesota by concentration, not by headcount.
+- **Tagalog**: HI 4.41%, Las Vegas metro 3.53%.
+
+### The dialect decision that lands directly on our code
+
+**When Spanish is added it must be `es-US`, not `es-ES`.** Twilio offers both with ElevenLabs voices and Deepgram STT, so it is a free
+choice — and the census says only one of them is right. Of 69.98M Hispanic or Latino people (Table B03001, ACS 2025): **Mexican 56.9%**,
+Caribbean (Puerto Rican + Cuban + Dominican) 17.7%, Central American 10.3%, South American 8.7%, and **Spaniard 1.5%**. Castilian — with
+*vosotros* and *distinción* — is the one variety the US market does not call for.
+
+Three other splits worth knowing before anything past Spanish:
+
+- **Chinese is two languages, not one.** ISO 639-3 treats `zho` as a macrolanguage; Mandarin and Cantonese are not mutually intelligible
+  in speech. Of those who named a variety: Mandarin 725,300, Cantonese 533,100 — but **2,115,000 reported only "Chinese"**, so the
+  variety cannot be inferred and would have to be detected or asked at the start of the call. Cantonese is concentrated in CA and NY and
+  thin everywhere else.
+- **Haitian Creole is not French.** ISO 639-3 lists `hat` as an individual language belonging to no macrolanguage. A French receptionist
+  does not serve a Creole caller, the markets barely overlap (Creole: Miami/Brooklyn/Boston; French: Maine, Louisiana, DC), and Creole's
+  LEP rate is nearly double French's.
+- **Arabic has no spoken standard.** Of 1,305,000 Arabic speakers, **1,257,000 reported generic "Arabic" and exactly 373 reported
+  "Standard Arabic."** MSA is a written and broadcast register — a receptionist speaking it sounds like a newsreader, and MSA recognition
+  performs poorly on dialectal speech. The US population skews Levantine, Egyptian and Iraqi.
+
+### The legal position, and one premise correction
+
+**No US federal or state law was found that requires a private business to answer its telephone, or speak to a customer, in a language
+other than English.** Checked against primary sources, with these specifics:
+
+- **Title VI (42 U.S.C. § 2000d) does not mention language at all** and binds only recipients of federal financial assistance. The
+  language duty lives in 28 CFR § 42.405(d)(1), which binds those recipients.
+- **Executive Order 13166 — the LEP access order — was revoked.** EO 14224, 90 FR 11363 (6 March 2025), § 3(b) revokes it outright.
+  **Any document citing it as live law is wrong**, and it is worth checking that none of ours does. It bound federal agencies anyway, not
+  businesses.
+- **47 CFR § 64.1200 — the TCPA rule — contains no occurrence of "language", "Spanish" or "English."** No federal requirement for the
+  language of a greeting, voicemail or IVR menu. The one federal Spanish-telephone mandate, 47 CFR § 64.603(a), binds carriers and relay
+  providers.
+- **Cal. Penal Code § 632 specifies no language for a recording disclosure** — relevant to our consent gate, and it means the obligation
+  is ours by design rather than by statute.
+- The exceptions that exist are almost all **written documents**: California's Translation Act (Civ. Code § 1632, five languages, eight
+  transaction types) requires a written translation and contains **zero occurrences of "telephon"**; same for Texas Fin. Code
+  § 341.502(a-1) and the FTC's used-car and door-to-door rules.
+- **Two real oral mandates, neither reaching this product's customers:** NY Education Law § 6829 obliges **chain pharmacies** (8+ under
+  one owner) to give free oral interpretation "on an immediate basis", which "need not be provided in-person" — the clearest
+  private-business spoken-language duty found. Cal. H&S Code § 1259 obliges **general acute care hospitals** to have interpreters
+  "accessible by telephone" 24 hours. Healthcare is already refused at signup.
+- **Debt collection is permissive, not mandatory:** 12 CFR § 1006.34(e)(1) says a collector *"may"* send a translated validation notice.
+  And NYC's rule is disclose-don't-provide — but note its definition of language access services includes *"a service that interprets
+  phone conversations in real time"*, so **advertising this feature could turn it into an enforceable representation** for a collections
+  tenant. That ties straight into `outbound-calling.md`.
+
+Not verified, and left open rather than claimed as negatives: California Knox-Keene (H&S § 1367.04, Ins. Code § 10133.8) and NY DFS
+Part 419, both of which returned 403 to automated reading and are the most likely remaining source of a genuine private-sector
+telephone-interpreter mandate — though both bind health plans and insurers, who cannot sign up here anyway.
 
 ## What is now built
 

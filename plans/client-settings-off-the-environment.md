@@ -155,9 +155,9 @@ Nothing in C is built ahead of him saying it.
 is built on the tenant path first — separate work, not in this plan — or Q7d ships with the message choice only until it
 is. Jeff's call; the form is not built ahead of it either way.
 
-**Proposed step names, 2026-11-20, offered and not approved.** Jeff asked for the steps to be named. These are a
-proposal in the grouped shape the review suggested, written in the owner's words rather than the field names, and nothing
-is built on them until he accepts, renames or cuts them. None of these names exists anywhere in the code.
+**The step names, approved by Jeff, 2026-11-20: _"you step names are fine"_.** Asked for and accepted in the grouped
+shape the review suggested, written in the owner's words rather than the field names. The names are settled; what each
+step *asks* is still question wording, which stays Jeff's one instruction at a time. None of them is built yet.
 
 | Proposed step | The settings behind it |
 |---|---|
@@ -171,8 +171,11 @@ is built on them until he accepts, renames or cuts them. None of these names exi
 Twelve of the fifteen settings. The remaining three - `TransferMode`, `TransferTargetNumber`, `TransferCallerIdMode` -
 have no step and deliberately no name, for the reason above: nothing dials. A sixth step was proposed for them in
 conversation and withdrawn, because naming a step for a capability that does not exist creates a name that is grepped
-for and not found, which is the same defect as a name that outlives its code. Flatter alternative for the six, if the
-progress bar is tight: Greeting, Hours, Questions, Knowledge, Messages, Appointments.
+for and not found, which is the same defect as a name that outlives its code.
+
+Flatter alternative for the six, offered if the progress bar is tight and **not** chosen over the names above:
+
+> Greeting · Hours · Questions · Knowledge · Messages · Appointments
 
 **The review's grouping suggestion, recorded rather than taken.** It proposes three or four thematic steps — call
 handling, greeting and voice, notifications, booking and consent — each showing the preset already filled in, instead of

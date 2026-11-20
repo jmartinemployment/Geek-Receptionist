@@ -1,12 +1,13 @@
 # Outbound calling, against the use cases Jeff has named
 
 Jeff, 2026-11-20: *"I do not wish to exclude outboard calls"*, then *"Outbound calls - One Use Case example Collections"*,
-then *"Joe's TV owes me 10K"*, then *"Call to confirm"*. Two use cases, and the second is much the lighter.
+then *"Joe's TV owes me 10K"*, then *"Call to confirm"*, then *"follow up, reminder call, non-marketing calling"*. Four
+use cases and one legal category, set out as cases 1 to 3 at the end.
 
-**Read the two sections at the end before the middle ones.** The regulatory weight below is third-party *consumer*
-collections. Neither case Jeff has named is that: one is his own commercial invoice, the other is an appointment
-confirmation. The heavy sections stay because they are what a *tenant* doing consumer collections would face, and the form
-would have to find out which kind a tenant is.
+**Read cases 1 to 3 before the middle sections.** The regulatory weight below is third-party *consumer* collections, and
+none of Jeff's cases is that: a commercial invoice he is owed, and appointment confirmations, reminders and follow-ups. The
+heavy sections stay because they are what a *tenant* doing consumer collections would face, and the signup form would have to
+find out which kind of business a tenant is.
 
 This is research, not a plan to build. Nothing here is approved and no code exists: there is no call origination anywhere in
 this product. It exists because collections is the heaviest-regulated outbound case there is, and because the constraints
@@ -119,6 +120,8 @@ Each of these came from compliance-vendor blogs, not a primary source, and the t
 - **FCC consent-revocation rules said to take effect 25 November 2026** — five days after this was written. Must be read
   from the FCC or the Federal Register before it matters.
 - **Whether the FCC has adopted AI-disclosure-at-call-start requirements**, or they remain proposals.
+- ~~Whether written consent is needed~~ — **answered**, see case 3: 47 CFR 64.1200(a)(2) reaches only calls carrying an
+  advertisement or constituting telemarketing, and none of Jeff's four cases does.
 - **One-to-one consent** said to have been vacated by the Eleventh Circuit in 2025 and therefore unenforced federally, with
   some states enforcing their own. Not confirmed.
 - **State rules stricter than Reg F**: Massachusetts and New York City announced changes in February 2026; Oregon HB 3865
@@ -188,13 +191,75 @@ disclosing the AI, honouring a request not to be called again, and handing the c
 Build that once for confirmations, where the retained state is nobody's but the tenant's, and the collections cases are the
 same machinery plus a ledger — rather than the ledger being the first thing built.
 
+## Case 3: follow-up and reminder calls, and why "non-marketing" is the whole ballgame
+
+Jeff, 2026-11-20: *"follow up, reminder call, non-marketing calling"*. The third phrase is the one that matters: it is not a
+use case, it is the legal category all four of his cases sit in, and it decides which consent standard applies.
+
+**There are two standards, and only one of them is hard.** From 47 CFR 64.1200:
+
+- **(a)(2)** requires **prior express *written* consent** — and it applies only to a call *"that includes or introduces an
+  advertisement or constitutes telemarketing."*
+- **(a)(1)** covers everything else: an artificial or prerecorded voice needs *"the prior express consent of the called
+  party"*, with no writing, no signature and no disclosures.
+
+The definitions, same rule: **telemarketing** is *"the initiation of a telephone call or message for the purpose of
+encouraging the purchase or rental of, or investment in, property, goods, or services"* ((f)(13)); an **advertisement** is
+*"any material advertising the commercial availability or quality of any property, goods, or services"* ((f)(1)); and
+**prior express written consent** ((f)(9)) is *"an agreement, in writing, bearing the signature of the person called"*, naming
+the number, with specified disclosures.
+
+So a confirmation, a reminder, a follow-up and a chase on an existing invoice are all (a)(1) calls. Nobody has to sign
+anything. That is the difference between an outbound feature a small business can actually use and one that needs a signed
+form per customer before a single call.
+
+### The constraint this creates, and it is a prompt constraint
+
+**One upsell sentence moves a call from (a)(1) to (a)(2).** A reminder call that ends with "while I have you, would you like
+our maintenance plan?" is a call made for the purpose of encouraging a purchase. It becomes telemarketing, and the consent
+standard behind it becomes a signed written agreement the tenant does not have — retrospectively, for a call already placed.
+
+That lands on code written on 2026-11-20. `ReceptionistDefaults.PromptFrom` assembles the receptionist's prompt from what the
+business typed, and one of its fields is *"What should it do with a caller?"*, free text. An owner writing "offer them our
+maintenance plan" there would convert their own reminder calls into telemarketing without anything in the product noticing.
+The same is true of *"What do you charge?"*, which is legitimate on an inbound call and is an advertisement if the AI
+volunteers it on an outbound one.
+
+So an outbound call cannot simply reuse the inbound prompt. It needs its own instruction — state the business, state the
+reason for the call, do the one thing, do not offer anything — and the owner-supplied parts have to be constrained or
+re-scoped for outbound rather than passed through. This is the second place a tenant could talk itself into a federal statute
+through a free-text field; the first was the receptionist's name, under case 1.
+
+### Follow-up and reminder are the confirmation call's shape
+
+Both need a person, a number, a reason and a time, and all four live in the tenant's own calendar or CRM — the same place the
+confirmation call reads from, and already filed under *"compatible only if the state lives in the client's system"* in
+`use-cases-against-zero-data-retention.md` (pre-appointment reminders, post-visit check-ins). So they need no new retained
+store either, and they are the same mechanism as case 2 with a different reason string and a different time to fire.
+
+What they add that case 2 does not: **something has to decide when to place them.** A confirmation is "the day before the
+appointment in their calendar"; a follow-up is "N days after the visit"; a reminder may be either. That is a scheduler, and a
+scheduler that reads the tenant's calendar at the moment it runs holds nothing between runs. A scheduler that keeps its own
+queue of who to call and when is the ledger again, by another name — worth saying now, because it is the obvious way to build
+it and it is the thing that quietly reintroduces retention.
+
+### What this settles, and what is still open
+
+**Settled, from the rule:** none of Jeff's four cases needs written consent, because none of them is telemarketing or carries
+an advertisement — as long as the AI does not pitch. The written-consent question is removed from the unverified list above.
+
+**Still open, and still load-bearing:** what satisfies *prior express consent* under (a)(1). Whether a number given when
+booking, or given to a creditor in the course of business, is itself prior express consent for an AI call about that matter
+was not read first-hand and is the one assumption every case here rests on.
+
 ## Sources
 
 Primary: [FCC 24-17 Declaratory Ruling](https://docs.fcc.gov/public/attachments/FCC-24-17A1.pdf) ·
 [12 CFR 1006.14](https://www.law.cornell.edu/cfr/text/12/1006.14) ·
 [12 CFR 1006.6](https://www.law.cornell.edu/cfr/text/12/1006.6) ·
 [15 U.S.C. 1692a](https://www.law.cornell.edu/uscode/text/15/1692a) ·
-[47 U.S.C. 227](https://www.law.cornell.edu/uscode/text/47/227).
+[47 U.S.C. 227](https://www.law.cornell.edu/uscode/text/47/227) ·
+[47 CFR 64.1200](https://www.law.cornell.edu/cfr/text/47/64.1200).
 Secondary, and the reason the section above exists:
 [Reg F 2026 operator's guide](https://www.sedric.ai/arm-resources/cfpb-reg-f-2026-operators-guide) ·
 [AI voice agents and the TCPA, October 2026](https://econsent.org/posts/ai-voice-agents-tcpa-rules-october-2026/).

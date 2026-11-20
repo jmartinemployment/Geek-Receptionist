@@ -15,7 +15,7 @@ one working wire.
 | Calendar | `google_calendar` | **real** — OAuth, token refresh, tools, appointments |
 | Calendar | `outlook` | a string in `VoiceMcpProviders` and a DB CHECK constraint. No OAuth, no client, no tool |
 | Calendar | `cal_com` | same |
-| CRM | `hubspot` | same — **and filed as a calendar**, see below |
+| **CRM** | `hubspot` | same — **and filed as a calendar**, see below |
 | Storage | `google_drive` | real, and not a calendar |
 | CRM | anything else | **zero occurrences anywhere in the receptionist path** |
 
@@ -24,8 +24,14 @@ Calendly, Acuity, Square, Jobber, Housecall Pro, ServiceTitan, Salesforce, Zoho,
 Two names that read as live claims and are not:
 
 - **`VoiceMcpProviders.Calendars` contains HubSpot**, under the comment *"The providers an appointment can come from: a
-  calendar, never a storage connection."* HubSpot is a CRM. `google_drive` already had to be carved out of that list with
-  its own "Not a calendar" note — the list is carrying three different kinds of connection and labelling them all calendars.
+  calendar, never a storage connection."* **HubSpot is a CRM.** It does have a calendar — meetings and scheduling are part of
+  the product — but that is a capability it offers, not what it *is*, and filing it by one of its features is what put a CRM
+  in a list the appointments table reads.
+
+  **This filing is mine, not inherited.** `bccc1a30`, 2026-11-19: `google_drive` was being added and needed carving out of
+  the provider list, and the carve was written as *everything that is not Drive is a calendar*. That swept HubSpot in, and
+  the comment then asserted the thing the list had just stopped being true about. The lesson is the one this project already
+  wrote down — a surviving name is read as a live claim — and it applies to a list's name as much as a column's.
 - **`VoiceCredentialProtector`'s doc comment** says it protects *"the calendar and CRM OAuth"* secrets. There is no CRM
   OAuth. Same defect class as `EmergencyKeywords`, which stores, validates and round-trips while nothing reads it.
 
@@ -57,13 +63,49 @@ entry.** The seam exists; three places assume there is only one thing on the oth
    one. It fails at the gateway rather than silently doing the wrong thing, which is the right failure — but it is a failure
    on a live call, and the model wasted the turn.
 
+## What "connected" means: each provider needs tested
+
+Jeff, 2026-11-20: *"Each needs tested."* This is a gate on every provider, not a stage that happens once, and it is sharper
+here than in most of this codebase for one reason: **the tool definitions come from the vendor, not from us.**
+`McpToolDefinition` is documented *"exactly as the provider describes it: nothing here is written by us."* That is the right
+design, and the price of it is that **our test suite cannot see a vendor change its own schema.** A provider that renames a
+field or drops a tool breaks a live phone call, and 4,730 green tests say nothing about it.
+
+So "done" for a provider is all of this, per provider, not once for the registry:
+
+| Proved | Why it is not covered by the one before it |
+|---|---|
+| **Connect** — consent screen, every scope granted, token stored encrypted | a partial grant is a real path: a person can untick one scope |
+| **Reconnect** — the same tenant connecting a second time | an existing row must be replaced, not duplicated; `uq_voice_mcp_tenant_provider` says so |
+| **Refresh** — an expired access token renewed without the owner | the one that silently rots: it works for an hour after connecting and fails days later |
+| **Reauthorize** — a revoked token becomes `reauthorization_required`, not a retry | the gateway refuses once and we must not renew twice |
+| **Call a tool** — against the vendor, through the gateway, with the schema it actually publishes | the only check that the model's arguments fit the vendor's tool |
+| **Do the job** — book an appointment, or read and write a contact | a tool returning 200 is not an appointment appearing |
+| **Disconnect** — the connection gone, the tenant refused thereafter | a stale row makes a call try a dead connection |
+| **Wrong tenant** — the state-sealing refusal still holds for this provider | the rule that stops a stranger approving someone else's connection |
+
+Two of these need a real account with the vendor. Jeff, 2026-11-20: *"don't care what it costs. Doesn't affect me one way
+or another."* So price is not a criterion for which providers we support, and this document does not treat it as one. The
+account is a requirement, and the only thing it decides is whether one can be held at all: **a vendor we cannot hold a test
+account with is a vendor we cannot keep working.**
+
+And because the vendor can change under us, the tool-call test is the one that has to run **on a schedule, not only in CI**
+— a contract check per connected provider, reporting to an operator. A provider whose contract check has never run is not
+supported; it is merely written.
+
 ## Stages
 
 ### Stage 1: the provider registry
 
-`GoogleConnections` becomes `McpProviders` — every provider, each carrying what differs: display name, kind
-(**calendar · crm · storage**, replacing the one list that conflates them), OAuth authorization and token endpoints, the
-client credentials' variable names, scopes, external id, and the partial-grant sentence. `McpConnectionService` takes an
+`GoogleConnections` becomes `McpProviders` — every provider, each carrying what differs: display name, **capabilities**,
+OAuth authorization and token endpoints, the client credentials' variable names, scopes, external id, and the
+partial-grant sentence.
+
+**Capabilities is a set, not a label, and HubSpot is the reason.** It is a CRM that also has a calendar; Outlook is a
+calendar that also has contacts. A single `kind` field forces exactly the choice that produced the bug above — pick one
+feature and file the vendor under it. So a provider declares what it can do (**booking · contacts · storage**), a tenant
+may connect one provider and get both, and `VoiceMcpProviders.Calendars` stops being a hand-kept second list and becomes
+*the providers declaring `booking`*. Derived, so it cannot be wrong again. `McpConnectionService` takes an
 OAuth client resolved from that entry instead of `GoogleCalendarOAuth` directly; the state sealing, the tenant check, the
 "refuse unless the approving owner matches the sealed tenant" rule and the encryption are untouched, because none of them is
 Google-specific.

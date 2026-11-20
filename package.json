@@ -17,12 +17,15 @@
     "@fortawesome/react-fontawesome": "^3.5.0",
     "@hugeicons/core-free-icons": "^4.4.0",
     "@hugeicons/react": "^1.1.10",
+    "@tabler/icons-react": "^3.52.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cn": "^0.5.2",
+    "date-fns": "^4.4.0",
     "googleapis": "^189.0.0",
     "lucide-react": "^1.75.0",
     "next": "16.2.12",
+    "postcss": "^8.5.33",
     "react": "19.2.4",
     "react-day-picker": "^10.0.2",
     "react-dom": "19.2.4",
@@ -33,13 +36,13 @@
     "vaul": "^1.1.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.3.3",
+    "@tailwindcss/postcss": "^4.3.5",
     "@types/node": "24.13.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "eslint": "9.39.5",
     "eslint-config-next": "16.2.12",
-    "tailwindcss": "4.3.3",
+    "tailwindcss": "^4.3.5",
     "tsx": "^4.23.15",
     "typescript": "5.9.3"
   }

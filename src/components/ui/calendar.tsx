@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { cn } from "cn"
 import {
   DayPicker,
   getDefaultClassNames,
@@ -8,10 +9,8 @@ import {
   type Locale,
 } from "react-day-picker"
 
-import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowLeftIcon, ArrowRightIcon, ArrowDownIcon } from "@hugeicons/core-free-icons"
+import { IconChevronLeft, IconChevronRight, IconChevronDown } from "@tabler/icons-react"
 
 function Calendar({
   className,
@@ -32,7 +31,7 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "group/calendar bg-background p-3 [--cell-radius:var(--radius-4xl)] [--cell-size:--spacing(8)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
+        "group/calendar bg-background p-2 [--cell-radius:var(--radius-md)] [--cell-size:--spacing(7)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
@@ -148,18 +147,18 @@ function Calendar({
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === "left") {
             return (
-              <HugeiconsIcon icon={ArrowLeftIcon} strokeWidth={2} className={cn("size-4", className)} {...props} />
+              <IconChevronLeft className={cn("size-4", className)} {...props} />
             )
           }
 
           if (orientation === "right") {
             return (
-              <HugeiconsIcon icon={ArrowRightIcon} strokeWidth={2} className={cn("size-4", className)} {...props} />
+              <IconChevronRight className={cn("size-4", className)} {...props} />
             )
           }
 
           return (
-            <HugeiconsIcon icon={ArrowDownIcon} strokeWidth={2} className={cn("size-4", className)} {...props} />
+            <IconChevronDown className={cn("size-4", className)} {...props} />
           )
         },
         DayButton: ({ ...props }) => (

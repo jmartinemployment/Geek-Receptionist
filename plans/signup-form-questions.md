@@ -3,6 +3,29 @@
 Jeff, 2026-11-20, choosing what comes first: *"I would probably choosen the Multi-Step onboarding form to finish before
 dashboard."* So the form is the work, and the dashboard write path waits.
 
+## The rule this list is built under
+
+Jeff, 2026-11-20: *"Any and/or every setting needs to be included in the onboarding multi-step form. The application may have
+preset defaults, but I am not comfortable making decisions on behalf of others."*
+
+So the count is sixteen for sixteen. A setting that the form does not ask is a decision we made for the client, whatever the
+value happens to be — and that holds for the safe-looking ones too: `RecordingDisclosureEnabled` is true for everyone,
+`ConsentMode` is `strict_keypress` for everyone, `TransferMode` is `voicemail_only` for everyone. Each of those is a choice,
+made by us, that the client never saw.
+
+A preset stays, and is **the answer already filled in** on the step, with the client free to change it. The difference is
+whether they were shown it. Nothing may be configured silently because the value seems sensible.
+
+Two of the sixteen are not a question with answer choices and need a shape of their own:
+
+* **`SystemPromptTemplate`** is a document, not a setting. The form asks for its parts — what the business does, who it
+  serves, how it prices, what it wants the receptionist to do — and assembles the prompt from those answers. Handing the
+  client a text box containing Lily's script and asking them to edit it would be the same decision in a different costume.
+* **`KnowledgeRunId`** is a crawl, not an answer. The question is "should your receptionist answer from your website?" with
+  the site address; the run is what we do with the yes.
+
+## The list
+
 This is the list of questions for him to change, reorder or throw out. Nothing here is a decision. It reconciles two lists
 that had drifted apart: the twelve questions kept in GeekBackend `docs/Geek-Receptionist-zero-data-retention.md` section 9,
 and the sixteen settings `VoiceReceptionistConfig` actually holds. Four settings are in neither list and are named below.
@@ -78,6 +101,32 @@ without the calls where nobody spoke. Still his to word.
 what it is called, which calendar.
 
 **Q1–Q5.** Storage, unchanged from section 9.
+
+**E. Should your receptionist answer questions from your website?** Yes, and here is the address / No. The yes is what
+sets `KnowledgeRunId`; the no leaves the receptionist with no lookup tool rather than one that finds nothing.
+
+That is sixteen of sixteen. None is left for us to decide.
+
+## Railway holds no client settings, checked 2026-11-20
+
+Asked whether any client setting had been removed from Railway. Nothing was removed, and nothing could have been: every
+Railway call made in this work was a read (`list-projects`, `list-services`, `list-deployments`, `get-logs`,
+`list-variables`). No variable has been set, renamed or deleted.
+
+What is there now, production environment:
+
+* **GeekRepository** — sixteen variables, all infrastructure: `DATABASE_URL`, `MONGO_CRAWLER_URL`, the two API keys, the
+  Railway-injected names. No receptionist or client setting of any kind.
+* **GeekAPI** — the company line's four are present and untouched: `COMPANY_NAME`, `OWNER_CELL`, `TWILIO_NUMBER`,
+  `CALL_MODE`. `RING_SECONDS` and `SCREEN_CALLS` are not set and never were; `ReceptionistOptions.FromConfiguration`
+  reads them as `config["RING_SECONDS"] ?? "18"` and `config["SCREEN_CALLS"] ?? "true"`, so their absence is a code
+  default doing its job, not a missing variable.
+
+Those four are Geek @ Your Spot's own line, which is the single-tenant shortcut the audit flagged — one company's settings
+in a process-wide singleton that cannot hold a second business. The audit *proposed* retiring them once Geek @ Your Spot
+signs up as a real tenant and its number moves onto the tenant path. That is a proposal in a document, not something done,
+and the order matters: the tenant exists first, the variables go last, and the company line never stops answering in
+between. No Railway variable gets changed without Jeff saying so.
 
 ## Two things to settle before any of it is built
 

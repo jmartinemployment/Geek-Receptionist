@@ -255,6 +255,53 @@ What that needs, none of it free:
   A business whose admin is a part-time contractor will not clear that in a week, and the expiry would delete the
   connection work they had done.
 
+### The gate is the authorization, not a question — and most of it is already built
+
+Jeff, 2026-11-21: *"Unreliable is a known truth, the authorization is a hard gate."* Right, and it follows from the
+Outlook research rather than from preference. Asking *"are you an administrator?"* fails in both directions: an owner
+who believes they are an admin passes the question and hits a wall at Microsoft, and an owner who does not know they
+have consent rights is turned away before trying. **The token exchange is the only thing that actually knows.** So the
+gate is a successful authorization with the scopes we need, for each system the business requires.
+
+**Three parts of that are already in this codebase and must not be rebuilt:**
+
+- **Strict scope checking.** `GoogleCalendarOAuth.Read` already compares the granted `scope` against
+  `connection.Scopes` and refuses `scope_not_granted` on any shortfall, with the provider's own
+  `PartialGrantMessage`. It is registry-driven, so it covers a new provider the moment that provider has an entry. A
+  second hand-written scope comparison per vendor is exactly the per-vendor glue this estate forbids.
+- **Refresh-token presence.** Already refused as `refresh_token_missing`, and `RotatesRefreshToken` already handles the
+  vendor that returns a new one each time.
+- **The live probe.** `list_calendars` through the gateway is already used as a real call before booking is switched on
+  (`BookingSettingController:126`, `ReceptionistConfigWriter:135`). Verification reuses that, rather than a Graph call
+  written into GeekAPI — which would be a vendor API client in the receptionist path, forbidden by the connector plan.
+
+**What the verified state is: derived, not stored.** A separate `PendingTenant` entity with its own
+`AwaitingOAuth → PendingAdminConsent → VerifiedForCheckout` machine would be a second source of truth beside the tenant
+status we already have and the connection rows in `tenant_mcp_connections`, which already carry active and
+reauthorization-required. "Ready for checkout" is *the business has an active connection for every system it said it
+requires* — a derivation, the same way `VoiceMcpProviders.Calendars` is derived from each provider's `Booking` rather
+than hand-kept. One state to drift is better than four.
+
+**The one genuinely new state, and it is worth having: parked on admin consent.** When Microsoft answers
+`consent_required` / `AADSTS90094`, that is not a failed connection to dead-end on — the Outlook research already
+established admin consent is the *normal* path on a default-policy tenant, not the error path. The business is blocked
+from checkout, correctly, but should be given the admin-consent address to hand to whoever can approve it, and a way
+back in when they have. **This is what the expiry window above must be sized for**: not "how long before an abandoned
+signup is tidied away" but "how long does a small business need to get its administrator to click a link". A single
+longer window answers both; several different TTLs answer neither better.
+
+**One thing that does not fit the existing design and needs deciding:** the administrator approving out of band is
+**not the owner**, so their return cannot come through `CompleteAsync` — that route refuses unless the approving
+owner's `tenant_id` matches the one sealed in the state, which is the check that stops a stranger approving someone
+else's connection. An admin-consent return arrives with no owner session at all. It needs its own route and its own
+binding, and it must not be built by relaxing the tenant-match rule.
+
+**Checked, because it would have been copied:** the addresses in the advice are mangled —
+`https://microsoftonline.com{tenant_id}/adminconsent`, a probe against `https://microsoft.com`, and stripping a
+`https://microsoft.com` scope prefix. The real ones are `https://login.microsoftonline.com/{tenant}/adminconsent`, a
+Graph call under `https://graph.microsoft.com/`, and the prefix to strip is `https://graph.microsoft.com/`. It also
+says "post-Stripe webhook"; billing here is PayPal.
+
 **Still open under the rule:** what signup does when a required system cannot be connected at all — no supported
 provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you cannot sign up" or
 as "sign up without booking, which is the message-taking receptionist", is a product answer, not a technical one.

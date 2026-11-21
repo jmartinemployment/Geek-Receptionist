@@ -217,30 +217,51 @@ owner can sign in, connect each system they require and have it verified, and on
 status check moves with it; the state-sealing and tenant-match checks do not change at all, because they were never
 about payment.
 
-### Decided, 2026-11-21: an unpaid tenant may hold a real login
+### Decided, 2026-11-21: an unpaid tenant gets a pending login
 
-Gated on status, and expired rather than left to sit. The flow becomes: step 3 creates the tenant
-(`pending_payment`), writes the attestation, creates the owner login and signs them in; the owner connects and verifies
-each required system on an authenticated dashboard; only then the plan, PayPal and `activate-subscription`, which flips
-the tenant `active` and provisions the number.
+Jeff: *"I can read your statement two ways, a user gets a login but technically it is not. More appropriate would be a
+pending login or something to that effect."* Right, and the name matters here for the reason this project already
+states: a surviving name is read as a live claim. "A real login" claimed more than this gives. A **pending login** is a
+credential that can sign in and do one job, connecting and verifying the systems the business requires and moving on
+to payment, and nothing else. It becomes a full login when the subscription is active and, per Stage 8, once the
+contact details are confirmed.
+
+The flow: step 3 creates the tenant (`pending_payment`), writes the attestation and creates the pending login, and
+signs the owner in to a setup-and-connect surface; the owner connects and verifies each required system; only then the
+plan, PayPal and `activate-subscription`, which flips the tenant `active`, provisions the number and makes the login
+a full one. Expired rather than left to sit, below.
 
 **The cost boundary holds, verified rather than assumed.** `TwilioProvisioner.ProvisionAsync` has exactly one caller,
-`SubscriptionActivation` — the `activate-subscription` route. An unpaid tenant therefore has no inbound number, and no
-number means no telephony and no model spend. A login is an identity bound to a `tenant_id`, not a licence to burn
-minutes.
+`SubscriptionActivation`, the `activate-subscription` route. An unpaid tenant therefore has no inbound number, and no
+number means no telephony and no model spend.
 
-**But "runtime and provisioning endpoints already fail closed on active" is not true here, and this is the real work.**
-There are exactly **two** status checks in the whole product, and this change removes both of them:
+**A pending login stays narrow by construction, not by a list. This replaces an earlier version of this section that
+was wrong.** That version said the moment the login gate moved, nine tenant controllers became reachable by a tenant
+that had paid nothing, and that the work was adding a status check to each. Checked 2026-11-21 against the code:
+`OwnerTenantClaim.Refuse` is called on **every route of the eight owner controllers** (Billing 3 of 3, BookingSetting
+2 of 2, Calendar 1 of 1, ConsentSetting 2 of 2, Disconnect 2 of 2, McpOAuth 2 of 2, ReceptionistConfig 2 of 2,
+Storage 3 of 3), and it refuses a token carrying no `tenant_id` claim with `403 tenant_unverified`. Its own comment
+says why: *"a login that was never given a tenant can touch no tenant's data."* The ninth controller,
+`TenantCallController`, is Twilio's webhooks (`voice`, `consent-result`, `relay`, `call-status`), not an owner route,
+so an owner token does not reach it at all.
 
-- `OwnerAuthService.CreateLoginAsync:92`
-- `McpConnectionService.BeginAsync:34`
+So the pending login's access token is minted with a **different claim and no `tenant_id`**, and all eight
+controllers already refuse it, with no edit. Only the routes a pending login genuinely needs are taught to accept the
+pending claim: McpOAuth's two (authorize and complete) and whatever reports verification status. The default is deny
+and the allowlist is a handful of routes, which is the reverse of adding a status check to eight controllers and
+hoping none was missed. It is also the shape the existing code asks for: its own note says a different kind of login
+must be given a different claim, because the tenant routes check only that `tenant_id` matches.
 
-Nothing else anywhere checks `VoiceTenantStatuses.Active`, because until now an unpaid tenant could not sign in, so no
-other route ever needed to. `SignInAsync` refuses only `cancelled`; `suspended` and `pending_payment` both get in. So
-the moment the login gate moves, **nine tenant controllers become reachable by a tenant that has paid nothing** —
-Billing, BookingSetting, Calendar, ConsentSetting, Disconnect, McpOAuth, ReceptionistConfig, Storage and TenantCall.
-None of them spends money today, which is why this is work rather than an emergency, but the gate they relied on is the
-one being removed. **The task is not "move one check"; it is "move one check and add the ones that were never needed."**
+What still changes, and what was not checked:
+
+- Two status checks are still the only ones in the product and both move: `OwnerAuthService.CreateLoginAsync:92`
+  (create the login against a `pending_payment` tenant) and `McpConnectionService.BeginAsync:34` (allow it).
+- The token minter picks the claim from the tenant's status at mint time. An access token minted before activation
+  stays pending until it expires, 15 minutes, and a refresh after activation mints a full one. That fails closed.
+- `SignInAsync` refuses only `cancelled` today, so a `pending_payment` login already signs in. That was unreachable
+  and becomes real, and `expired` needs its own refusal beside it.
+- **Not verified:** the portal reads the tenant from the token's `tenant_id` (`session-claims.ts`, `callOwnerTenant`),
+  so the setup surface needs to read the pending claim instead. I have not read those files for this change.
 
 **Expiry: soft, not a delete.** A `pending_payment` tenant gets an `expires_at`, and on expiry its OAuth credentials are
 revoked and deleted and its status becomes `expired`, while the tenant row, its `signup_industry_answers` and its
@@ -463,11 +484,12 @@ when the subscription is approved. Whether GeekAPI keeps that has not been check
 talking to" is proven for nothing. For the phone, the options are an SMS code or a call from the number just bought,
 and either is paid for by a sale already made.
 
-**This collides with Stage 7, and the collision is Jeff's to settle.** Stage 7 gives an unpaid tenant a real login so
-the owner can connect before paying. With confirmation after payment, that login sits on an unconfirmed email. Nothing
-is sent to it and nothing is spent, so the cost is small, but anyone can reserve someone else's address for the
-14-day window (`owner_exists` on the unique index), and the login proves a password, not a mailbox. The alternatives
-are to accept that, or to let the email code, the cheap one, be the one confirmation allowed before payment.
+**This collides with Stage 7, and the collision is Jeff's to settle.** Stage 7 gives an unpaid tenant a pending login
+so the owner can connect before paying. With confirmation after payment, that login sits on an unconfirmed email. A
+pending login can do almost nothing, which narrows the exposure, and nothing is sent to the address and nothing is
+spent. What remains is that anyone can reserve someone else's address for the 14-day window (`owner_exists` on the
+unique index), and the login proves a password, not a mailbox. The alternatives are to accept that, or to let the
+email code, the cheap one, be the one confirmation allowed before payment.
 
 ## Order, and what blocks what
 

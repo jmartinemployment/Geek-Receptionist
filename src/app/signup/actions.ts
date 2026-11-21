@@ -39,10 +39,20 @@ const WHO_MAX = 300;
 const US_STATE = /^[A-Za-z]{2}$/;
 const US_ZIP = /^\d{5}(-\d{4})?$/;
 
+/** A website is optional, but one that is given is a full http or https address with a dotted host; GeekAPI checks it the same way. */
+function isWebsite(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (url.protocol === "http:" || url.protocol === "https:") && url.hostname.includes(".");
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The first screen: who is talking to us and which business, before anything is verified or created (Jeff, 2026-11-21: First Name,
  * Middle Initial, Last Name, Address, City, State, Zip Code, Telephone, Email; Business Name, Business Address, City, State, Zip, Business
- * Telephone, Business Email). Everything but the middle initial is required. A state must be two letters and a zip five digits or ZIP+4, and each is
+ * Telephone, Business Email, and the business's website, which is optional). Everything but the middle initial is required. A state must be two letters and a zip five digits or ZIP+4, and each is
  * refused otherwise, never fixed up. Nothing else is checked here: the telephones are confirmed after payment, and GeekAPI checks their
  * shape again when the business is submitted. What was typed is held in a signed cookie so the declaration can show it again.
  */
@@ -64,14 +74,16 @@ export async function whoAction(_previous: SignupFormState, form: FormData): Pro
     businessZip: text(form, "businessZip"),
     businessPhone: text(form, "businessPhone"),
     businessEmail: text(form, "businessEmail"),
+    businessWebsite: text(form, "businessWebsite"),
   };
   if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired"), fields };
 
-  const { middleInitial, ...required } = fields;
+  const { middleInitial, businessWebsite, ...required } = fields;
   if (Object.values(required).some((value) => value.length === 0)) return { error: "Fill in every answer except the middle initial.", fields };
   if (Object.values(fields).some((value) => value.length > WHO_MAX)) return { error: `Each answer must be ${WHO_MAX} characters or fewer.`, fields };
   if (middleInitial.length > 2) return { error: "The middle initial is one letter.", fields };
   if (!US_STATE.test(fields.state) || !US_STATE.test(fields.businessState)) return { error: "A state is its two-letter code, such as FL.", fields };
+  if (businessWebsite.length > 0 && !isWebsite(businessWebsite)) return { error: signupMessage("business_website_invalid"), fields };
   if (!US_ZIP.test(fields.zip) || !US_ZIP.test(fields.businessZip)) return { error: "A zip code is five digits, such as 33432.", fields };
 
   await writeWho(fields);
@@ -144,6 +156,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     declarantAddress: text(form, "declarantAddress"),
     declarantPhone: text(form, "declarantPhone"),
     declarantEmail: text(form, "declarantEmail"),
+    businessWebsite: text(form, "businessWebsite"),
     stateCode: text(form, "stateCode").toUpperCase(),
     contactEmail: text(form, "contactEmail"),
     contactPhone: text(form, "contactPhone"),
@@ -180,6 +193,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     declarantAddress: fields.declarantAddress,
     declarantPhone: fields.declarantPhone,
     declarantEmail: fields.declarantEmail,
+    businessWebsite: fields.businessWebsite,
     declarationStatement: DECLARATION_STATEMENT,
     declarationAgreed: true,
     termsStatement: TERMS_STATEMENT,

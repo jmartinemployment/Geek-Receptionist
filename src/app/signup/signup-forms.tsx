@@ -209,6 +209,7 @@ export function WhoForm({ idSuffix }: { idSuffix: string }) {
         </div>
         {text("businessPhone", "Business telephone", { required: true, type: "tel", inputMode: "tel", placeholder: "(561) 555-0101" })}
         {text("businessEmail", "Business email", { required: true, type: "email" })}
+        {text("businessWebsite", "Business website (leave empty if there is none)", { type: "url", placeholder: "https://" })}
       </fieldset>
 
       <button className={`${ui.button} mt-2 w-fit`} type="submit" disabled={pending}>
@@ -236,11 +237,12 @@ const sheetField =
 const sheetLabel = "font-sans text-sm text-slate-600";
 
 /** One line of the document: a label, and a ruled line to write on. */
-function Line({ id, name, label, hintText, state, ...input }: {
+function Line({ id, name, label, hintText, state, required = true, ...input }: {
   id: string;
   name: string;
   label: string;
   hintText?: string;
+  required?: boolean;
   state: SignupFormState;
 } & Pick<React.InputHTMLAttributes<HTMLInputElement>, "type" | "autoComplete" | "inputMode" | "maxLength" | "placeholder">) {
   return (
@@ -249,7 +251,7 @@ function Line({ id, name, label, hintText, state, ...input }: {
         {label}
       </label>
       <div className="grid gap-1">
-        <input id={id} name={name} required defaultValue={state.fields[name] ?? ""} className={sheetField} {...input} />
+        <input id={id} name={name} required={required} defaultValue={state.fields[name] ?? ""} className={sheetField} {...input} />
         {hintText ? <p className="font-sans text-xs text-slate-500">{hintText}</p> : null}
       </div>
     </div>
@@ -330,6 +332,7 @@ export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; ini
       <Part number={2} title="The business">
         <Line id={id("businessName")} name="businessName" label="Business name" autoComplete="organization" state={state} />
         <Line id={id("businessDescription")} name="businessDescription" label="What it does" maxLength={120} placeholder="Plumbing and heating" state={state} />
+        <Line id={id("businessWebsite")} name="businessWebsite" label="Website" type="url" placeholder="https://" required={false} hintText="Leave empty if there is none." state={state} />
         <Line id={id("businessAddress")} name="businessAddress" label="Address" autoComplete="street-address" maxLength={300} state={state} />
         <Line id={id("stateCode")} name="stateCode" label="State" maxLength={2} placeholder="FL" autoComplete="address-level1" state={state} />
         <Line id={id("contactPhone")} name="contactPhone" label="Phone" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" hintText="A US number, typed any way you like." state={state} />

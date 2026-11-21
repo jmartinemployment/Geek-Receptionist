@@ -19,6 +19,7 @@ const MESSAGES: Record<string, string> = {
   attestor_required: "Give the name and title of the person making this declaration.",
   business_address_required: "Give the business's address.",
   declarant_address_required: "Give the address of the person making this declaration.",
+  business_website_invalid: "Enter the business's website as a full address, such as https://bocacool.example.",
   declarant_email_invalid: "Enter the email address of the person making this declaration.",
   declarant_phone_not_us: "Enter the declarant's US telephone number, ten digits, such as (561) 555-0101.",
   declaration_required: "The declaration must be made, in the words shown.",

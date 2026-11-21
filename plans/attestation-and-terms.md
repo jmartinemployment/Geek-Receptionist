@@ -542,6 +542,8 @@ production, and is deleted when the declaration is built into `/signup`.
 - **Stage 8, the first screen (who we are talking to):** built, 2026-11-21. After the robot check, `/signup?start=1` opens on a
   screen whose left pane reads "Hi, I am Lily / What's Your Name" and whose right pane asks, unverified, First Name, Middle Initial, Last Name, Address, City, State, Zip, Telephone and Email for the
   person, then Business Name, Address, City, State, Zip, Telephone and Email for the business (Jeff's list, 2026-11-21).
+  The business's website is the last of the business's fields; it is optional (a business with none leaves it empty and
+  NULL is stored), and one that is given must be a full http or https address (migration `0090`, `tenants.business_website`).
   The person's own address, telephone and email are stored sealed with the declaration (migrations `0088`, `0089`); the business's
   telephone and email are the tenant's contact details. "Lily" is the Retell voice name, used for now (Jeff, 2026-11-21). The answers are held in a signed cookie
   (`rp_who`, one day) and pre-fill the declaration. Nothing is confirmed; confirmation after payment is not built.

@@ -127,6 +127,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
                     businessName: who.businessName,
                     businessAddress: `${who.businessAddress}, ${who.businessCity}, ${who.businessState} ${who.businessZip}`,
                     stateCode: who.businessState,
+                    businessWebsite: who.businessWebsite,
                     contactPhone: who.businessPhone,
                     contactEmail: who.businessEmail,
                   }

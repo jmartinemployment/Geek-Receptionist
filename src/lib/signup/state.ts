@@ -64,11 +64,12 @@ export type Who = {
   businessZip: string;
   businessPhone: string;
   businessEmail: string;
+  businessWebsite: string;
 };
 
 const WHO_FIELDS = [
   "firstName", "middleInitial", "lastName", "address", "city", "state", "zip", "phone", "email",
-  "businessName", "businessAddress", "businessCity", "businessState", "businessZip", "businessPhone", "businessEmail",
+  "businessName", "businessAddress", "businessCity", "businessState", "businessZip", "businessPhone", "businessEmail", "businessWebsite",
 ] as const satisfies readonly (keyof Who)[];
 
 /** The cookie's value for this person: their words as base64url, a dot, and the signature of those words. */
@@ -77,7 +78,7 @@ export function signWho(who: Who, key: string): string {
   return `${body}.${createHmac("sha256", key).update(body).digest("hex")}`;
 }
 
-/** Who a cookie value names, or null when it is missing, not signed by this key, altered, or not sixteen pieces of text. */
+/** Who a cookie value names, or null when it is missing, not signed by this key, altered, or not seventeen pieces of text. */
 export function parseWho(raw: string | undefined, key: string): Who | null {
   if (!raw) return null;
   const dot = raw.lastIndexOf(".");

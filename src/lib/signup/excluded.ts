@@ -26,9 +26,9 @@ export const EXCLUDED_INDUSTRIES: Record<ExcludedCode, { question: string; dialo
     refusal: "Geek-Receptionist cannot be used by healthcare providers. We exclude them outright.",
   },
   hipaa_health_plan: {
-    question: "Is the business a health plan?",
-    dialogTitle: "Not available for health plans",
-    refusal: "Geek-Receptionist cannot be used by health plans. We exclude them outright.",
+    question: "Is the business a health insurer, HMO or other health plan?",
+    dialogTitle: "Not available for health insurers, HMOs or health plans",
+    refusal: "Geek-Receptionist cannot be used by health insurers, HMOs or other health plans. We exclude them outright.",
   },
   hipaa_clearinghouse: {
     question: "Is the business a healthcare clearinghouse?",

@@ -15,7 +15,7 @@ test("there are eight questions for the five excluded industries, each with its 
   ]);
   assert.deepEqual(EXCLUDED_CODES.map((code) => EXCLUDED_INDUSTRIES[code].question), [
     "Is the business a healthcare provider?",
-    "Is the business a health plan?",
+    "Is the business a health insurer, HMO or other health plan?",
     "Is the business a healthcare clearinghouse?",
     "Does the business handle patient health information for a healthcare provider or health plan?",
     "Is the business a securities broker-dealer?",
@@ -28,7 +28,7 @@ test("there are eight questions for the five excluded industries, each with its 
 test("a yes is sent with the noes before it and nothing after it", () => {
   assert.deepEqual(answersThrough("investment_adviser", true), [
     { industry: "hipaa_healthcare_provider", question: "Is the business a healthcare provider?", answer: false },
-    { industry: "hipaa_health_plan", question: "Is the business a health plan?", answer: false },
+    { industry: "hipaa_health_plan", question: "Is the business a health insurer, HMO or other health plan?", answer: false },
     { industry: "hipaa_clearinghouse", question: "Is the business a healthcare clearinghouse?", answer: false },
     { industry: "hipaa_business_associate", question: "Does the business handle patient health information for a healthcare provider or health plan?", answer: false },
     { industry: "securities_broker_dealer", question: "Is the business a securities broker-dealer?", answer: false },

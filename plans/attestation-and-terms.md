@@ -342,12 +342,32 @@ showing the owner a login screen, and a plain "check again" button beats polling
 noting that the admin may approve inside the Entra portal instead of through our link, in which case our route never
 fires and the re-check is the only thing that notices.
 
-**Not verified, and it should be before any of this is coded.** The specific `AADSTS` numbers in the advice —
-`65001`, `90094`, `900941`, `900942` — are quoted from a summary, not read from Microsoft, and this project's own
-Outlook report associates `AADSTS90094` with risk-based step-up consent rather than with the managed-policy block.
-The branch above turns on getting these right, so they come from Microsoft's error reference, read directly. The same
-goes for the claim that the consent request expiry is tenant-configurable and commonly 7 or 30 days: it is the number
-the window is sized against, so it is checked rather than inherited.
+**Checked against Microsoft directly, 2026-11-21** — `reference-error-codes`, `configure-admin-consent-workflow` and
+`troubleshoot-consent-issues` on learn.microsoft.com. (The error reference returned its first ~40k of ~73k characters
+verbatim; individual AADSTS rows past that point are still unread, which matters less than it sounds, for the first
+reason below.) What the read settles:
+
+- **Microsoft's own rule forbids branching on AADSTS numbers at all.** Verbatim, from the error reference: *"Error
+  codes are subject to change at any time ... Apps that take a dependency on text or error code numbers will be broken
+  over time."* On `error_description`: *"Never use this field to react to an error in your code."* The `error` query
+  parameter is the one field that *"should be used to react to errors."* So the registry classifier keys on the OAuth
+  `error` parameter — `consent_required`, `interaction_required`, bare `access_denied` — and an AADSTS number is
+  something an operator reads in a log, never something code tests. The earlier advice to match `AADSTS90094` /
+  `900941` / `90095` in `error_codes`/`suberror` is ruled out by the vendor's own instruction.
+- **`AADSTS90094` is the managed-policy block.** The troubleshoot page's symptom list, verbatim: *"An administrator of
+  &lt;TenantDisplayName&gt; has set a policy that prevents you from granting &lt;Name-of-App&gt; the permissions it is
+  requesting."* The Outlook report tied the same code to risk-based step-up consent; both causes can surface it, and
+  nothing turns on telling them apart, because nothing branches on the number.
+- **`AADSTS900941` is real and is the risky-app variant** (*AdminConsentRequiredDueToRiskyApp*, on the troubleshoot
+  page). **`AADSTS900942` still has no primary source** — absent from the troubleshoot page, unconfirmed on the
+  reference — so it stays out of the plan. The names given for `65001`/`90094`/`90095` on the reference page came back
+  through a summary of the unread tail and remain secondary.
+- **Microsoft publishes no range and no default for the consent-request expiry.** The configuration page's entire
+  description of the setting, verbatim: *"Specify how long requests stay valid."* The "up to 365 days, commonly 7 or
+  30" figure has no primary source. What is confirmed, verbatim: the first about-to-expire reminder email *"is likely
+  sent out in the middle of the configured"* window. So the parking TTL is sized by Jeff's judgment of how long a small
+  business needs to reach its administrator or MSP — there is no Microsoft default to inherit, because the
+  documentation does not state one.
 
 **Still open under the rule:** what signup does when a required system cannot be connected at all — no supported
 provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you cannot sign up" or

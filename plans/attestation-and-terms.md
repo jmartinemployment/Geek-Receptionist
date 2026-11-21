@@ -352,7 +352,12 @@ NOT CONFIRMED marked as such. The gate reduces to four rules, each grounded ther
    screens but *never states which `error` value reaches the redirect_uri* when the user exits them — community
    evidence says `access_denied`, same as a plain decline. The redirect cannot tell "you declined" from "your admin
    must approve", so the parked copy says both. `interaction_required` / `login_required` / `consent_required` →
-   retry interactively; anything else → fail loud.
+   retry interactively; anything else → fail loud. The two meanings stay **one outcome by design**: no
+   `error_subcode` matching and no `AADSTS`-in-description matching, even "defensively" — Microsoft forbids reacting
+   to either, and half the proposed markers were never observed anywhere. What covers the gap instead is a standing
+   affordance on the Microsoft connect card — *"my administrator must approve this"* — that produces the
+   admin-consent link without requiring another failed round trip. AADSTS numbers are regex-extracted into logs for
+   operators, nothing more.
 3. **`/adminconsent` may optimistically unpark and never verifies.** Its success redirect carries no code and no token
    for anyone; its *error* redirect also carries `admin_consent=True`, so the callback branches on `error` first; its
    `tenant` value is documented as forgeable. The request names the tenant GUID or `organizations`, never `common`,

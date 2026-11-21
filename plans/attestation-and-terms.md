@@ -98,8 +98,13 @@ strings; the record is unchanged.
 
 One screen, three groups: **Healthcare (HIPAA)** — provider, health plan, clearinghouse, handles PHI for one;
 **Financial services** — broker-dealer, investment adviser, commodity futures or derivatives; **Medicare** — Advantage
-or Part D TPMO. Three headings read as three things. Framing carries more than length: *"Most businesses answer no to
-all of these"* makes it eligibility rather than accusation.
+or Part D TPMO. Three headings read as three things.
+
+Framing carries more than length, and the obvious framing is the wrong one. *"Most businesses answer no to all of
+these"* is reassuring and is exactly what must not be said: telling someone that most people answer no, immediately
+before a HIPAA and FINRA screening, minimises the gravity of the question and can be read as nudging the answer. Stay
+matter-of-fact — *"To check eligibility, confirm whether the business operates in any of these regulated sectors"* —
+and let the three headings do the work of making it look short.
 
 **Portal-only.** GeekAPI needs no change: `ExcludedIndustries.Read` already accepts any subset, `industry-refusals`
 already takes the whole set, and step 3 already sends all eight noes. It collapses `rp_gates`' eight gates to one and
@@ -111,12 +116,117 @@ the eligibility screen the business has not been named yet.
 **What this stage must not become:** collapsing the four HIPAA questions into one. That reaches five questions by
 trading away exactly what 2026-11-18 bought — one answer covering four claims.
 
+## Stage 6: the appointments step promises a calendar we may not support
+
+Jeff, 2026-11-21, on the yes option of the appointments step (`AppointmentsForm`, `signup-forms.tsx`): *"You connect
+your Google Calendar the first time you sign in, and booking switches on then. Isn't quite right."*
+
+It is not. Read it as a business that runs on Outlook reads it:
+
+- The sentence names **Google Calendar** as if it were the only calendar there is. The business either takes it to mean
+  *their* calendar, or takes it to mean they are expected to move to Google.
+- Either way they answer yes, pay at [4]–[6], sign in, and meet a dashboard card headed **Google Calendar** offering
+  Google and nothing else (`calendar-section.tsx`). **They find out after the money is spent.**
+- Nothing is technically broken: `BookingRequested` is recorded, `BookingEnabled` stays off, and the receptionist takes
+  a message, which is the designed default. What is broken is that booking was sold to someone who cannot have it.
+
+This is the connector plan's own rule — *"No provider offered before it works"* — pointing at the signup form instead
+of at the provider enum. The three unconnectable names in that enum are one version of the mistake; this sentence is
+the other, and it is the one a paying customer meets.
+
+**Storage already has the answer calendar does not.** Call records go to Google Drive **or** a bring-your-own
+S3-compatible or GCS bucket (`storage-section.tsx`, `BucketForm`), so an unsupported drive is not a dead end. Calendar
+can have no equivalent under connectors-only: S3 is a generic API many vendors implement, and there is no generic
+calendar protocol we are allowed to speak. CalDAV is not a loophole — a CalDAV client is the piece that talks to a
+vendor, which is the thing this architecture exists to avoid.
+
+**Two fixes, and the small one should not wait for the large one.**
+
+- **Now, and cheap:** reword the yes option to say what is true today, without naming Google as the only calendar and
+  without promising booking to a business whose calendar we cannot reach.
+- **Properly:** Stage 6 of `plans/connecting-client-systems.md` — ask *"which calendar does your business use?"* before
+  they pay, offering only what can actually be connected plus "something else", which records the answer and promises
+  nothing. It stops the promise, tells the business what to expect while they can still walk away, and makes every
+  "something else" a demand signal. That plan holds *"which provider is a market decision and yours"* for Stage 3;
+  this is how that decision gets data rather than a guess.
+
+## Stage 7: the rule, and the order it breaks
+
+**Jeff, 2026-11-21, verbatim: *"The rule is simple: never take a dollar until you have verified you can connect to
+every system the customer requires."*** This decides the question Stage 6 left open, and decides it
+harder than any of the three options there: not a warning, not a recorded note, and not a refusal based on what we
+*support* — a **verified connection** to each system the customer says they need, proved before they are charged.
+
+Note what "verified" rules out. Knowing that a vendor is in the registry is not verification; neither is the business
+naming their calendar on a form. The connector plan already draws this line — *"a provider whose contract check has
+never run is not supported; it is merely written"* — and this rule extends it from the provider to the customer: their
+own account, their own consent, one real call that worked.
+
+**And it is a qualification gate, not a feature question. Jeff, 2026-11-21: *"99.99% of businesses need their
+receptionist connected to their existing systems, so compatibility isn't an edge case; it's the core qualification
+gate."*** That puts compatibility in the same class as the country question and the eight industry questions — a thing
+asked at the front, which decides whether this visitor can be a customer at all, rather than a detail settled late.
+Everywhere this plan and the connector plan treat an unsupported calendar as a footnote on the appointments step, they
+have it the wrong way round: **the appointments step is the footnote, and compatibility is the gate.**
+
+So the work splits in two, and the halves sit at different points in the flow:
+
+| | Qualification | Verification |
+|---|---|---|
+| Asks | do we support what this business runs? | does *this* business's own account connect? |
+| Costs | one screen, no connection, no account | an OAuth round trip per system |
+| Sits | at the front, with country and industry | after the login, before the plan |
+| A no means | not yet — and it is the demand signal | this one cannot be sold today |
+
+**A no here is not the same kind of no as an excluded industry, and must not be built as one.** An excluded industry is
+permanent and is refused forever. An unsupported calendar is *"not yet"*, and it is the single most valuable thing the
+signup can learn: it names the provider to build next, with a count behind it. `signup_industry_answers` is the wrong
+shelf for it — that table's rows are refusals kept for compliance. This wants its own record, and the business wants an
+answer better than a closed door: tell them what their systems mean today, and keep the address if they want telling
+when it changes.
+
+**The order we have is the opposite of the order the rule needs.**
+
+| | Today | What the rule requires |
+|---|---|---|
+| 1 | money (`activate-subscription`, [6]) | connect, and prove it |
+| 2 | tenant becomes `active` | money |
+| 3 | owner login (`CreateLoginAsync` refuses `409 tenant_not_active`) | |
+| 4 | connect (`BeginAsync` refuses the same way; `CompleteAsync` needs the owner's Bearer) | |
+
+Three gates, each sound on its own, chain into "no connection before payment":
+
+- `McpConnectionService.BeginAsync` refuses a tenant that is not `active`.
+- `CompleteAsync` refuses unless the approving owner's `tenant_id` matches the one sealed in the OAuth state. That is
+  the check that stops someone starting a connection for their own tenant and getting a stranger to approve it, and it
+  needs an owner token to compare against.
+- `OwnerAuthService.CreateLoginAsync` refuses `409 tenant_not_active`, and the tenant becomes active only by spending
+  the dollar at [6].
+
+**The smallest move is the owner login.** Let it be created against a `pending_payment` tenant after step 3, so the
+owner can sign in, connect each system they require and have it verified, and only then be asked to pay. `BeginAsync`'s
+status check moves with it; the state-sealing and tenant-match checks do not change at all, because they were never
+about payment.
+
+**What that costs, stated rather than skipped:** an unpaid tenant would hold a real, sign-in-able login, which is
+impossible today by construction. That is a new surface — free account creation — and it wants its own answer (a cap,
+an expiry on an unpaid tenant, or nothing, if the eligibility gate and the captcha are judged enough). **This is a
+GeekAPI policy change and it is Jeff's.** It is also the same hinge the abandoned-signup problem turns on: a visitor who
+configures six steps and loses the one-day `rp_signup` cookie has no way back in, for exactly this reason.
+
+**Still open under the rule:** what the signup does when a required system cannot be connected at all — no supported
+provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you can't sign up" or
+as "sign up without booking, which is the message-taking receptionist", is a product answer, not a technical one.
+
 ## Order, and what blocks what
 
-1. Stage 5 (portal-only, no dependencies) or Stage 2's portal and API halves — either can go first.
-2. Stage 1's version string and address, before Stage 3 ships.
-3. Stage 3 with it.
-4. Stage 4 after the Terms exist, since it enforces one of their clauses.
+1. Stage 6's rewording, which depends on nothing and removes a promise being made to visitors today.
+2. Stage 7's decision on the unpaid-login surface, because Stage 7 reorders what every stage below sits in.
+3. Stage 5 (portal-only, no dependencies) or Stage 2's portal and API halves — either can go next.
+4. Stage 1's version string and address, before Stage 3 ships.
+5. Stage 3 with it.
+6. Stage 4 after the Terms exist, since it enforces one of their clauses.
+7. Stage 6's signup question and Stage 7's verification step, which are the same screen once the order moves.
 
 ## Noticed while reading, not part of this plan
 

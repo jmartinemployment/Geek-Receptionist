@@ -1,6 +1,6 @@
 import { ActionButton } from "@/components/action-button";
 import { ui } from "@/lib/ui";
-import { choosePlanAction, countryAction, forgetRobotCheckAction, savePaymentMethodAction } from "./actions";
+import { choosePlanAction, savePaymentMethodAction } from "./actions";
 
 export const PLANS = [
   { code: "STARTER", name: "Starter", price: 30, minutes: 90 },
@@ -8,16 +8,6 @@ export const PLANS = [
   { code: "PRO", name: "Pro", price: 148, minutes: 1000 },
   { code: "PREMIUM", name: "Premium", price: 298, minutes: 2000 },
 ];
-
-/** The country question: a yes goes on, a no says so in a dialog and forgets the robot check. */
-export function CountryStep() {
-  return (
-    <div className="flex flex-nowrap justify-center gap-3">
-      <ActionButton action={countryAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
-      <ActionButton action={countryAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet dialogTitle="Not available outside the United States" onDialogClose={forgetRobotCheckAction} />
-    </div>
-  );
-}
 
 /** The four plans, each ending in PayPal. */
 export function PlanStep() {

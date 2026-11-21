@@ -14,10 +14,10 @@ import { postOnboarding } from "@/services/onboarding";
 import { setSessionCookies, signIn, visitorIpFrom } from "@/services/owner-auth";
 
 /**
- * What a signup step hands back. `refused` names the excluded industry a yes was given to, and `declined` the agreement a No was given to;
+ * What a signup step hands back. `refused` names the excluded industry a yes was given to, or `country` when the business is not in the United States, and `declined` the agreement a No was given to;
  * either ends the signup.
  */
-export type SignupFormState = { error: string | null; fields: Record<string, string>; refused?: ExcludedCode; declined?: Agreement };
+export type SignupFormState = { error: string | null; fields: Record<string, string>; refused?: ExcludedCode | "country"; declined?: Agreement };
 
 const TIERS = new Set(["STARTER", "STANDARD", "PRO", "PREMIUM"]);
 
@@ -113,15 +113,6 @@ export async function companyAction(_previous: SignupFormState, form: FormData):
   redirect("/signup?start=1");
 }
 
-/** Step 1: is the business in the United States. A yes is remembered and the form goes on; a no is the end of it, said at once. */
-export async function countryAction(inUnitedStates: boolean): Promise<{ error: string | null }> {
-  const passed = await readGates();
-  if (!passed.has("captcha") || !passed.has("who") || !passed.has("company")) return { error: signupMessage("signup_expired") };
-  if (!inUnitedStates) return { error: signupMessage("country_not_supported") };
-  await passGate("country");
-  redirect("/signup?start=1");
-}
-
 /**
  * What closing a refusal dialog (not in the United States, an excluded industry) does: the robot check is forgotten, so the next visit starts from it again. It runs
  * on close, not with the answer, because clearing the cookie re-renders the page back to the hero and the dialog would vanish with it.
@@ -131,15 +122,19 @@ export async function forgetRobotCheckAction(): Promise<void> {
 }
 
 /**
- * Step 2: the eight excluded-industry questions, on one screen, each its own yes or no. Every one must be answered; none is taken as
- * a no for being left blank. All noes are remembered as one gate and the form goes on. A yes to any of them is the end of it: GeekAPI
+ * The eligibility screen: is the business in the United States, then the eight excluded-industry questions, each its own yes or no
+ * (Jeff, 2026-11-21: the country question moves onto this screen). Every one must be answered; none is taken as a no for being left
+ * blank. A No to the country ends the signup at once, said in a dialog, and GeekAPI is not told: no answer about industries is kept for
+ * a business that is not here. Otherwise all noes are remembered as one gate and the form goes on. A yes to any of them is the end of it: GeekAPI
  * is told at once, all eight answers as given, and keeps them forever; then the refusal of the first industry answered yes is said.
  * If GeekAPI could not store them the visitor is still stopped, and is told what failed.
  */
 export async function eligibilityAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields: Record<string, string> = {};
+  const country = form.get("country");
+  if (country === "yes" || country === "no") fields.country = country;
   const yes = new Set<ExcludedCode>();
-  let unanswered = false;
+  let unanswered = fields.country === undefined;
   for (const code of EXCLUDED_CODES) {
     const answer = form.get(code);
     if (answer === "yes" || answer === "no") fields[code] = answer;
@@ -148,8 +143,9 @@ export async function eligibilityAction(_previous: SignupFormState, form: FormDa
   }
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("who") || !gates.has("company") || !gates.has("country")) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("who") || !gates.has("company")) return { error: signupMessage("signup_expired"), fields };
   if (unanswered) return { error: "Answer yes or no to every question.", fields };
+  if (country === "no") return { error: signupMessage("country_not_supported"), fields, refused: "country" };
 
   const refused = EXCLUDED_CODES.find((code) => yes.has(code));
   if (refused) {
@@ -193,7 +189,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   }
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("who") || !gates.has("company") || !gates.has("country") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("who") || !gates.has("company") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
   if (answers.size !== AGREEMENTS.length) return { error: "Answer every agreement, Agree or Do not agree.", fields };
 
   const declined = AGREEMENTS.find((agreement) => answers.get(agreement) === "no");

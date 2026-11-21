@@ -99,8 +99,29 @@ export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
 
   return (
     <form action={action} className="flex flex-col gap-6">
-      <p className={hint}>To check eligibility, confirm whether the business operates in any of these regulated sectors.</p>
+      <p className={hint}>To check eligibility, tell us where the business is and whether it operates in any of these regulated sectors.</p>
       {state.refused ? null : <Refusal error={state.error} />}
+
+      <fieldset className="flex min-w-0 flex-col gap-1">
+        <legend className="mb-1 font-display text-lg font-bold">Location</legend>
+        <legend className={label}>Is the business located in the United States?</legend>
+        <div className="flex gap-6">
+          {(["yes", "no"] as const).map((answer) => (
+            <label key={answer} htmlFor={`country-${answer}${idSuffix}`} className="flex items-center gap-2">
+              <input
+                id={`country-${answer}${idSuffix}`}
+                type="radio"
+                name="country"
+                value={answer}
+                required
+                defaultChecked={state.fields.country === answer}
+                className="size-4 accent-[#c83803]"
+              />
+              {answer === "yes" ? "Yes" : "No"}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       {EXCLUDED_GROUPS.map((group) => (
         <fieldset key={group.heading} className="flex min-w-0 flex-col gap-4">
@@ -134,7 +155,7 @@ export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
       </button>
 
       {state.refused && closed !== state ? (
-        <Dialog title={EXCLUDED_INDUSTRIES[state.refused].dialogTitle} onClose={close}>
+        <Dialog title={state.refused === "country" ? "Not available outside the United States" : EXCLUDED_INDUSTRIES[state.refused].dialogTitle} onClose={close}>
           <p className="mb-4" role="alert">
             {state.error}
           </p>

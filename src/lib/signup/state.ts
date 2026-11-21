@@ -5,7 +5,7 @@ export const SIGNUP_COOKIE = "rp_signup";
 
 /**
  * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, who they are, their
- * business, the country question, then the eight excluded-industry questions, which share one screen and so one gate. The cookie is signed
+ * business, then the country question and the eight excluded-industry questions, which share one screen and so one gate. The cookie is signed
  * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. The "industries" gate is a no to every
  * one of the eight questions: a yes to any of them never passes it. Country is only a bookmark, which GeekAPI decides again when
  * the business is submitted. The industry answers are sent to GeekAPI from this gate; it stores every one forever and refuses
@@ -13,7 +13,7 @@ export const SIGNUP_COOKIE = "rp_signup";
  */
 export const GATES_COOKIE = "rp_gates";
 
-export const GATES = ["captcha", "who", "company", "country", "industries"] as const;
+export const GATES = ["captcha", "who", "company", "industries"] as const;
 export type Gate = (typeof GATES)[number];
 
 const gateKey = (): string | null => {
@@ -153,7 +153,6 @@ export type SignupStep =
   | "captcha"
   | "who"
   | "company"
-  | "country"
   | "industries"
   | "business"
   | ConfigStep
@@ -171,7 +170,6 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
     if (!gates.has("captcha")) return "captcha";
     if (!gates.has("who")) return "who";
     if (!gates.has("company")) return "company";
-    if (!gates.has("country")) return "country";
     if (!gates.has("industries")) return "industries";
     return "business";
   }

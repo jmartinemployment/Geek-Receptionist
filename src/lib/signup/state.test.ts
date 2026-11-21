@@ -6,18 +6,17 @@ import { CONFIG_STEPS, parseCompany, parseGates, parseSignup, parseWho, signComp
 const tenantId = "22222222-2222-2222-2222-222222222222";
 
 test("each step follows from what is already done", () => {
-  const all = new Set<Gate>(["captcha", "who", "company", "country", "industries"]);
+  const all = new Set<Gate>(["captcha", "who", "company", "industries"]);
   assert.equal(stepOf(null, new Set()), "captcha");
-  assert.equal(stepOf(null, new Set<Gate>(["who", "company", "country", "industries"])), "captcha");
+  assert.equal(stepOf(null, new Set<Gate>(["who", "company", "industries"])), "captcha");
   // Who the visitor is comes straight after the robot check, then their business, before any question about eligibility.
   assert.equal(stepOf(null, new Set<Gate>(["captcha"])), "who");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "company", "country", "industries"])), "who");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "company", "industries"])), "who");
   assert.equal(stepOf(null, new Set<Gate>(["captcha", "who"])), "company");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "country", "industries"])), "company");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "company"])), "country");
-  // The eight industry answers are one gate: a later gate does not let an earlier one be skipped.
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "company", "industries"])), "country");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "company", "country"])), "industries");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "industries"])), "company");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "company"])), "industries");
+  // The country question is on the eligibility screen, so it has no gate of its own to skip.
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "company", "industries"])), "who");
   assert.equal(stepOf(null, all), "business");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, all), "greeting");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, all), "greeting");
@@ -104,10 +103,10 @@ test("only well-formed ids are read back", () => {
 });
 
 test("a gates cookie only counts when this server signed it", () => {
-  const signed = signGates(["captcha", "country"], "secret-one");
-  assert.deepEqual([...parseGates(signed, "secret-one")], ["captcha", "country"]);
+  const signed = signGates(["captcha", "company"], "secret-one");
+  assert.deepEqual([...parseGates(signed, "secret-one")], ["captcha", "company"]);
   assert.equal(parseGates(signed, "secret-two").size, 0);
-  assert.equal(parseGates(signed.replace("captcha,country", "captcha,country,healthcare"), "secret-one").size, 0);
+  assert.equal(parseGates(signed.replace("captcha,company", "captcha,company,healthcare"), "secret-one").size, 0);
   assert.equal(parseGates("captcha.00", "secret-one").size, 0);
   assert.equal(parseGates("captcha", "secret-one").size, 0);
   assert.equal(parseGates(undefined, "secret-one").size, 0);

@@ -13,7 +13,7 @@ import {
   QuestionsForm,
   WhoForm,
 } from "@/app/signup/signup-forms";
-import { CountryStep, PaymentMethodStep, PlanStep } from "@/app/signup/steps";
+import { PaymentMethodStep, PlanStep } from "@/app/signup/steps";
 
 /**
  * Every signup screen, in the order the approved plan (plans/attestation-and-terms.md) puts them, on one page, so Jeff can judge the
@@ -59,8 +59,7 @@ const before: Screen[] = [
     note: "The left pane reads “Nice to meet you, <first name> / Tell me about your business” (my wording, a draft); this is the right pane: the business alone.",
     body: <CompanyForm idSuffix="-p0b" />,
   },
-  { title: "Is the business located in the United States?", body: <CountryStep /> },
-  { title: "Check eligibility", note: "Eight questions, each its own Yes or No, none pre-selected.", body: <EligibilityForm idSuffix="-p2" /> },
+  { title: "Check eligibility", note: "The country question first, then eight questions about regulated sectors, each its own Yes or No, none pre-selected.", body: <EligibilityForm idSuffix="-p2" /> },
   {
     title: "Declaration",
     note: "The person, the business, and three agreements as radio buttons. The Terms are here, before anything is configured or paid for.",

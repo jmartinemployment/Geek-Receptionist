@@ -7,14 +7,13 @@ at `30bdd94`, with the file that decides each one. It is a record, not a proposa
 
 ## The order
 
-Fifteen screens, plus the robot check before them: two screens asking who is talking to us, the person and then the business apart from each other, were added 2026-11-21 (it was twenty before the eight industry questions shared one screen). The bracketed numbers are `src/app/signup/actions.ts`' own comments,
+Fourteen screens, plus the robot check before them: two screens asking who is talking to us, the person and then the business apart from each other, were added 2026-11-21 (it was twenty before the eight industry questions shared one screen). The bracketed numbers are `src/app/signup/actions.ts`' own comments,
 which skip the six receptionist steps — that is why the numbering jumps from 3 to 4.
 
 | # | Screen | Decided by | What happens |
 |---|---|---|---|
 | — | Robot check | `captcha.ts`, `RobotCheckButton` | reCAPTCHA. A gate, not a numbered step |
-| **[1]** | Is the business in the United States? | `countryAction` | A no ends the signup and says so. Nothing is sent to GeekAPI |
-| **[2]** | Eight excluded-industry questions | `eligibilityAction` | One screen, three headings, each question its own yes or no, none pre-selected, all required. All noes are one `industries` gate; a yes to any ends it, is sent at once with all eight answers (`industry-refusals`) and is kept forever |
+| **[1]** | Eligibility: is the business in the United States, then eight excluded-industry questions | `eligibilityAction` | One screen (the country question moved onto it, Jeff, 2026-11-21). A no to the country ends the signup and says so; nothing is sent to GeekAPI. The eight: three headings, each question its own yes or no, none pre-selected, all required. All noes are one `industries` gate; a yes to any ends it, is sent at once with all eight answers (`industry-refusals`) and is kept forever |
 | **[3]** | Your business | `businessAction` | Name, what it does, state, email, phone, AI-disclosure checkbox, plus all eight noes → `validate-eligibility`. **A tenant now exists, `pending_payment`** |
 | | Your greeting | `saveConfigStep` | ↓ |
 | | When you're open | `saveConfigStep` | ↓ |
@@ -30,7 +29,7 @@ which skip the six receptionist steps — that is why the numbering jumps from 3
 ## Where the progress lives
 
 - **Before [3]: `rp_gates`**, HMAC-signed with `RECAPTCHA_SECRET_KEY` so a visitor cannot write `captcha` into it and
-  skip the check. `GATES` is `captcha`, `country` and `industries` — the last meaning a no to all eight questions.
+  skip the check. `GATES` is `captcha`, `who`, `company` and `industries` — the last meaning a yes to the country question and a no to all eight.
   Country is only a bookmark; GeekAPI decides it again at [3].
 - **From [3]: `rp_signup`**, httpOnly, one day, **ids only** — tenant, PayPal subscription, setup token, vault token,
   number, and which receptionist steps are done. Never an answer, never a password. A greeting and a question list would

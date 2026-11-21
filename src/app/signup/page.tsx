@@ -6,7 +6,7 @@ import { readCompany, readGates, readSignup, readWho, stepOf, type SignupStep } 
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
 import { startOverAction } from "./actions";
-import { CountryStep, PaymentMethodStep, PlanStep } from "./steps";
+import { PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
 import {
   AppointmentsForm,
@@ -29,7 +29,6 @@ export const dynamic = "force-dynamic";
 const STEPS: { step: SignupStep; title: string }[] = [
   { step: "who", title: "Tell us who you are" },
   { step: "company", title: "Tell us about your business" },
-  { step: "country", title: "Is Business located in United States?" },
   { step: "industries", title: "Check eligibility" },
   { step: "business", title: "Your business" },
   // The receptionist's own settings, in the owner's words rather than the field names. Approved by Jeff, 2026-11-20.
@@ -46,9 +45,6 @@ const STEPS: { step: SignupStep; title: string }[] = [
 ];
 
 const CODE = /^[a-z0-9_]{1,64}$/;
-
-/** The words of a yes-or-no question wrap at this width, so the block they make is narrower than the column and can sit centered in it. */
-const QUESTION_WIDTH = "mx-auto max-w-[17.5rem]";
 
 /** Self-service signup, rendered on the server from where this browser's signup stands. Each step is a Server Action; no step reloads the page. */
 export default async function Signup({ searchParams }: { searchParams: Promise<{ error?: string | string[]; start?: string | string[] }> }) {
@@ -93,16 +89,14 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const step = gateStep === "captcha" ? "who" : gateStep;
   const who = await readWho();
   const company = await readCompany();
-  const compact = step === "country";
   const index = STEPS.findIndex((s) => s.step === step);
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
 
   // The steps are written once and rendered in both hero blocks, as geekatyourspot.com writes a section's body, so every id takes the block's suffix.
-  // The yes-or-no questions take only the width their own words need, centered in the column with the text centered; the forms use all of it.
   const body = (s: string) => (
-    <div className={compact ? "mx-auto w-fit max-w-full text-center" : "w-full text-left"}>
+    <div className="w-full text-left">
       <section className="mb-4" aria-labelledby={`step-heading${s}`}>
-        <h2 id={`step-heading${s}`} className={step === "who" || step === "company" ? "sr-only" : `${ui.h2} ${compact ? QUESTION_WIDTH : ""}`}>
+        <h2 id={`step-heading${s}`} className={step === "who" || step === "company" ? "sr-only" : ui.h2}>
           {STEPS[index].title}
         </h2>
         {refusal ? (
@@ -113,8 +107,6 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "who" && <WhoForm idSuffix={s} />}
         {step === "company" && <CompanyForm idSuffix={s} />}
-
-        {step === "country" && <CountryStep />}
 
         {step === "industries" && <EligibilityForm idSuffix={s} />}
 
@@ -191,7 +183,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
     <>
       <HeroSection
         largeGridClassName="grid min-h-screen grid-cols-12 items-center"
-        summaryTone={step === "who" ? "orange" : "white"}
+        summaryTone={step === "who" || step === "company" ? "orange" : "white"}
         title={step === "who" ? "Hi, I am Lily" : step === "company" ? `Nice to meet you${who?.firstName ? `, ${who.firstName}` : ""}` : title}
         summary={step === "who" ? "What’s Your Name?" : step === "company" ? "Tell me about your business" : summary}
         action={

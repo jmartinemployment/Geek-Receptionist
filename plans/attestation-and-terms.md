@@ -531,6 +531,19 @@ not taken.
 `/preview/declaration` so Jeff can judge the layout before it is built. It sends and saves nothing, returns 404 in
 production, and is deleted when the declaration is built into `/signup`.
 
+## Status, 2026-11-21 (what is built, and what is not)
+
+- **Stage 5, eligibility on one screen:** built and pushed.
+- **Stage 6, appointments wording:** built and pushed.
+- **Stage 2, the named declarant, and Stage 3, the Terms:** built, **committed locally and not pushed** (portal `c717061`, GeekBackend
+  `fbceb07a`): migration `0087`, the gate, the declaration form at step 3 as radio buttons, and the Terms carrying the "subject to"
+  sentence. Not pushed because migration `0087` has not been run against a Postgres (no Docker here) and a bad migration crash-loops
+  GeekRepository on boot. The Terms document itself does not exist; the agreement stores the words shown.
+- **Stage 4, Stage 7 and Stage 8:** not built. Stage 7 (pending login, connect before pay) has the Microsoft app registration as an
+  external prerequisite.
+- The declaration sits at step 3 because the plan said so. Jeff, 2026-11-21, on seeing it: the contract "feels like it is too soon".
+  The order is his to change; nothing has been reordered.
+
 ## Order, and what blocks what
 
 1. ~~Stage 6's rewording~~ — done.

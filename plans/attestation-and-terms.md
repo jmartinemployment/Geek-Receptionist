@@ -412,9 +412,19 @@ Teaching first does not soften the gate: the dollar still waits for a redeemed c
 the instructions are on the card when the owner is looking at it, never sent after them. Exact wording is Jeff's,
 with the rest of the signup copy.
 
-**Still open under the rule:** what signup does when a required system cannot be connected at all — no supported
-provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you cannot sign up" or
-as "sign up without booking, which is the message-taking receptionist", is a product answer, not a technical one.
+**Decided, 2026-11-21 — when a required system cannot be connected, the visitor decides, told plainly.** Jeff:
+*"clearly we cannot satisfy the user's desire, best to communicate via modal dialogs and put the decision back where
+it belongs."* Neither a silent refusal nor a silent pass-through: a modal says what cannot happen — their system is
+not one we can connect today, so booking (or the CRM ability) will not work — and what still can: the receptionist
+answers, takes messages, and does everything that does not need that system. The visitor then chooses: continue
+without it, or stop. The decision goes back to the person it belongs to, which is this product's standing rule about
+clients applied to the sale itself.
+
+Mechanics that follow from it: the modal is the signup's existing refusal idiom (the country and excluded-industry
+dialogs already work this way), the "something else" answer is still recorded as the demand signal either way, and
+the never-take-a-dollar rule holds in both branches — a visitor who continues without booking has nothing left to
+verify for that system, so the sale matches what was actually proved. Wording is Jeff's, with the rest of the signup
+copy.
 
 ## Order, and what blocks what
 

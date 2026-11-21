@@ -150,14 +150,21 @@ nothing here hand-maps a vendor's fields — the moment we write it, we own ever
 So the first question about any provider is *does the vendor run a connector the owner can sign into*, asked before any
 other research. Two consequences, found 2026-11-20:
 
-- **Outlook is not a candidate.** Microsoft's calendar MCP server is Agent 365 "Work IQ Calendar", at a per-tenant address
-  requiring Agent 365 and Microsoft 365 Copilot licensing on the customer's own tenant, and nothing at all for personal
-  Outlook.com. Our customers are small businesses; a connector they must buy enterprise licensing to use is not one. It
-  stays an accepted value in `VoiceMcpProviders` with nothing behind it, which is what that list already means.
-- **Cal.com is the candidate.** It runs a hosted MCP server at `https://mcp.cal.com/mcp`, Streamable HTTP with OAuth 2.1,
-  the owner authorizing their own account — the transport `createMcpCaller` already speaks. Its `toolsets` query parameter
-  narrows what a session registers, which suits the gateway's per-provider allow-list. **Not yet verified against a real
-  account**, and by the rule below that means it is written, not supported.
+**The protocol is not the test — Jeff, 2026-11-20: "You need to look beyond MCP."** A vendor's own OAuth plus its own
+documented API is a connector exactly as much as a hosted MCP server is. The gateway speaks MCP today because Google
+publishes an MCP server, not because MCP is the definition.
+
+~~**Outlook is not a candidate**, because Microsoft's calendar MCP server is Agent 365 "Work IQ Calendar" and needs Agent
+365 plus Copilot licensing on the customer's own tenant.~~ **Struck the day it was written.** The licensing fact may hold
+for *that server*, but the conclusion drawn from it does not: it assumed the only way in was an MCP server. Jeff's
+answer is the check that should have come first — **"If it really doesn't exist, no one else offers"** — and
+`plans/ai-receptionist-research/` is full of competitors booking on Outlook (group-3 lists Dialpad's Google/Outlook/
+Calendly connectors; group-5 lists Voksha's self-serve Google, Outlook and iCloud). A route plainly exists.
+
+What the realistic routes are, what each asks of the business owner, and whether Microsoft Graph with the owner's own
+sign-in needs any licence at all, is under research now; this section is rewritten from that report rather than from
+another inference. Cal.com's hosted server at `https://mcp.cal.com/mcp` remains a candidate on its own merits and is
+likewise unverified against a real account, which by the rule below makes it written, not supported.
 
 ### Stage 4: the database stops being a second list
 

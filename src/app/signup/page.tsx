@@ -5,7 +5,8 @@ import HeroSection from "@/components/shared/shared-hero-section";
 import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
-import { choosePlanAction, countryAction, forgetRobotCheckAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { startOverAction } from "./actions";
+import { CountryStep, PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
 import {
   AppointmentsForm,
@@ -38,13 +39,6 @@ const STEPS: { step: SignupStep; title: string }[] = [
   { step: "payment_method", title: "Save a payment method" },
   { step: "number", title: "Your receptionist's number" },
   { step: "login", title: "Your login" },
-];
-
-const PLANS = [
-  { code: "STARTER", name: "Starter", price: 30, minutes: 90 },
-  { code: "STANDARD", name: "Standard", price: 48, minutes: 250 },
-  { code: "PRO", name: "Pro", price: 148, minutes: 1000 },
-  { code: "PREMIUM", name: "Premium", price: 298, minutes: 2000 },
 ];
 
 const CODE = /^[a-z0-9_]{1,64}$/;
@@ -111,12 +105,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           </p>
         ) : null}
 
-        {step === "country" && (
-          <div className="flex flex-nowrap justify-center gap-3">
-            <ActionButton action={countryAction.bind(null, true)} label="Yes" pendingLabel="One moment…" />
-            <ActionButton action={countryAction.bind(null, false)} label="No" pendingLabel="One moment…" quiet dialogTitle="Not available outside the United States" onDialogClose={forgetRobotCheckAction} />
-          </div>
-        )}
+        {step === "country" && <CountryStep />}
 
         {step === "industries" && <EligibilityForm idSuffix={s} />}
 
@@ -129,36 +118,9 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         {step === "messages" && state && <MessagesForm email={state.contactEmail} idSuffix={s} />}
         {step === "appointments" && <AppointmentsForm />}
 
-        {step === "plan" && (
-          <>
-            <p className={`${ui.muted} mb-4`}>
-              Billed monthly through PayPal. Minutes over your plan are $0.50 each, charged at the end of the month to the PayPal account
-              you save next.
-            </p>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {PLANS.map((plan) => (
-                <li key={plan.code} className="flex flex-col gap-2 rounded-md border border-line p-4">
-                  <p className="font-semibold">{plan.name}</p>
-                  <p>
-                    <span className="text-2xl font-semibold">${plan.price}</span> a month
-                  </p>
-                  <p className={ui.muted}>{plan.minutes.toLocaleString("en-US")} minutes included</p>
-                  <ActionButton action={choosePlanAction.bind(null, plan.code)} label={`Choose ${plan.name}`} pendingLabel="Opening PayPal…" />
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+        {step === "plan" && <PlanStep />}
 
-        {step === "payment_method" && (
-          <>
-            <p className={`${ui.muted} mb-4`}>
-              Your {state?.tier ? state.tier.charAt(0) + state.tier.slice(1).toLowerCase() : ""} subscription is approved. Now save your PayPal
-              account for minutes over your plan. Nothing is charged now.
-            </p>
-            <ActionButton action={savePaymentMethodAction} label="Save PayPal for overage minutes" pendingLabel="Opening PayPal…" />
-          </>
-        )}
+        {step === "payment_method" && <PaymentMethodStep tier={state?.tier} />}
 
         {step === "number" && (
           <>

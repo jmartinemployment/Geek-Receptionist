@@ -56,7 +56,7 @@ function buildICS(booking: Booking, contact: ContactInfo, organizerEmail: string
   ].join('\r\n');
 }
 
-function buildEmailHTML(booking: Booking, contact: ContactInfo): string {
+function buildEmailHTML(booking: Booking): string {
   const dateDisplay = new Date(`${booking.date}T00:00:00`).toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -103,7 +103,7 @@ export async function sendBookingConfirmation(
   const organizerEmail = process.env.GOOGLE_CALENDAR_OWNER_EMAIL ?? fromEmail;
 
   const ics = buildICS(booking, contact, organizerEmail);
-  const html = buildEmailHTML(booking, contact);
+  const html = buildEmailHTML(booking);
 
   const resend = new Resend(apiKey);
 

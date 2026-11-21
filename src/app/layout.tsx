@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Figtree, Sora, Geist } from "next/font/google";
+import { Sora, Geist } from "next/font/google";
 import type { ReactNode } from "react";
 import Footer from "@/components/footer";
 import { Navbar } from "@/components/navbar";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-// The two faces of geekatyourspot.com, loaded the way its layout.tsx loads them: Sora for headings, Figtree as --font-sans for everything else.
+// Two faces: Sora for headings, Geist as --font-sans for everything else. geekatyourspot.com uses Figtree for the second of
+// those; this site does not, and the import that said otherwise was never used.
 const sora = Sora({ subsets: ["latin"], display: "swap", variable: "--font-sora", weight: ["400", "500", "600", "700"] });
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 

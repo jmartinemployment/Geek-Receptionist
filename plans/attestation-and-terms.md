@@ -544,6 +544,13 @@ production, and is deleted when the declaration is built into `/signup`.
   person, then Business Name, Address, City, State, Zip, Telephone and Email for the business (Jeff's list, 2026-11-21).
   The business's website is the last of the business's fields; it is optional (a business with none leaves it empty and
   NULL is stored), and one that is given must be a full http or https address (migration `0090`, `tenants.business_website`).
+  **Website to crawl (Jeff, 2026-11-21: "loss of focus -> Geek Crawler (needs a crawl type = Receptionist)"):** the crawl type
+  `receptionist` now exists in GeekAPI (`CrawlTypes.Receptionist`) and in Geek-Crawler-v2 (`CrawlTypes.Receptionist`, profile = the
+  project-site profile, my choice, not yet confirmed by Jeff). **The trigger is not built, and cannot be without a decision:** GeekAPI's
+  in-process crawl was made unreachable on purpose (`StartCrawlAsync` throws), crawls start only on the crawler (`127.0.0.1:8787` on the
+  VPS), so a blur on the signup page has no door to it. It would also let an anonymous visitor point the crawler at any address before
+  a tenant or a payment exists. The run would have to be bound to the tenant server-side (`KnowledgeRunId` is deliberately not a form
+  field), and the signup form question is "should your receptionist answer from your website?" (`plans/signup-form-questions.md`, E).
   The person's own address, telephone and email are stored sealed with the declaration (migrations `0088`, `0089`); the business's
   telephone and email are the tenant's contact details. "Lily" is the Retell voice name, used for now (Jeff, 2026-11-21). The answers are held in a signed cookie
   (`rp_who`, one day) and pre-fill the declaration. Nothing is confirmed; confirmation after payment is not built.

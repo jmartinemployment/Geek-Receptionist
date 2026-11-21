@@ -342,32 +342,33 @@ showing the owner a login screen, and a plain "check again" button beats polling
 noting that the admin may approve inside the Entra portal instead of through our link, in which case our route never
 fires and the re-check is the only thing that notices.
 
-**Checked against Microsoft directly, 2026-11-21** — `reference-error-codes`, `configure-admin-consent-workflow` and
-`troubleshoot-consent-issues` on learn.microsoft.com. (The error reference returned its first ~40k of ~73k characters
-verbatim; individual AADSTS rows past that point are still unread, which matters less than it sounds, for the first
-reason below.) What the read settles:
+**Settled by deep research, 2026-11-21 — `reports/Entra admin consent for calendar OAuth.md`.** Four researchers
+read the primary Microsoft pages (raw HTML, no truncation); the report carries every quote and URL, and keeps what is
+NOT CONFIRMED marked as such. The gate reduces to four rules, each grounded there:
 
-- **Microsoft's own rule forbids branching on AADSTS numbers at all.** Verbatim, from the error reference: *"Error
-  codes are subject to change at any time ... Apps that take a dependency on text or error code numbers will be broken
-  over time."* On `error_description`: *"Never use this field to react to an error in your code."* The `error` query
-  parameter is the one field that *"should be used to react to errors."* So the registry classifier keys on the OAuth
-  `error` parameter — `consent_required`, `interaction_required`, bare `access_denied` — and an AADSTS number is
-  something an operator reads in a log, never something code tests. The earlier advice to match `AADSTS90094` /
-  `900941` / `90095` in `error_codes`/`suberror` is ruled out by the vendor's own instruction.
-- **`AADSTS90094` is the managed-policy block.** The troubleshoot page's symptom list, verbatim: *"An administrator of
-  &lt;TenantDisplayName&gt; has set a policy that prevents you from granting &lt;Name-of-App&gt; the permissions it is
-  requesting."* The Outlook report tied the same code to risk-based step-up consent; both causes can surface it, and
-  nothing turns on telling them apart, because nothing branches on the number.
-- **`AADSTS900941` is real and is the risky-app variant** (*AdminConsentRequiredDueToRiskyApp*, on the troubleshoot
-  page). **`AADSTS900942` still has no primary source** — absent from the troubleshoot page, unconfirmed on the
-  reference — so it stays out of the plan. The names given for `65001`/`90094`/`90095` on the reference page came back
-  through a summary of the unread tail and remain secondary.
-- **Microsoft publishes no range and no default for the consent-request expiry.** The configuration page's entire
-  description of the setting, verbatim: *"Specify how long requests stay valid."* The "up to 365 days, commonly 7 or
-  30" figure has no primary source. What is confirmed, verbatim: the first about-to-expire reminder email *"is likely
-  sent out in the middle of the configured"* window. So the parking TTL is sized by Jeff's judgment of how long a small
-  business needs to reach its administrator or MSP — there is no Microsoft default to inherit, because the
-  documentation does not state one.
+1. **A redirect without a `code` is a failure.** The authorize redirect carries `error` + `error_description` + `state`
+   and nothing else; `error_subcode` appears in no reference page and is never branched on.
+2. **`access_denied` parks, with copy that covers both meanings.** Microsoft documents the "Need admin approval"
+   screens but *never states which `error` value reaches the redirect_uri* when the user exits them — community
+   evidence says `access_denied`, same as a plain decline. The redirect cannot tell "you declined" from "your admin
+   must approve", so the parked copy says both. `interaction_required` / `login_required` / `consent_required` →
+   retry interactively; anything else → fail loud.
+3. **`/adminconsent` may optimistically unpark and never verifies.** Its success redirect carries no code and no token
+   for anyone; its *error* redirect also carries `admin_consent=True`, so the callback branches on `error` first; its
+   `tenant` value is documented as forgeable. The request names the tenant GUID or `organizations`, never `common`,
+   and should cover `openid profile offline_access` beside the calendar scope so the later sign-in is prompt-free.
+4. **Payment follows only a redeemed authorization code that returned a refresh token.** The resume probe
+   (`prompt=none` + `login_hint`, browser-borne — no server-to-server consent check exists for a delegated-only
+   vendor) is a session-AND-consent test: `login_required` means "no session here", not "no consent". A silent
+   redemption with `offline_access` mints the refresh token itself, so the probe that confirms consent completes the
+   connection. `prompt=consent` is never sent to Microsoft — it forces the dialog even after tenant-wide consent.
+
+Corrections to what this section said before the research: `AADSTS900941` and `900942` are both **absent** from the
+error reference page (the full 370-row table was read; 900941 lives only on the troubleshoot page, 900942 was found on
+no Microsoft page at all). And the parked TTL is sized blind: no primary source states a range or default for the
+tenant's consent-request window, the vendor cannot read it, a reviewer's **Block** is terminal and indistinguishable
+from a slow admin — so the parked state is **re-enterable**, not one-shot, and the TTL choice (Jeff's) governs only
+housekeeping, never a hard refusal to try again.
 
 **Still open under the rule:** what signup does when a required system cannot be connected at all — no supported
 provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you cannot sign up" or

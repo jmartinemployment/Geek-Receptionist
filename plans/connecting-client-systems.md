@@ -137,9 +137,27 @@ Breadth comes from repetition, so the second one is the one that proves the seam
 disconnect, reconnect. **Which provider is a market decision and yours.** What this plan asserts is only that the second one
 is done completely before the third is started, because every shortcut taken on the second is taken four more times.
 
-What it needs beyond Stage 1: an **MCP server for it behind `geek-mcp-gateway`**. That is where the breadth actually lives —
-GeekAPI never speaks a vendor's API, it speaks MCP, and the gateway speaks the vendor. A vendor with a published MCP server
-is cheap; one without needs a server written, and that is the real per-provider cost to weigh when choosing.
+What it needs beyond Stage 1: the vendor's **own** MCP endpoint, reached through `geek-mcp-gateway`. GeekAPI never speaks a
+vendor's API, it speaks MCP, and the gateway opens a session against the address in that vendor's registry entry.
+
+**Connectors only — Jeff, 2026-11-20.** A *connector* is a plug-in point **the vendor runs**: we point at their address,
+the business owner signs in with their own account, and that is the whole integration. A vendor that has an API but no
+such endpoint is **not a candidate** — we do not write the piece that talks to them. An earlier version of this line
+called writing one "the real per-provider cost to weigh when choosing", which was wrong in kind, not in degree: it is not
+a cost to weigh, it is out of scope. Per-vendor glue is the thing this architecture exists to avoid, for the same reason
+nothing here hand-maps a vendor's fields — the moment we write it, we own every schema change that vendor ships.
+
+So the first question about any provider is *does the vendor run a connector the owner can sign into*, asked before any
+other research. Two consequences, found 2026-11-20:
+
+- **Outlook is not a candidate.** Microsoft's calendar MCP server is Agent 365 "Work IQ Calendar", at a per-tenant address
+  requiring Agent 365 and Microsoft 365 Copilot licensing on the customer's own tenant, and nothing at all for personal
+  Outlook.com. Our customers are small businesses; a connector they must buy enterprise licensing to use is not one. It
+  stays an accepted value in `VoiceMcpProviders` with nothing behind it, which is what that list already means.
+- **Cal.com is the candidate.** It runs a hosted MCP server at `https://mcp.cal.com/mcp`, Streamable HTTP with OAuth 2.1,
+  the owner authorizing their own account — the transport `createMcpCaller` already speaks. Its `toolsets` query parameter
+  narrows what a session registers, which suits the gateway's per-provider allow-list. **Not yet verified against a real
+  account**, and by the rule below that means it is written, not supported.
 
 ### Stage 4: the database stops being a second list
 

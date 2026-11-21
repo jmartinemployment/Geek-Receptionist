@@ -5,12 +5,12 @@ export const ui = {
   card: "mb-4 rounded-md border border-line bg-paper p-5",
   h1: "mb-4 text-4xl font-extrabold",
   h2: "mb-2 text-2xl font-extrabold",
-  muted: "text-muted",
+  muted: "text-muted-foreground",
   button:
-    "inline-flex items-center justify-center rounded bg-accent px-4 py-2 font-medium text-white no-underline transition-colors hover:bg-teak " +
+    "inline-flex items-center justify-center rounded bg-brand-orange px-4 py-2 font-medium text-white no-underline transition-colors hover:bg-brand-teak " +
     "disabled:cursor-wait disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white",
   quietButton:
-    "inline-flex items-center justify-center rounded border border-accent px-4 py-2 font-medium text-white " +
-    "hover:bg-accent disabled:cursor-wait disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white",
+    "inline-flex items-center justify-center rounded border border-brand-orange px-4 py-2 font-medium text-white " +
+    "hover:bg-brand-orange disabled:cursor-wait disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white",
   status: { ok: "font-semibold text-ok", warn: "font-semibold text-warn", bad: "font-semibold text-bad" },
 } as const;

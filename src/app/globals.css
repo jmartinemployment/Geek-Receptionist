@@ -71,12 +71,23 @@ html, body {
   --color-brand-blue: #023059;
   --color-brand-teal-blue: #024059;
   --color-brand-ocean-blue: #025e73;
+  --color-brand-orange: #c83803;
   --color-brand-teak: #8c4e2a;
   --color-brand-salsa-red: #8c2703;
   --color-brand-true-black: #0a080d;
   --color-brand-deep-ocean-blue: #023859;
   --color-brand-dark-water: #024873;
   --color-brand-frost-aqua: #bdf2f2;
+
+  /* The names src/lib/ui.ts writes. They were never defined, so the classes built from them emitted no colour at all: the signup
+     Continue was bg-accent over text-white and both are near-white, and every status line rendered as plain body text. accent and
+     muted belong to shadcn and are used by the scheduler's calendar, so the brand orange is named for itself rather than taking
+     theirs. line and paper follow the border and card the rest of the app already draws with. */
+  --color-line: var(--border);
+  --color-paper: var(--card);
+  --color-ok: #15803d;
+  --color-warn: #b45309;
+  --color-bad: #dc2626;
   --color-brand-brown-suede: #733e1f;
   --color-brand-maastricht-blue: #012840;
 
@@ -214,7 +225,7 @@ html, body {
     @apply inline-block rounded px-4 py-2 font-medium transition-colors;
   }
   .btn-primary {
-    @apply bg-[#C83803] text-white hover:bg-[#8C4E2A];
+    @apply bg-brand-orange text-white hover:bg-brand-teak;
   }
   .shadow-text {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, .375);

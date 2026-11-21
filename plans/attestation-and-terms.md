@@ -484,12 +484,14 @@ when the subscription is approved. Whether GeekAPI keeps that has not been check
 talking to" is proven for nothing. For the phone, the options are an SMS code or a call from the number just bought,
 and either is paid for by a sale already made.
 
-**This collides with Stage 7, and the collision is Jeff's to settle.** Stage 7 gives an unpaid tenant a pending login
-so the owner can connect before paying. With confirmation after payment, that login sits on an unconfirmed email. A
-pending login can do almost nothing, which narrows the exposure, and nothing is sent to the address and nothing is
-spent. What remains is that anyone can reserve someone else's address for the 14-day window (`owner_exists` on the
-unique index), and the login proves a password, not a mailbox. The alternatives are to accept that, or to let the
-email code, the cheap one, be the one confirmation allowed before payment.
+**Settled, 2026-11-21: the pending login sits on an unconfirmed email.** Stage 7 gives an unpaid tenant a pending
+login so the owner can connect before paying, and Stage 8 confirms the email and phone only after payment, so the
+two meet. Jeff's answers decide it: confirmation after payment, and the credential is a pending login, not a full
+one. The cost is accepted as named: a pending login can do one job, nothing is sent to the address and nothing is
+spent, and what remains is that anyone can reserve someone else's address for the 14-day window (`owner_exists` on
+the unique index), which expiry releases. The login proves a password, not a mailbox, until the confirmation after
+payment, which is what makes it a full login. The alternative, a free email code before payment, was offered and is
+not taken.
 
 ## Order, and what blocks what
 
@@ -497,7 +499,7 @@ email code, the cheap one, be the one confirmation allowed before payment.
 2. ~~Stage 5~~ — done.
 3. Stage 2's portal and API halves, the next buildable thing; it needs no decision.
 4. Stage 7's reorder, which changes what every stage below sits in and needs the unpaid-login surface built first.
-5. Stage 8's decision on the unpaid login's unconfirmed email, which Stage 7's login depends on.
+5. ~~Stage 8's decision on the unpaid login's unconfirmed email~~ — settled.
 6. Stage 1's version string and address, before Stage 3 ships.
 7. Stage 3 with it.
 8. Stage 4 after the Terms exist, since it enforces one of their clauses.

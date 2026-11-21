@@ -8,12 +8,16 @@ import { isConsentMode } from "@/lib/receptionist/controls";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
+import { AGREEMENTS, DECLARATION_STATEMENT, DECLINED, TERMS_STATEMENT, type Agreement } from "@/lib/signup/declaration";
 import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, industryAnswers, type ExcludedCode } from "@/lib/signup/excluded";
 import { postOnboarding } from "@/services/onboarding";
 import { setSessionCookies, signIn, visitorIpFrom } from "@/services/owner-auth";
 
-/** What a signup step hands back. `refused` names the excluded industry a yes was given to, which ends the signup. */
-export type SignupFormState = { error: string | null; fields: Record<string, string>; refused?: ExcludedCode };
+/**
+ * What a signup step hands back. `refused` names the excluded industry a yes was given to, and `declined` the agreement a No was given to;
+ * either ends the signup.
+ */
+export type SignupFormState = { error: string | null; fields: Record<string, string>; refused?: ExcludedCode; declined?: Agreement };
 
 const TIERS = new Set(["STARTER", "STANDARD", "PRO", "PREMIUM"]);
 
@@ -77,19 +81,39 @@ export async function eligibilityAction(_previous: SignupFormState, form: FormDa
   redirect("/signup?start=1");
 }
 
-/** Step 3: the business and the compliance statement, once the robot check and the questions are passed. GeekAPI's gate decides; a business that passes becomes a tenant waiting for payment. */
+/**
+ * Step 3: the declaration. A named person gives their name and title, the business's details, and answers three agreements: the AI
+ * disclosure, the declaration that they may answer for the business and that the answers are true, and the Terms. Each is a yes or a no
+ * with nothing pre-selected; one left unanswered is refused, never read as a no or a yes. A No to any of them ends the signup and creates
+ * nothing. Only a person who agreed to all three reaches GeekAPI, which holds the same words and refuses any other; a business that passes
+ * becomes a tenant waiting for payment, with the declaration stored beside it forever.
+ */
 export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
-  const fields = {
+  const fields: Record<string, string> = {
+    declarantName: text(form, "declarantName"),
+    declarantTitle: text(form, "declarantTitle"),
     businessName: text(form, "businessName"),
     businessDescription: text(form, "businessDescription"),
+    businessAddress: text(form, "businessAddress"),
     stateCode: text(form, "stateCode").toUpperCase(),
     contactEmail: text(form, "contactEmail"),
     contactPhone: text(form, "contactPhone"),
   };
-  const attested = form.get("complianceAttested") === "on";
+  const answers = new Map<Agreement, "yes" | "no">();
+  for (const agreement of AGREEMENTS) {
+    const answer = form.get(agreement);
+    if (answer === "yes" || answer === "no") {
+      answers.set(agreement, answer);
+      fields[agreement] = answer;
+    }
+  }
 
   const gates = await readGates();
   if (!gates.has("captcha") || !gates.has("country") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
+  if (answers.size !== AGREEMENTS.length) return { error: "Answer every agreement, Agree or Do not agree.", fields };
+
+  const declined = AGREEMENTS.find((agreement) => answers.get(agreement) === "no");
+  if (declined) return { error: DECLINED[declined].message, fields, declined };
 
   const visitor = await headers();
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
@@ -99,8 +123,15 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     stateCode: fields.stateCode,
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone,
-    complianceAttested: attested,
+    complianceAttested: true,
     industryAnswers: industryAnswers(new Set()),
+    attestorName: fields.declarantName,
+    attestorTitle: fields.declarantTitle,
+    businessAddress: fields.businessAddress,
+    declarationStatement: DECLARATION_STATEMENT,
+    declarationAgreed: true,
+    termsStatement: TERMS_STATEMENT,
+    termsAgreed: true,
   }, visitor);
 
   const tenantId = answer.body?.tenantId;

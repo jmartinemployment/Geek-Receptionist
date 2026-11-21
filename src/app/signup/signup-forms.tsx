@@ -6,6 +6,7 @@ import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
 import { DAYS, TIMEZONES } from "@/lib/signup/hours";
 import { EXCLUDED_GROUPS, EXCLUDED_INDUSTRIES } from "@/lib/signup/excluded";
+import { AI_DISCLOSURE_STATEMENT, DECLARATION_STATEMENT, DECLINED, TERMS_STATEMENT, type Agreement } from "@/lib/signup/declaration";
 import {
   activateAction,
   appointmentsAction,
@@ -144,43 +145,150 @@ export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
   );
 }
 
+/** One numbered part of the declaration, set as a legal document is: a serif heading, a rule above every part but the first. */
+function Part({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
+  return (
+    <section className="grid gap-4 border-t border-slate-300 pt-6 first:border-t-0 first:pt-0">
+      <h3 className="font-serif text-lg font-semibold text-slate-900">
+        <span className="mr-2 text-slate-500">{number}.</span>
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+const sheetField =
+  "w-full min-w-0 border-0 border-b border-slate-400 bg-transparent px-0 py-1 font-serif text-base text-slate-900 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f5fae]";
+const sheetLabel = "font-sans text-sm text-slate-600";
+
+/** One line of the document: a label, and a ruled line to write on. */
+function Line({ id, name, label, hintText, state, ...input }: {
+  id: string;
+  name: string;
+  label: string;
+  hintText?: string;
+  state: SignupFormState;
+} & Pick<React.InputHTMLAttributes<HTMLInputElement>, "type" | "autoComplete" | "inputMode" | "maxLength" | "placeholder">) {
+  return (
+    <div className="grid gap-1 sm:grid-cols-[11rem_1fr] sm:items-end sm:gap-4">
+      <label htmlFor={id} className={sheetLabel}>
+        {label}
+      </label>
+      <div className="grid gap-1">
+        <input id={id} name={name} required defaultValue={state.fields[name] ?? ""} className={sheetField} {...input} />
+        {hintText ? <p className="font-sans text-xs text-slate-500">{hintText}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+/** A statement the person answers, never pre-selected. Not a checkbox: a statement a person is bound by is a yes or no they answer. */
+function Agree({ name, statement, state, idSuffix, yes = "Agree", no = "Do not agree", children }: {
+  name: Agreement;
+  statement: string;
+  state: SignupFormState;
+  idSuffix: string;
+  yes?: string;
+  no?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <fieldset className="grid gap-3">
+      <legend className="font-serif text-base leading-relaxed text-slate-900">{statement}</legend>
+      {children}
+      <div className="flex flex-wrap gap-x-8 gap-y-2 font-sans text-base text-slate-900">
+        {[
+          { value: "yes", text: yes },
+          { value: "no", text: no },
+        ].map((option) => (
+          <label key={option.value} htmlFor={`${name}-${option.value}${idSuffix}`} className="flex items-center gap-2">
+            <input
+              id={`${name}-${option.value}${idSuffix}`}
+              type="radio"
+              name={name}
+              value={option.value}
+              required
+              defaultChecked={state.fields[name] === option.value}
+              className="size-4 accent-[#c83803]"
+            />
+            {option.text}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+/**
+ * Step 3, laid out as the legal document it is (plans/attestation-and-terms.md, stages 2 and 3). A named person gives who they are and
+ * what the business is, then answers three agreements, each a pair of radio buttons with nothing selected: Jeff, 2026-11-21, "I do not
+ * wish to use checkboxes in legal acceptance documents." A No to any ends the signup in a dialog and creates nothing; closing it forgets
+ * the robot check, as every other ending does. The Terms are accepted before any system is connected, and say so: they are subject to
+ * the required connections being verified.
+ */
 export function BusinessForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(businessAction, start());
-  const value = (name: string) => state.fields[name] ?? "";
+  const [closed, setClosed] = useState<SignupFormState | null>(null);
+  const [, afterClose] = useTransition();
+  const close = () => {
+    setClosed(state);
+    afterClose(forgetRobotCheckAction);
+  };
+  const id = (name: string) => `${name}${idSuffix}`;
 
   return (
-    <form action={action} className="flex flex-col gap-6">
-      <Refusal error={state.error} />
+    <form action={action} className="grid gap-6 rounded-sm bg-white p-6 text-slate-900 shadow-xl sm:p-10">
+      <header className="grid gap-1 border-b-2 border-slate-900 pb-4 text-center">
+        <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Geek-Receptionist</p>
+        <h3 className="font-serif text-2xl font-semibold tracking-wide text-slate-900 uppercase">Declaration of eligibility</h3>
+      </header>
 
-      <fieldset className="flex min-w-0 flex-col gap-2">
-        <label htmlFor={`businessName${idSuffix}`} className={label}>Business name</label>
-        <input id={`businessName${idSuffix}`} name="businessName" required autoComplete="organization" defaultValue={value("businessName")} className={field} />
-        <label htmlFor={`businessDescription${idSuffix}`} className={label}>What the business does</label>
-        <input id={`businessDescription${idSuffix}`} name="businessDescription" required maxLength={120} placeholder="Plumbing and heating" defaultValue={value("businessDescription")} className={field} />
-      </fieldset>
+      {state.declined ? null : <Refusal error={state.error} />}
 
-      <fieldset className="flex min-w-0 flex-col gap-2">
-        <legend className="mb-1 font-display text-lg font-bold">Where it is and how to reach you</legend>
-        <label htmlFor={`stateCode${idSuffix}`} className={label}>State</label>
-        <input id={`stateCode${idSuffix}`} name="stateCode" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("stateCode")} className={`${field} w-24 uppercase`} />
-        <label htmlFor={`contactEmail${idSuffix}`} className={label}>Email</label>
-        <input id={`contactEmail${idSuffix}`} name="contactEmail" type="email" required autoComplete="email" aria-describedby={`emailHint${idSuffix}`} defaultValue={value("contactEmail")} className={field} />
-        <p id={`emailHint${idSuffix}`} className={`${ui.muted} text-sm`}>You will sign in with this email.</p>
-        <label htmlFor={`contactPhone${idSuffix}`} className={label}>Business phone</label>
-        <input id={`contactPhone${idSuffix}`} name="contactPhone" type="tel" required autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" aria-describedby={`phoneHint${idSuffix}`} defaultValue={value("contactPhone")} className={field} />
-        <p id={`phoneHint${idSuffix}`} className={`${ui.muted} text-sm`}>A US number, typed any way you like.</p>
-      </fieldset>
+      <Part number={1} title="The declarant">
+        <Line id={id("declarantName")} name="declarantName" label="Full name" autoComplete="name" maxLength={300} state={state} />
+        <Line id={id("declarantTitle")} name="declarantTitle" label="Title" autoComplete="organization-title" maxLength={300} state={state} />
+      </Part>
 
-      <label className="flex items-start gap-3">
-        <input type="checkbox" name="complianceAttested" required className="mt-1.5 size-4 accent-[#c83803]" />
-        <span>Calls to this business may be answered and recorded by an AI receptionist that tells callers so.</span>
-      </label>
-      <div className="flex flex-col gap-2">
-        <button className={ui.button} type="submit" disabled={pending}>
+      <Part number={2} title="The business">
+        <Line id={id("businessName")} name="businessName" label="Business name" autoComplete="organization" state={state} />
+        <Line id={id("businessDescription")} name="businessDescription" label="What it does" maxLength={120} placeholder="Plumbing and heating" state={state} />
+        <Line id={id("businessAddress")} name="businessAddress" label="Address" autoComplete="street-address" maxLength={300} state={state} />
+        <Line id={id("stateCode")} name="stateCode" label="State" maxLength={2} placeholder="FL" autoComplete="address-level1" state={state} />
+        <Line id={id("contactPhone")} name="contactPhone" label="Phone" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" hintText="A US number, typed any way you like." state={state} />
+        <Line id={id("contactEmail")} name="contactEmail" label="Email" type="email" autoComplete="email" hintText="You will sign in with this email." state={state} />
+      </Part>
+
+      <Part number={3} title="Disclosure">
+        <Agree name="complianceAttested" statement={AI_DISCLOSURE_STATEMENT} state={state} idSuffix={idSuffix} />
+      </Part>
+
+      <Part number={4} title="Declaration">
+        <Agree name="declaration" statement={DECLARATION_STATEMENT} state={state} idSuffix={idSuffix} yes="Yes" no="No" />
+      </Part>
+
+      <Part number={5} title="Subscription Terms">
+        <Agree name="terms" statement={TERMS_STATEMENT} state={state} idSuffix={idSuffix} />
+      </Part>
+
+      <footer className="grid gap-3 border-t border-slate-400 pt-4 font-sans text-sm text-slate-600">
+        <p>A No, or a Do not agree, stops the signup and creates nothing. Nothing is charged in this step. You choose a plan next.</p>
+        <button className={`${ui.button} w-fit`} type="submit" disabled={pending}>
           {pending ? "Checking…" : "Continue"}
         </button>
-        <p className={`${ui.muted} text-sm`}>Nothing is charged in this step. You choose a plan next.</p>
-      </div>
+      </footer>
+
+      {state.declined && closed !== state ? (
+        <Dialog title={DECLINED[state.declined].title} onClose={close}>
+          <p className="mb-4" role="alert">
+            {state.error}
+          </p>
+          <button type="button" className={ui.button} onClick={close}>
+            Close
+          </button>
+        </Dialog>
+      ) : null}
     </form>
   );
 }

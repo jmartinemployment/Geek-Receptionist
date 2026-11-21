@@ -16,6 +16,10 @@ const MESSAGES: Record<string, string> = {
   industry_excluded:
     "Geek-Receptionist cannot be used by HIPAA covered entities or business associates, securities broker-dealers, investment advisers, commodity futures or derivatives businesses, or Third-Party Marketing Organizations (TPMOs) involved in Medicare Advantage or Part D marketing and sales. We exclude them outright.",
   attestation_required: "Confirm the compliance statement to continue.",
+  attestor_required: "Give the name and title of the person making this declaration.",
+  business_address_required: "Give the business's address.",
+  declaration_required: "The declaration must be made, in the words shown.",
+  terms_required: "The Terms must be accepted, in the words shown.",
   rate_limited: "Too many signup attempts from this address. Try again in an hour.",
   tier_unknown: "Choose one of the four plans.",
   billing_not_configured: "Payments are not set up on our side yet. Nothing was charged.",

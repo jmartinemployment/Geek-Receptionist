@@ -16,6 +16,7 @@ import {
   eligibilityAction,
   forgetRobotCheckAction,
   greetingAction,
+  whoAction,
   hoursAction,
   knowledgeAction,
   messagesAction,
@@ -145,6 +146,36 @@ export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
   );
 }
 
+/**
+ * The first screen, in the right pane beside "Hi, I am Lily. What's Your Name": who is talking to us and the business they are asking for
+ * (Jeff, 2026-11-21: "name, business name, address, email, telephone"). Nothing is verified here. The declaration shows these again, so
+ * nobody types them twice.
+ */
+export function WhoForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(whoAction, start());
+  const value = (name: string) => state.fields[name] ?? "";
+  const id = (name: string) => `${name}${idSuffix}`;
+
+  return (
+    <form action={action} className="flex flex-col gap-4 text-left">
+      <Refusal error={state.error} />
+      <label htmlFor={id("name")} className={label}>Your name</label>
+      <input id={id("name")} name="name" required maxLength={300} autoComplete="name" defaultValue={value("name")} className={field} />
+      <label htmlFor={id("businessName")} className={label}>Business name</label>
+      <input id={id("businessName")} name="businessName" required maxLength={300} autoComplete="organization" defaultValue={value("businessName")} className={field} />
+      <label htmlFor={id("address")} className={label}>Business address</label>
+      <input id={id("address")} name="address" required maxLength={300} autoComplete="street-address" defaultValue={value("address")} className={field} />
+      <label htmlFor={id("email")} className={label}>Email</label>
+      <input id={id("email")} name="email" type="email" required maxLength={300} autoComplete="email" defaultValue={value("email")} className={field} />
+      <label htmlFor={id("phone")} className={label}>Telephone</label>
+      <input id={id("phone")} name="phone" type="tel" required maxLength={300} autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" defaultValue={value("phone")} className={field} />
+      <button className={`${ui.button} mt-2 w-fit`} type="submit" disabled={pending}>
+        {pending ? "One moment…" : "Continue"}
+      </button>
+    </form>
+  );
+}
+
 /** One numbered part of the declaration, set as a legal document is: a serif heading, a rule above every part but the first. */
 function Part({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
@@ -227,8 +258,8 @@ function Agree({ name, statement, state, idSuffix, yes = "Agree", no = "Do not a
  * the robot check, as every other ending does. The Terms are accepted before any system is connected, and say so: they are subject to
  * the required connections being verified.
  */
-export function BusinessForm({ idSuffix }: { idSuffix: string }) {
-  const [state, action, pending] = useActionState(businessAction, start());
+export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; initial?: Record<string, string> }) {
+  const [state, action, pending] = useActionState(businessAction, start(initial));
   const [closed, setClosed] = useState<SignupFormState | null>(null);
   const [, afterClose] = useTransition();
   const close = () => {

@@ -10,6 +10,7 @@ import {
   MessagesForm,
   NumberForm,
   QuestionsForm,
+  WhoForm,
 } from "@/app/signup/signup-forms";
 import { CountryStep, PaymentMethodStep, PlanStep } from "@/app/signup/steps";
 
@@ -47,6 +48,11 @@ function NotBuilt({ children }: { children: React.ReactNode }) {
 }
 
 const before: Screen[] = [
+  {
+    title: "Hi, I am Lily. What’s Your Name",
+    note: "The left pane reads “Hi, I am Lily / What’s Your Name”; this is the right pane. Nothing is verified here.",
+    body: <WhoForm idSuffix="-p0" />,
+  },
   { title: "Is the business located in the United States?", body: <CountryStep /> },
   { title: "Check eligibility", note: "Eight questions, each its own Yes or No, none pre-selected.", body: <EligibilityForm idSuffix="-p2" /> },
   {

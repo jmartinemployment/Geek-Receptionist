@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
 import { SchedulerShell } from "@/components/shared/scheduler/scheduler-shell";
 import HeroSection from "@/components/shared/shared-hero-section";
-import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
+import { readGates, readSignup, readWho, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
 import { startOverAction } from "./actions";
@@ -20,11 +20,13 @@ import {
   NumberForm,
   QuestionsForm,
   RobotCheckButton,
+  WhoForm,
 } from "./signup-forms";
 
 export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
+  { step: "who", title: "Tell us who you are" },
   { step: "country", title: "Is Business located in United States?" },
   { step: "industries", title: "Check eligibility" },
   { step: "business", title: "Your business" },
@@ -86,7 +88,8 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
     );
   }
 
-  const step = gateStep === "captcha" ? "country" : gateStep;
+  const step = gateStep === "captcha" ? "who" : gateStep;
+  const who = await readWho();
   const compact = step === "country";
   const index = STEPS.findIndex((s) => s.step === step);
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
@@ -96,7 +99,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const body = (s: string) => (
     <div className={compact ? "mx-auto w-fit max-w-full text-center" : "w-full text-left"}>
       <section className="mb-4" aria-labelledby={`step-heading${s}`}>
-        <h2 id={`step-heading${s}`} className={`${ui.h2} ${compact ? QUESTION_WIDTH : ""}`}>
+        <h2 id={`step-heading${s}`} className={step === "who" ? "sr-only" : `${ui.h2} ${compact ? QUESTION_WIDTH : ""}`}>
           {STEPS[index].title}
         </h2>
         {refusal ? (
@@ -105,11 +108,28 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           </p>
         ) : null}
 
+        {step === "who" && <WhoForm idSuffix={s} />}
+
         {step === "country" && <CountryStep />}
 
         {step === "industries" && <EligibilityForm idSuffix={s} />}
 
-        {step === "business" && <BusinessForm idSuffix={s} />}
+        {step === "business" && (
+          <BusinessForm
+            idSuffix={s}
+            initial={
+              who
+                ? {
+                    declarantName: who.name,
+                    businessName: who.businessName,
+                    businessAddress: who.address,
+                    contactEmail: who.email,
+                    contactPhone: who.phone,
+                  }
+                : {}
+            }
+          />
+        )}
 
         {step === "greeting" && <GreetingForm idSuffix={s} />}
         {step === "hours" && <HoursForm idSuffix={s} />}
@@ -157,12 +177,14 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   return (
     <>
       <HeroSection
-        title={title}
-        summary={summary}
+        title={step === "who" ? "Hi, I am Lily" : title}
+        summary={step === "who" ? "What’s Your Name" : summary}
         action={
-          <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>
-            Continue
-          </button>
+          step === "who" ? undefined : (
+            <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>
+              Continue
+            </button>
+          )
         }
       >
         {body}

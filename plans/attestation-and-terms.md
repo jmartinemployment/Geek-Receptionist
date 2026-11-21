@@ -539,7 +539,11 @@ production, and is deleted when the declaration is built into `/signup`.
   `fbceb07a`): migration `0087`, the gate, the declaration form at step 3 as radio buttons, and the Terms carrying the "subject to"
   sentence. Not pushed because migration `0087` has not been run against a Postgres (no Docker here) and a bad migration crash-loops
   GeekRepository on boot. The Terms document itself does not exist; the agreement stores the words shown.
-- **Stage 4, Stage 7 and Stage 8:** not built. Stage 7 (pending login, connect before pay) has the Microsoft app registration as an
+- **Stage 8, the first screen (who we are talking to):** built, 2026-11-21. After the robot check, `/signup?start=1` opens on a
+  screen whose left pane reads "Hi, I am Lily / What's Your Name" and whose right pane asks name, business name, address, email and
+  telephone, unverified. "Lily" is the Retell voice name, used for now (Jeff, 2026-11-21). The answers are held in a signed cookie
+  (`rp_who`, one day) and pre-fill the declaration. Nothing is confirmed; confirmation after payment is not built.
+- **Stage 4, Stage 7 and the confirmations of Stage 8:** not built. Stage 7 (pending login, connect before pay) has the Microsoft app registration as an
   external prerequisite.
 - The declaration sits at step 3 because the plan said so. Jeff, 2026-11-21, on seeing it: the contract "feels like it is too soon".
   The order is his to change; nothing has been reordered.

@@ -1,23 +1,44 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { CONFIG_STEPS, parseGates, parseSignup, signGates, stepOf, withConfigStepDone, type Gate } from "./state";
+import { createHmac } from "node:crypto";
+import { CONFIG_STEPS, parseGates, parseSignup, parseWho, signGates, signWho, stepOf, withConfigStepDone, type Gate } from "./state";
 
 const tenantId = "22222222-2222-2222-2222-222222222222";
 
 test("each step follows from what is already done", () => {
+  const all = new Set<Gate>(["captcha", "who", "country", "industries"]);
   assert.equal(stepOf(null, new Set()), "captcha");
-  assert.equal(stepOf(null, new Set<Gate>(["country", "industries"])), "captcha");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha"])), "country");
+  assert.equal(stepOf(null, new Set<Gate>(["who", "country", "industries"])), "captcha");
+  // Who the visitor is comes straight after the robot check, before any question about the business.
+  assert.equal(stepOf(null, new Set<Gate>(["captcha"])), "who");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "industries"])), "who");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who"])), "country");
   // The eight industry answers are one gate: a later gate does not let an earlier one be skipped.
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "industries"])), "country");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country"])), "industries");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "industries"])), "business");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, new Set<Gate>(["captcha", "country", "industries"])), "greeting");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, new Set<Gate>(["captcha", "country", "industries"])), "greeting");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "industries"])), "country");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "country"])), "industries");
+  assert.equal(stepOf(null, all), "business");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, all), "greeting");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, all), "greeting");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", configDone: CONFIG_STEPS.slice(), subscriptionApproved: false }, new Set<Gate>()), "plan");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true }, new Set<Gate>(["captcha", "country", "industries"])), "payment_method");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1" }, new Set<Gate>(["captcha", "country", "industries"])), "number");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1", phoneNumber: "+15615550100" }, new Set<Gate>(["captcha", "country", "industries"])), "login");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true }, all), "payment_method");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1" }, all), "number");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1", phoneNumber: "+15615550100" }, all), "login");
+});
+
+test("who the visitor said they are is signed, and a forged or altered value reads as nobody", () => {
+  const who = { name: "Pat Rivera", businessName: "Boca Cool HVAC", address: "12 Palm Way, Boca Raton, FL", email: "pat@bocacool.example", phone: "(561) 555-0101" };
+  const signed = signWho(who, "secret-one");
+  assert.deepEqual(parseWho(signed, "secret-one"), who);
+  assert.equal(parseWho(signed, "secret-two"), null);
+  assert.equal(parseWho(undefined, "secret-one"), null);
+  assert.equal(parseWho("nodot", "secret-one"), null);
+  const dot = signed.lastIndexOf(".");
+  const forged = Buffer.from(JSON.stringify({ ...who, name: "Someone Else" }), "utf8").toString("base64url") + signed.slice(dot);
+  assert.equal(parseWho(forged, "secret-one"), null);
+  // Validly signed, but not five pieces of text.
+  const partial = Buffer.from(JSON.stringify({ name: "Pat" }), "utf8").toString("base64url");
+  const sig = createHmac("sha256", "secret-one").update(partial).digest("hex");
+  assert.equal(parseWho(`${partial}.${sig}`, "secret-one"), null);
 });
 
 test("the receptionist questions are asked in order, each once, and only before anything is paid", () => {

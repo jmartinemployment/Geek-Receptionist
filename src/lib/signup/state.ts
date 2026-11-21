@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 export const SIGNUP_COOKIE = "rp_signup";
 
 /**
- * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, the country
- * question, then the eight excluded-industry questions, which share one screen and so one gate. The cookie is signed
+ * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, who they are, the
+ * country question, then the eight excluded-industry questions, which share one screen and so one gate. The cookie is signed
  * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. The "industries" gate is a no to every
  * one of the eight questions: a yes to any of them never passes it. Country is only a bookmark, which GeekAPI decides again when
  * the business is submitted. The industry answers are sent to GeekAPI from this gate; it stores every one forever and refuses
@@ -13,7 +13,7 @@ export const SIGNUP_COOKIE = "rp_signup";
  */
 export const GATES_COOKIE = "rp_gates";
 
-export const GATES = ["captcha", "country", "industries"] as const;
+export const GATES = ["captcha", "who", "country", "industries"] as const;
 export type Gate = (typeof GATES)[number];
 
 const gateKey = (): string | null => {
@@ -37,6 +37,45 @@ export function parseGates(raw: string | undefined, key: string): ReadonlySet<Ga
   const expected = createHmac("sha256", key).update(names).digest();
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) return new Set();
   return new Set(GATES.filter((gate) => names.split(",").includes(gate)));
+}
+
+/**
+ * What the first screen asked: who is talking to us and the business they are asking for, before anything is verified or created
+ * (Jeff, 2026-11-21: "who we are talking to first"). Held in its own signed httpOnly cookie for a day so the declaration can show it again
+ * without the visitor typing it twice. It is the visitor's own words, unconfirmed, and nothing trusts it: GeekAPI checks the email and the
+ * phone again when the business is submitted. It is signed with the same key as the gates, so a forged value reads as none.
+ */
+export const WHO_COOKIE = "rp_who";
+
+export type Who = { name: string; businessName: string; address: string; email: string; phone: string };
+
+const WHO_FIELDS = ["name", "businessName", "address", "email", "phone"] as const;
+
+/** The cookie's value for this person: their words as base64url, a dot, and the signature of those words. */
+export function signWho(who: Who, key: string): string {
+  const body = Buffer.from(JSON.stringify(who), "utf8").toString("base64url");
+  return `${body}.${createHmac("sha256", key).update(body).digest("hex")}`;
+}
+
+/** Who a cookie value names, or null when it is missing, not signed by this key, altered, or not five pieces of text. */
+export function parseWho(raw: string | undefined, key: string): Who | null {
+  if (!raw) return null;
+  const dot = raw.lastIndexOf(".");
+  if (dot < 0) return null;
+  const body = raw.slice(0, dot);
+  const given = Buffer.from(raw.slice(dot + 1), "hex");
+  const expected = createHmac("sha256", key).update(body).digest();
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+  } catch {
+    return null;
+  }
+  if (typeof value !== "object" || value === null) return null;
+  const v = value as Record<string, unknown>;
+  if (!WHO_FIELDS.every((field) => typeof v[field] === "string")) return null;
+  return { name: v.name as string, businessName: v.businessName as string, address: v.address as string, email: v.email as string, phone: v.phone as string };
 }
 
 /**
@@ -76,6 +115,7 @@ export type SignupState = {
 
 export type SignupStep =
   | "captcha"
+  | "who"
   | "country"
   | "industries"
   | "business"
@@ -92,6 +132,7 @@ const ID = /^[A-Za-z0-9-]{1,64}$/;
 export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): SignupStep {
   if (!state) {
     if (!gates.has("captcha")) return "captcha";
+    if (!gates.has("who")) return "who";
     if (!gates.has("country")) return "country";
     if (!gates.has("industries")) return "industries";
     return "business";
@@ -140,6 +181,26 @@ export function parseSignup(raw: string | undefined): SignupState | null {
   };
 }
 
+/** Who the first screen was told, or null: no cookie, no key to check it with, or one this app did not sign. */
+export async function readWho(): Promise<Who | null> {
+  const key = gateKey();
+  if (!key) return null;
+  return parseWho((await cookies()).get(WHO_COOKIE)?.value, key);
+}
+
+/** Remembers for a day who the visitor said they are. Server Actions only; it needs the reCAPTCHA secret to sign with. */
+export async function writeWho(who: Who): Promise<void> {
+  const key = gateKey();
+  if (!key) throw new Error("RECAPTCHA_SECRET_KEY is not set, so the signup's progress cannot be signed.");
+  (await cookies()).set(WHO_COOKIE, signWho(who, key), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+}
+
 export async function readGates(): Promise<ReadonlySet<Gate>> {
   const key = gateKey();
   if (!key) return new Set();
@@ -184,6 +245,7 @@ const gone = { httpOnly: true, secure: process.env.NODE_ENV === "production", sa
 /** Forgets the robot check and the questions passed, so the next visit starts from the robot check again. */
 export async function clearGates(): Promise<void> {
   (await cookies()).set(GATES_COOKIE, "", gone);
+  (await cookies()).set(WHO_COOKIE, "", gone);
 }
 
 export async function clearSignup(): Promise<void> {

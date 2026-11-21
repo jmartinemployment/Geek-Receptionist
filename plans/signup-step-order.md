@@ -7,7 +7,7 @@ at `30bdd94`, with the file that decides each one. It is a record, not a proposa
 
 ## The order
 
-Thirteen screens, plus the robot check before them (it was twenty before the eight industry questions shared one screen). The bracketed numbers are `src/app/signup/actions.ts`' own comments,
+Fourteen screens, plus the robot check before them: a first screen asking who is talking to us was added 2026-11-21 (it was twenty before the eight industry questions shared one screen). The bracketed numbers are `src/app/signup/actions.ts`' own comments,
 which skip the six receptionist steps — that is why the numbering jumps from 3 to 4.
 
 | # | Screen | Decided by | What happens |

@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { clearGates, clearSignup, passGate, readGates, readSignup, withConfigStepDone, writeSignup, type ConfigStep } from "@/lib/signup/state";
+import { clearGates, clearSignup, passGate, readGates, readSignup, withConfigStepDone, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
 import { isConsentMode } from "@/lib/receptionist/controls";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
@@ -34,9 +34,36 @@ export async function captchaAction(_previous: SignupFormState, form: FormData):
   redirect("/signup?start=1");
 }
 
+/** The longest a name, business name, address, email or phone is accepted at the first screen; a longer one is refused, never cut short. */
+const WHO_MAX = 300;
+
+/**
+ * The first screen: who is talking to us and which business, before anything is verified or created (Jeff, 2026-11-21: "who we are
+ * talking to first"). All five are required. Nothing is checked beyond being given and being sensible in length: the email and phone are
+ * confirmed after payment, and GeekAPI checks their shape again when the business is submitted. What was typed is held in a signed
+ * cookie so the declaration can show it again.
+ */
+export async function whoAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const fields = {
+    name: text(form, "name"),
+    businessName: text(form, "businessName"),
+    address: text(form, "address"),
+    email: text(form, "email"),
+    phone: text(form, "phone"),
+  };
+  if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired"), fields };
+  if (Object.values(fields).some((value) => value.length === 0)) return { error: "Fill in all five.", fields };
+  if (Object.values(fields).some((value) => value.length > WHO_MAX)) return { error: `Each answer must be ${WHO_MAX} characters or fewer.`, fields };
+
+  await writeWho(fields);
+  await passGate("who");
+  redirect("/signup?start=1");
+}
+
 /** Step 1: is the business in the United States. A yes is remembered and the form goes on; a no is the end of it, said at once. */
 export async function countryAction(inUnitedStates: boolean): Promise<{ error: string | null }> {
-  if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired") };
+  const passed = await readGates();
+  if (!passed.has("captcha") || !passed.has("who")) return { error: signupMessage("signup_expired") };
   if (!inUnitedStates) return { error: signupMessage("country_not_supported") };
   await passGate("country");
   redirect("/signup?start=1");
@@ -68,7 +95,7 @@ export async function eligibilityAction(_previous: SignupFormState, form: FormDa
   }
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("country")) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("who") || !gates.has("country")) return { error: signupMessage("signup_expired"), fields };
   if (unanswered) return { error: "Answer yes or no to every question.", fields };
 
   const refused = EXCLUDED_CODES.find((code) => yes.has(code));
@@ -109,7 +136,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   }
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("country") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("who") || !gates.has("country") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
   if (answers.size !== AGREEMENTS.length) return { error: "Answer every agreement, Agree or Do not agree.", fields };
 
   const declined = AGREEMENTS.find((agreement) => answers.get(agreement) === "no");

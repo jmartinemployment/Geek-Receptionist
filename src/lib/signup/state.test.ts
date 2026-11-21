@@ -1,21 +1,23 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { CONFIG_STEPS, parseGates, parseSignup, parseWho, signGates, signWho, stepOf, withConfigStepDone, type Gate } from "./state";
+import { CONFIG_STEPS, parseCompany, parseGates, parseSignup, parseWho, signCompany, signGates, signWho, stepOf, withConfigStepDone, type Gate } from "./state";
 
 const tenantId = "22222222-2222-2222-2222-222222222222";
 
 test("each step follows from what is already done", () => {
-  const all = new Set<Gate>(["captcha", "who", "country", "industries"]);
+  const all = new Set<Gate>(["captcha", "who", "company", "country", "industries"]);
   assert.equal(stepOf(null, new Set()), "captcha");
-  assert.equal(stepOf(null, new Set<Gate>(["who", "country", "industries"])), "captcha");
-  // Who the visitor is comes straight after the robot check, before any question about the business.
+  assert.equal(stepOf(null, new Set<Gate>(["who", "company", "country", "industries"])), "captcha");
+  // Who the visitor is comes straight after the robot check, then their business, before any question about eligibility.
   assert.equal(stepOf(null, new Set<Gate>(["captcha"])), "who");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "industries"])), "who");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who"])), "country");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "company", "country", "industries"])), "who");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who"])), "company");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "country", "industries"])), "company");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "company"])), "country");
   // The eight industry answers are one gate: a later gate does not let an earlier one be skipped.
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "industries"])), "country");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "country"])), "industries");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "company", "industries"])), "country");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "company", "country"])), "industries");
   assert.equal(stepOf(null, all), "business");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, all), "greeting");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, all), "greeting");
@@ -25,23 +27,35 @@ test("each step follows from what is already done", () => {
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1", phoneNumber: "+15615550100" }, all), "login");
 });
 
+const person = { firstName: "Pat", middleInitial: "", lastName: "Rivera", address: "9 Ocean Blvd", city: "Delray Beach", state: "FL", zip: "33444", phone: "(561) 555-0199", email: "pat@example.test" };
+const business = {
+  businessName: "Boca Cool HVAC", businessAddress: "12 Palm Way", businessCity: "Boca Raton", businessState: "FL", businessZip: "33432",
+  businessPhone: "(561) 555-0101", businessEmail: "office@bocacool.example", businessWebsite: "https://bocacool.example",
+};
+
 test("who the visitor said they are is signed, and a forged or altered value reads as nobody", () => {
-  const who = {
-    firstName: "Pat", middleInitial: "", lastName: "Rivera", address: "9 Ocean Blvd", city: "Delray Beach", state: "FL", zip: "33444", phone: "(561) 555-0199", email: "pat@example.test",
-    businessName: "Boca Cool HVAC", businessAddress: "12 Palm Way", businessCity: "Boca Raton", businessState: "FL", businessZip: "33432", businessPhone: "(561) 555-0101", businessEmail: "office@bocacool.example", businessWebsite: "https://bocacool.example",
-  };
-  const signed = signWho(who, "secret-one");
-  assert.deepEqual(parseWho(signed, "secret-one"), who);
+  const signed = signWho(person, "secret-one");
+  assert.deepEqual(parseWho(signed, "secret-one"), person);
   assert.equal(parseWho(signed, "secret-two"), null);
   assert.equal(parseWho(undefined, "secret-one"), null);
   assert.equal(parseWho("nodot", "secret-one"), null);
   const dot = signed.lastIndexOf(".");
-  const forged = Buffer.from(JSON.stringify({ ...who, firstName: "Someone" }), "utf8").toString("base64url") + signed.slice(dot);
+  const forged = Buffer.from(JSON.stringify({ ...person, firstName: "Someone" }), "utf8").toString("base64url") + signed.slice(dot);
   assert.equal(parseWho(forged, "secret-one"), null);
-  // Validly signed, but not seventeen pieces of text.
+  // Validly signed, but not nine pieces of text.
   const partial = Buffer.from(JSON.stringify({ firstName: "Pat" }), "utf8").toString("base64url");
   const sig = createHmac("sha256", "secret-one").update(partial).digest("hex");
   assert.equal(parseWho(`${partial}.${sig}`, "secret-one"), null);
+});
+
+test("the business is signed apart from the person, and one cookie can never be read as the other", () => {
+  const signed = signCompany(business, "secret-one");
+  assert.deepEqual(parseCompany(signed, "secret-one"), business);
+  assert.equal(parseCompany(signed, "secret-two"), null);
+  assert.equal(parseCompany(undefined, "secret-one"), null);
+  // Each is validly signed but is not the other's eight or nine fields.
+  assert.equal(parseWho(signed, "secret-one"), null);
+  assert.equal(parseCompany(signWho(person, "secret-one"), "secret-one"), null);
 });
 
 test("the receptionist questions are asked in order, each once, and only before anything is paid", () => {

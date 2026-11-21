@@ -9,6 +9,7 @@ import {
   LoginForm,
   MessagesForm,
   NumberForm,
+  CompanyForm,
   QuestionsForm,
   WhoForm,
 } from "@/app/signup/signup-forms";
@@ -50,8 +51,13 @@ function NotBuilt({ children }: { children: React.ReactNode }) {
 const before: Screen[] = [
   {
     title: "Hi, I am Lily. What’s Your Name",
-    note: "The left pane reads “Hi, I am Lily / What’s Your Name”; this is the right pane. Nothing is verified here.",
+    note: "The left pane reads “Hi, I am Lily / What’s Your Name”; this is the right pane: the person alone. Nothing is verified here.",
     body: <WhoForm idSuffix="-p0" />,
+  },
+  {
+    title: "Nice to meet you. Tell me about your business",
+    note: "The left pane reads “Nice to meet you, <first name> / Tell me about your business” (my wording, a draft); this is the right pane: the business alone.",
+    body: <CompanyForm idSuffix="-p0b" />,
   },
   { title: "Is the business located in the United States?", body: <CountryStep /> },
   { title: "Check eligibility", note: "Eight questions, each its own Yes or No, none pre-selected.", body: <EligibilityForm idSuffix="-p2" /> },

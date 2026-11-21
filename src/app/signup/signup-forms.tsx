@@ -14,6 +14,7 @@ import {
   captchaAction,
   createLoginAction,
   eligibilityAction,
+  companyAction,
   forgetRobotCheckAction,
   greetingAction,
   whoAction,
@@ -146,72 +147,94 @@ export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
   );
 }
 
+/** A labelled text box for the first two screens, with the dark theme's field style. */
+function Box({ name, label: labelText, id, state, extra = {} }: {
+  name: string;
+  label: string;
+  id: (name: string) => string;
+  state: SignupFormState;
+  extra?: React.InputHTMLAttributes<HTMLInputElement>;
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <label htmlFor={id(name)} className={label}>{labelText}</label>
+      <input id={id(name)} name={name} maxLength={300} defaultValue={state.fields[name] ?? ""} className={field} {...extra} />
+    </div>
+  );
+}
+
+/** A two-letter state box and a zip box, side by side with a city beside them, as an address is written. */
+function CityStateZip({ city, state, zip, zipLabel, id, form }: {
+  city: string;
+  state: string;
+  zip: string;
+  zipLabel: string;
+  id: (name: string) => string;
+  form: SignupFormState;
+}) {
+  return (
+    <div className="flex gap-3">
+      <Box name={city} label="City" id={id} state={form} extra={{ required: true, autoComplete: "address-level2" }} />
+      <div className="flex w-20 flex-col gap-1">
+        <label htmlFor={id(state)} className={label}>State</label>
+        <input id={id(state)} name={state} required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={form.fields[state] ?? ""} className={`${field} uppercase`} />
+      </div>
+      <div className="flex w-28 flex-col gap-1">
+        <label htmlFor={id(zip)} className={label}>{zipLabel}</label>
+        <input id={id(zip)} name={zip} required maxLength={10} inputMode="numeric" autoComplete="postal-code" defaultValue={form.fields[zip] ?? ""} className={field} />
+      </div>
+    </div>
+  );
+}
+
 /**
- * The first screen, in the right pane beside "Hi, I am Lily. What's Your Name": who is talking to us and the business they are asking for
- * (Jeff, 2026-11-21: "name, business name, address, email, telephone"). Nothing is verified here. The declaration shows these again, so
+ * The first screen, in the right pane beside "Hi, I am Lily / What's Your Name": the person alone (Jeff, 2026-11-21: First Name, Middle
+ * Initial, Last Name, Address, City, State, Zip Code, Telephone, Email). Nothing is verified here. The declaration shows these again, so
  * nobody types them twice.
  */
 export function WhoForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(whoAction, start());
-  const value = (name: string) => state.fields[name] ?? "";
   const id = (name: string) => `${name}${idSuffix}`;
-  const text = (name: string, labelText: string, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
-    <div className="flex min-w-0 flex-1 flex-col gap-1">
-      <label htmlFor={id(name)} className={label}>{labelText}</label>
-      <input id={id(name)} name={name} maxLength={300} defaultValue={value(name)} className={field} {...extra} />
-    </div>
-  );
 
   return (
-    <form action={action} className="flex flex-col gap-4 text-left">
+    <form action={action} className="flex flex-col gap-3 text-left">
       <Refusal error={state.error} />
-
-      <fieldset className="flex min-w-0 flex-col gap-3">
-        <legend className="mb-1 font-display text-lg font-bold">About you</legend>
-        <div className="flex gap-3">
-          {text("firstName", "First name", { required: true, autoComplete: "given-name" })}
-          <div className="flex w-20 flex-col gap-1">
-            <label htmlFor={id("middleInitial")} className={label}>M.I.</label>
-            <input id={id("middleInitial")} name="middleInitial" maxLength={2} autoComplete="additional-name" defaultValue={value("middleInitial")} className={field} />
-          </div>
-          {text("lastName", "Last name", { required: true, autoComplete: "family-name" })}
+      <div className="flex gap-3">
+        <Box name="firstName" label="First name" id={id} state={state} extra={{ required: true, autoComplete: "given-name" }} />
+        <div className="flex w-20 flex-col gap-1">
+          <label htmlFor={id("middleInitial")} className={label}>M.I.</label>
+          <input id={id("middleInitial")} name="middleInitial" maxLength={2} autoComplete="additional-name" defaultValue={state.fields.middleInitial ?? ""} className={field} />
         </div>
-        {text("address", "Address", { required: true, autoComplete: "street-address" })}
-        <div className="flex gap-3">
-          {text("city", "City", { required: true, autoComplete: "address-level2" })}
-          <div className="flex w-20 flex-col gap-1">
-            <label htmlFor={id("state")} className={label}>State</label>
-            <input id={id("state")} name="state" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("state")} className={`${field} uppercase`} />
-          </div>
-          <div className="flex w-28 flex-col gap-1">
-            <label htmlFor={id("zip")} className={label}>Zip code</label>
-            <input id={id("zip")} name="zip" required maxLength={10} inputMode="numeric" autoComplete="postal-code" defaultValue={value("zip")} className={field} />
-          </div>
-        </div>
-        {text("phone", "Telephone", { required: true, type: "tel", inputMode: "tel", autoComplete: "tel-national", placeholder: "(561) 555-0101" })}
-        {text("email", "Email", { required: true, type: "email", autoComplete: "email" })}
-      </fieldset>
+        <Box name="lastName" label="Last name" id={id} state={state} extra={{ required: true, autoComplete: "family-name" }} />
+      </div>
+      <Box name="address" label="Address" id={id} state={state} extra={{ required: true, autoComplete: "street-address" }} />
+      <CityStateZip city="city" state="state" zip="zip" zipLabel="Zip code" id={id} form={state} />
+      <Box name="phone" label="Telephone" id={id} state={state} extra={{ required: true, type: "tel", inputMode: "tel", autoComplete: "tel-national", placeholder: "(561) 555-0101" }} />
+      <Box name="email" label="Email" id={id} state={state} extra={{ required: true, type: "email", autoComplete: "email" }} />
+      <button className={`${ui.button} mt-2 w-fit`} type="submit" disabled={pending}>
+        {pending ? "One moment…" : "Continue"}
+      </button>
+    </form>
+  );
+}
 
-      <fieldset className="flex min-w-0 flex-col gap-3">
-        <legend className="mb-1 font-display text-lg font-bold">Your business</legend>
-        {text("businessName", "Business name", { required: true, autoComplete: "organization" })}
-        {text("businessAddress", "Business address", { required: true })}
-        <div className="flex gap-3">
-          {text("businessCity", "City", { required: true })}
-          <div className="flex w-20 flex-col gap-1">
-            <label htmlFor={id("businessState")} className={label}>State</label>
-            <input id={id("businessState")} name="businessState" required maxLength={2} placeholder="FL" defaultValue={value("businessState")} className={`${field} uppercase`} />
-          </div>
-          <div className="flex w-28 flex-col gap-1">
-            <label htmlFor={id("businessZip")} className={label}>Zip</label>
-            <input id={id("businessZip")} name="businessZip" required maxLength={10} inputMode="numeric" defaultValue={value("businessZip")} className={field} />
-          </div>
-        </div>
-        {text("businessPhone", "Business telephone", { required: true, type: "tel", inputMode: "tel", placeholder: "(561) 555-0101" })}
-        {text("businessEmail", "Business email", { required: true, type: "email" })}
-        {text("businessWebsite", "Business website (leave empty if there is none)", { type: "url", placeholder: "https://" })}
-      </fieldset>
+/**
+ * The second screen, in the right pane: the business alone, kept apart from the person (Jeff, 2026-11-21: "split off business from
+ * personal"). Business Name, Business Address, City, State, Zip, Business Telephone, Business Email, and the website, which is optional.
+ */
+export function CompanyForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(companyAction, start());
+  const id = (name: string) => `${name}${idSuffix}`;
 
+  return (
+    <form action={action} className="flex flex-col gap-3 text-left">
+      <Refusal error={state.error} />
+      <Box name="businessName" label="Business name" id={id} state={state} extra={{ required: true, autoComplete: "organization" }} />
+      <Box name="businessAddress" label="Business address" id={id} state={state} extra={{ required: true }} />
+      <CityStateZip city="businessCity" state="businessState" zip="businessZip" zipLabel="Zip" id={id} form={state} />
+      <Box name="businessPhone" label="Business telephone" id={id} state={state} extra={{ required: true, type: "tel", inputMode: "tel", placeholder: "(561) 555-0101" }} />
+      <Box name="businessEmail" label="Business email" id={id} state={state} extra={{ required: true, type: "email" }} />
+      <Box name="businessWebsite" label="Business website (leave empty if there is none)" id={id} state={state} extra={{ type: "url", placeholder: "https://" }} />
       <button className={`${ui.button} mt-2 w-fit`} type="submit" disabled={pending}>
         {pending ? "One moment…" : "Continue"}
       </button>

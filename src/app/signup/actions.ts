@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { clearGates, clearSignup, passGate, readGates, readSignup, withConfigStepDone, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
+import { clearGates, clearSignup, passGate, readGates, readSignup, withConfigStepDone, writeCompany, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
 import { isConsentMode } from "@/lib/receptionist/controls";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
@@ -34,7 +34,7 @@ export async function captchaAction(_previous: SignupFormState, form: FormData):
   redirect("/signup?start=1");
 }
 
-/** The longest any answer at the first screen is accepted; a longer one is refused, never cut short. */
+/** The longest any answer at the first two screens is accepted; a longer one is refused, never cut short. */
 const WHO_MAX = 300;
 const US_STATE = /^[A-Za-z]{2}$/;
 const US_ZIP = /^\d{5}(-\d{4})?$/;
@@ -50,11 +50,11 @@ function isWebsite(value: string): boolean {
 }
 
 /**
- * The first screen: who is talking to us and which business, before anything is verified or created (Jeff, 2026-11-21: First Name,
- * Middle Initial, Last Name, Address, City, State, Zip Code, Telephone, Email; Business Name, Business Address, City, State, Zip, Business
- * Telephone, Business Email, and the business's website, which is optional). Everything but the middle initial is required. A state must be two letters and a zip five digits or ZIP+4, and each is
- * refused otherwise, never fixed up. Nothing else is checked here: the telephones are confirmed after payment, and GeekAPI checks their
- * shape again when the business is submitted. What was typed is held in a signed cookie so the declaration can show it again.
+ * The first screen: who is talking to us, before anything is verified or created (Jeff, 2026-11-21: First Name, Middle Initial, Last
+ * Name, Address, City, State, Zip Code, Telephone, Email). Everything but the middle initial is required. A state must be two letters and
+ * a zip five digits or ZIP+4, and each is refused otherwise, never fixed up. Nothing else is checked here: the telephone and email are
+ * confirmed after payment, and GeekAPI checks their shape again when the business is submitted. What was typed is held in a signed
+ * cookie so the declaration can show it again.
  */
 export async function whoAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
@@ -67,6 +67,28 @@ export async function whoAction(_previous: SignupFormState, form: FormData): Pro
     zip: text(form, "zip"),
     phone: text(form, "phone"),
     email: text(form, "email"),
+  };
+  if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired"), fields };
+
+  const { middleInitial, ...required } = fields;
+  if (Object.values(required).some((value) => value.length === 0)) return { error: "Fill in every answer except the middle initial.", fields };
+  if (Object.values(fields).some((value) => value.length > WHO_MAX)) return { error: `Each answer must be ${WHO_MAX} characters or fewer.`, fields };
+  if (middleInitial.length > 2) return { error: "The middle initial is one letter.", fields };
+  if (!US_STATE.test(fields.state)) return { error: "A state is its two-letter code, such as FL.", fields };
+  if (!US_ZIP.test(fields.zip)) return { error: "A zip code is five digits, such as 33432.", fields };
+
+  await writeWho(fields);
+  await passGate("who");
+  redirect("/signup?start=1");
+}
+
+/**
+ * The second screen, kept apart from the person's (Jeff, 2026-11-21: "split off business from personal"): Business Name, Business
+ * Address, City, State, Zip, Business Telephone, Business Email, and the business's website, which is optional. The same rules as the
+ * first screen, and the website must be a full http or https address when one is given.
+ */
+export async function companyAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const fields = {
     businessName: text(form, "businessName"),
     businessAddress: text(form, "businessAddress"),
     businessCity: text(form, "businessCity"),
@@ -76,25 +98,25 @@ export async function whoAction(_previous: SignupFormState, form: FormData): Pro
     businessEmail: text(form, "businessEmail"),
     businessWebsite: text(form, "businessWebsite"),
   };
-  if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired"), fields };
+  const passed = await readGates();
+  if (!passed.has("captcha") || !passed.has("who")) return { error: signupMessage("signup_expired"), fields };
 
-  const { middleInitial, businessWebsite, ...required } = fields;
-  if (Object.values(required).some((value) => value.length === 0)) return { error: "Fill in every answer except the middle initial.", fields };
+  const { businessWebsite, ...required } = fields;
+  if (Object.values(required).some((value) => value.length === 0)) return { error: "Fill in every answer except the website.", fields };
   if (Object.values(fields).some((value) => value.length > WHO_MAX)) return { error: `Each answer must be ${WHO_MAX} characters or fewer.`, fields };
-  if (middleInitial.length > 2) return { error: "The middle initial is one letter.", fields };
-  if (!US_STATE.test(fields.state) || !US_STATE.test(fields.businessState)) return { error: "A state is its two-letter code, such as FL.", fields };
+  if (!US_STATE.test(fields.businessState)) return { error: "A state is its two-letter code, such as FL.", fields };
+  if (!US_ZIP.test(fields.businessZip)) return { error: "A zip code is five digits, such as 33432.", fields };
   if (businessWebsite.length > 0 && !isWebsite(businessWebsite)) return { error: signupMessage("business_website_invalid"), fields };
-  if (!US_ZIP.test(fields.zip) || !US_ZIP.test(fields.businessZip)) return { error: "A zip code is five digits, such as 33432.", fields };
 
-  await writeWho(fields);
-  await passGate("who");
+  await writeCompany(fields);
+  await passGate("company");
   redirect("/signup?start=1");
 }
 
 /** Step 1: is the business in the United States. A yes is remembered and the form goes on; a no is the end of it, said at once. */
 export async function countryAction(inUnitedStates: boolean): Promise<{ error: string | null }> {
   const passed = await readGates();
-  if (!passed.has("captcha") || !passed.has("who")) return { error: signupMessage("signup_expired") };
+  if (!passed.has("captcha") || !passed.has("who") || !passed.has("company")) return { error: signupMessage("signup_expired") };
   if (!inUnitedStates) return { error: signupMessage("country_not_supported") };
   await passGate("country");
   redirect("/signup?start=1");
@@ -126,7 +148,7 @@ export async function eligibilityAction(_previous: SignupFormState, form: FormDa
   }
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("who") || !gates.has("country")) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("who") || !gates.has("company") || !gates.has("country")) return { error: signupMessage("signup_expired"), fields };
   if (unanswered) return { error: "Answer yes or no to every question.", fields };
 
   const refused = EXCLUDED_CODES.find((code) => yes.has(code));
@@ -171,7 +193,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   }
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("who") || !gates.has("country") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("who") || !gates.has("company") || !gates.has("country") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
   if (answers.size !== AGREEMENTS.length) return { error: "Answer every agreement, Agree or Do not agree.", fields };
 
   const declined = AGREEMENTS.find((agreement) => answers.get(agreement) === "no");

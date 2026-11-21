@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 export const SIGNUP_COOKIE = "rp_signup";
 
 /**
- * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, who they are, the
- * country question, then the eight excluded-industry questions, which share one screen and so one gate. The cookie is signed
+ * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, who they are, their
+ * business, the country question, then the eight excluded-industry questions, which share one screen and so one gate. The cookie is signed
  * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. The "industries" gate is a no to every
  * one of the eight questions: a yes to any of them never passes it. Country is only a bookmark, which GeekAPI decides again when
  * the business is submitted. The industry answers are sent to GeekAPI from this gate; it stores every one forever and refuses
@@ -13,7 +13,7 @@ export const SIGNUP_COOKIE = "rp_signup";
  */
 export const GATES_COOKIE = "rp_gates";
 
-export const GATES = ["captcha", "who", "country", "industries"] as const;
+export const GATES = ["captcha", "who", "company", "country", "industries"] as const;
 export type Gate = (typeof GATES)[number];
 
 const gateKey = (): string | null => {
@@ -40,13 +40,16 @@ export function parseGates(raw: string | undefined, key: string): ReadonlySet<Ga
 }
 
 /**
- * What the first screen asked: who is talking to us and the business they are asking for, before anything is verified or created
- * (Jeff, 2026-11-21: "who we are talking to first"). Held in its own signed httpOnly cookie for a day so the declaration can show it again
- * without the visitor typing it twice. It is the visitor's own words, unconfirmed, and nothing trusts it: GeekAPI checks the email and the
- * phone again when the business is submitted. It is signed with the same key as the gates, so a forged value reads as none.
+ * What the first two screens asked, kept apart (Jeff, 2026-11-21: "split off business from personal"): who is talking to us, then the
+ * business they are asking for, before anything is verified or created. Each is held in its own signed httpOnly cookie for a day so the
+ * declaration can show it again without the visitor typing it twice. It is the visitor's own words, unconfirmed, and nothing trusts it:
+ * GeekAPI checks the emails and the phones again when the business is submitted. Both are signed with the same key as the gates, so a
+ * forged value reads as none.
  */
 export const WHO_COOKIE = "rp_who";
+export const COMPANY_COOKIE = "rp_company";
 
+/** The person: the first screen. */
 export type Who = {
   firstName: string;
   middleInitial: string;
@@ -57,6 +60,10 @@ export type Who = {
   zip: string;
   phone: string;
   email: string;
+};
+
+/** The business: the second screen. */
+export type Company = {
   businessName: string;
   businessAddress: string;
   businessCity: string;
@@ -69,17 +76,20 @@ export type Who = {
 
 const WHO_FIELDS = [
   "firstName", "middleInitial", "lastName", "address", "city", "state", "zip", "phone", "email",
-  "businessName", "businessAddress", "businessCity", "businessState", "businessZip", "businessPhone", "businessEmail", "businessWebsite",
 ] as const satisfies readonly (keyof Who)[];
 
-/** The cookie's value for this person: their words as base64url, a dot, and the signature of those words. */
-export function signWho(who: Who, key: string): string {
-  const body = Buffer.from(JSON.stringify(who), "utf8").toString("base64url");
+const COMPANY_FIELDS = [
+  "businessName", "businessAddress", "businessCity", "businessState", "businessZip", "businessPhone", "businessEmail", "businessWebsite",
+] as const satisfies readonly (keyof Company)[];
+
+/** A cookie's value for these fields: their words as base64url, a dot, and the signature of those words. */
+function signFields(value: object, key: string): string {
+  const body = Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
   return `${body}.${createHmac("sha256", key).update(body).digest("hex")}`;
 }
 
-/** Who a cookie value names, or null when it is missing, not signed by this key, altered, or not seventeen pieces of text. */
-export function parseWho(raw: string | undefined, key: string): Who | null {
+/** The fields a cookie value carries, or null when it is missing, not signed by this key, altered, or not all text. */
+function parseFields<T>(raw: string | undefined, fields: readonly string[], key: string): T | null {
   if (!raw) return null;
   const dot = raw.lastIndexOf(".");
   if (dot < 0) return null;
@@ -95,9 +105,14 @@ export function parseWho(raw: string | undefined, key: string): Who | null {
   }
   if (typeof value !== "object" || value === null) return null;
   const v = value as Record<string, unknown>;
-  if (!WHO_FIELDS.every((field) => typeof v[field] === "string")) return null;
-  return Object.fromEntries(WHO_FIELDS.map((field) => [field, v[field] as string])) as Who;
+  if (!fields.every((field) => typeof v[field] === "string")) return null;
+  return Object.fromEntries(fields.map((field) => [field, v[field] as string])) as T;
 }
+
+export const signWho = (who: Who, key: string): string => signFields(who, key);
+export const parseWho = (raw: string | undefined, key: string): Who | null => parseFields<Who>(raw, WHO_FIELDS, key);
+export const signCompany = (company: Company, key: string): string => signFields(company, key);
+export const parseCompany = (raw: string | undefined, key: string): Company | null => parseFields<Company>(raw, COMPANY_FIELDS, key);
 
 /**
  * The steps that ask how this business's receptionist should behave, in the order they are asked, between the business step and the
@@ -137,6 +152,7 @@ export type SignupState = {
 export type SignupStep =
   | "captcha"
   | "who"
+  | "company"
   | "country"
   | "industries"
   | "business"
@@ -154,6 +170,7 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
   if (!state) {
     if (!gates.has("captcha")) return "captcha";
     if (!gates.has("who")) return "who";
+    if (!gates.has("company")) return "company";
     if (!gates.has("country")) return "country";
     if (!gates.has("industries")) return "industries";
     return "business";
@@ -202,6 +219,14 @@ export function parseSignup(raw: string | undefined): SignupState | null {
   };
 }
 
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 60 * 60 * 24,
+};
+
 /** Who the first screen was told, or null: no cookie, no key to check it with, or one this app did not sign. */
 export async function readWho(): Promise<Who | null> {
   const key = gateKey();
@@ -209,17 +234,25 @@ export async function readWho(): Promise<Who | null> {
   return parseWho((await cookies()).get(WHO_COOKIE)?.value, key);
 }
 
+/** What the second screen was told about the business, or null for the same reasons. */
+export async function readCompany(): Promise<Company | null> {
+  const key = gateKey();
+  if (!key) return null;
+  return parseCompany((await cookies()).get(COMPANY_COOKIE)?.value, key);
+}
+
 /** Remembers for a day who the visitor said they are. Server Actions only; it needs the reCAPTCHA secret to sign with. */
 export async function writeWho(who: Who): Promise<void> {
   const key = gateKey();
   if (!key) throw new Error("RECAPTCHA_SECRET_KEY is not set, so the signup's progress cannot be signed.");
-  (await cookies()).set(WHO_COOKIE, signWho(who, key), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24,
-  });
+  (await cookies()).set(WHO_COOKIE, signWho(who, key), cookieOptions);
+}
+
+/** Remembers for a day what the visitor said about the business. Server Actions only. */
+export async function writeCompany(company: Company): Promise<void> {
+  const key = gateKey();
+  if (!key) throw new Error("RECAPTCHA_SECRET_KEY is not set, so the signup's progress cannot be signed.");
+  (await cookies()).set(COMPANY_COOKIE, signCompany(company, key), cookieOptions);
 }
 
 export async function readGates(): Promise<ReadonlySet<Gate>> {
@@ -267,6 +300,7 @@ const gone = { httpOnly: true, secure: process.env.NODE_ENV === "production", sa
 export async function clearGates(): Promise<void> {
   (await cookies()).set(GATES_COOKIE, "", gone);
   (await cookies()).set(WHO_COOKIE, "", gone);
+  (await cookies()).set(COMPANY_COOKIE, "", gone);
 }
 
 export async function clearSignup(): Promise<void> {

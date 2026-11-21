@@ -540,7 +540,7 @@ production, and is deleted when the declaration is built into `/signup`.
   sentence. Not pushed because migration `0087` has not been run against a Postgres (no Docker here) and a bad migration crash-loops
   GeekRepository on boot. The Terms document itself does not exist; the agreement stores the words shown.
 - **Stage 8, the first screen (who we are talking to):** built, 2026-11-21. After the robot check, `/signup?start=1` opens on a
-  screen whose left pane reads "Hi, I am Lily / What's Your Name" and whose right pane asks, unverified, First Name, Middle Initial, Last Name, Address, City, State, Zip, Telephone and Email for the
+  screen whose left pane reads "Hi, I am Lily / What's Your Name" and whose right pane asks, unverified, **the person alone** (then, on a second screen, **the business alone**: Jeff, 2026-11-21, "split off business from personal"): First Name, Middle Initial, Last Name, Address, City, State, Zip, Telephone and Email for the
   person, then Business Name, Address, City, State, Zip, Telephone and Email for the business (Jeff's list, 2026-11-21).
   The business's website is the last of the business's fields; it is optional (a business with none leaves it empty and
   NULL is stored), and one that is given must be a full http or https address (migration `0090`, `tenants.business_website`).

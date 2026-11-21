@@ -208,14 +208,55 @@ owner can sign in, connect each system they require and have it verified, and on
 status check moves with it; the state-sealing and tenant-match checks do not change at all, because they were never
 about payment.
 
-**What that costs, stated rather than skipped:** an unpaid tenant would hold a real, sign-in-able login, which is
-impossible today by construction. That is a new surface — free account creation — and it wants its own answer (a cap,
-an expiry on an unpaid tenant, or nothing, if the eligibility gate and the captcha are judged enough). **This is a
-GeekAPI policy change and it is Jeff's.** It is also the same hinge the abandoned-signup problem turns on: a visitor who
-configures six steps and loses the one-day `rp_signup` cookie has no way back in, for exactly this reason.
+### Decided, 2026-11-21: an unpaid tenant may hold a real login
 
-**Still open under the rule:** what the signup does when a required system cannot be connected at all — no supported
-provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you can't sign up" or
+Gated on status, and expired rather than left to sit. The flow becomes: step 3 creates the tenant
+(`pending_payment`), writes the attestation, creates the owner login and signs them in; the owner connects and verifies
+each required system on an authenticated dashboard; only then the plan, PayPal and `activate-subscription`, which flips
+the tenant `active` and provisions the number.
+
+**The cost boundary holds, verified rather than assumed.** `TwilioProvisioner.ProvisionAsync` has exactly one caller,
+`SubscriptionActivation` — the `activate-subscription` route. An unpaid tenant therefore has no inbound number, and no
+number means no telephony and no model spend. A login is an identity bound to a `tenant_id`, not a licence to burn
+minutes.
+
+**But "runtime and provisioning endpoints already fail closed on active" is not true here, and this is the real work.**
+There are exactly **two** status checks in the whole product, and this change removes both of them:
+
+- `OwnerAuthService.CreateLoginAsync:92`
+- `McpConnectionService.BeginAsync:34`
+
+Nothing else anywhere checks `VoiceTenantStatuses.Active`, because until now an unpaid tenant could not sign in, so no
+other route ever needed to. `SignInAsync` refuses only `cancelled`; `suspended` and `pending_payment` both get in. So
+the moment the login gate moves, **nine tenant controllers become reachable by a tenant that has paid nothing** —
+Billing, BookingSetting, Calendar, ConsentSetting, Disconnect, McpOAuth, ReceptionistConfig, Storage and TenantCall.
+None of them spends money today, which is why this is work rather than an emergency, but the gate they relied on is the
+one being removed. **The task is not "move one check"; it is "move one check and add the ones that were never needed."**
+
+**Expiry: soft, not a delete.** A `pending_payment` tenant gets an `expires_at`, and on expiry its OAuth credentials are
+revoked and deleted and its status becomes `expired`, while the tenant row, its `signup_industry_answers` and its
+`signup_attestations` stay exactly where they are. Deleting the row is not an option and the reason is already in the
+schema: `0068` is `ON DELETE RESTRICT` and append-only by trigger, and Stage 2's table is the same. A soft expiry costs
+nothing those constraints protect.
+
+What that needs, none of it free:
+
+- **`expired` is a fifth status.** `tenants.status` is `CHECK (status IN ('pending_payment','active','suspended','cancelled'))`
+  in migration `0060`, with `VoiceTenantStatuses.All` mirroring it. A fifth value is a migration, the code list, a
+  sign-in refusal beside the `cancelled` one, and a portal change — `src/proxy.ts` currently treats `403
+  account_cancelled` as "session ended", and an expired owner needs the same treatment with its own sentence.
+- **Expiry must release the email.** A tenant has one owner login and the email is unique, so an abandoned signup that
+  created a login *burns that address*: the same owner retrying hits `409 owner_exists`. Today the abandoned-signup
+  problem is only a lost cookie; moving the login earlier makes it a hard block on retry. Expiry is what unblocks it,
+  which makes the release part of the feature rather than housekeeping.
+- **The window is Jeff's, and seven days may be short.** Seven is the usual figure and it is defensible, but this
+  product's own research cuts against it: `reports/Outlook calendar booking without licensing.md` found that on a
+  default-policy Microsoft tenant the owner **cannot self-consent to a calendar scope at all** — an administrator must.
+  A business whose admin is a part-time contractor will not clear that in a week, and the expiry would delete the
+  connection work they had done.
+
+**Still open under the rule:** what signup does when a required system cannot be connected at all — no supported
+provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you cannot sign up" or
 as "sign up without booking, which is the message-taking receptionist", is a product answer, not a technical one.
 
 ## Order, and what blocks what

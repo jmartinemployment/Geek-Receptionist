@@ -41,7 +41,7 @@ failed sign-ins per email per hour never keeps the owner out of a browser they h
 - `/billing/paid` and `/oauth/mcp/google_calendar/callback`: the return trips above.
 - The tenant is always taken from the owner's own `tenant_id` claim on the server, never from the browser's request.
 
-- `/signup`: self-service signup, each step a Server Action, in this order. After a robot check: (1) is the business in the United
+- `/signup`: self-service signup, each step a Server Action, in this order. After a robot check, a first screen asks who is talking to us (name, business name, address, email, telephone; unverified); then (1) is the business in the United
   States; (2) the eight excluded-industry questions, on one screen under three headings, each its own yes or no with none
   pre-selected (a yes to any ends the signup and is sent to `POST .../onboarding/industry-refusals`); (3) the business and the compliance
   statement go to GeekAPI `POST /api/v1/onboarding/validate-eligibility`, which makes the tenant in `pending_payment`, with the eight

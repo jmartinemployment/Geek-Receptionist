@@ -32,8 +32,12 @@ Two names that read as live claims and are not:
   the provider list, and the carve was written as *everything that is not Drive is a calendar*. That swept HubSpot in, and
   the comment then asserted the thing the list had just stopped being true about. The lesson is the one this project already
   wrote down — a surviving name is read as a live claim — and it applies to a list's name as much as a column's.
-- **`VoiceCredentialProtector`'s doc comment** says it protects *"the calendar and CRM OAuth"* secrets. There is no CRM
-  OAuth. Same defect class as `EmergencyKeywords`, which stores, validates and round-trips while nothing reads it.
+- ~~**`VoiceCredentialProtector`'s doc comment** says it protects *"the calendar and CRM OAuth"* secrets.~~ **Checked
+  2026-11-20 and this was wrong.** The comment says *"the calendar and storage OAuth tokens"*, which is exactly what it
+  protects. The claim was written from memory rather than from the file — the thing this document tells everyone else not
+  to do. It did turn up a real defect next to it, though: that summary and its `<remarks>` sat above `VoiceSecretPurposes`,
+  which has a summary of its own, so one member carried two `<summary>` blocks and the protector itself was undocumented.
+  Moved onto its class.
 
 ## The good news, and it decides the shape of this plan
 

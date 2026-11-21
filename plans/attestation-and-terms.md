@@ -527,6 +527,10 @@ the unique index), which expiry releases. The login proves a password, not a mai
 payment, which is what makes it a full login. The alternative, a free email code before payment, was offered and is
 not taken.
 
+**Layout preview, 2026-11-21.** `src/app/preview/declaration/page.tsx` renders the declaration in the running app at
+`/preview/declaration` so Jeff can judge the layout before it is built. It sends and saves nothing, returns 404 in
+production, and is deleted when the declaration is built into `/signup`.
+
 ## Order, and what blocks what
 
 1. ~~Stage 6's rewording~~ — done.

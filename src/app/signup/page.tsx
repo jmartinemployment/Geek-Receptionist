@@ -193,7 +193,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         largeGridClassName="grid min-h-screen grid-cols-12 items-center"
         summaryTone={step === "who" ? "orange" : "white"}
         title={step === "who" ? "Hi, I am Lily" : step === "company" ? `Nice to meet you${who?.firstName ? `, ${who.firstName}` : ""}` : title}
-        summary={step === "who" ? "What’s Your Name" : step === "company" ? "Tell me about your business" : summary}
+        summary={step === "who" ? "What’s Your Name?" : step === "company" ? "Tell me about your business" : summary}
         action={
           step === "who" || step === "company" ? undefined : (
             <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>

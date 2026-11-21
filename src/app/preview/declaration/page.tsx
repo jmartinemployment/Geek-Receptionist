@@ -50,8 +50,8 @@ function NotBuilt({ children }: { children: React.ReactNode }) {
 
 const before: Screen[] = [
   {
-    title: "Hi, I am Lily. What’s Your Name",
-    note: "The left pane reads “Hi, I am Lily / What’s Your Name”; this is the right pane: the person alone. Nothing is verified here.",
+    title: "Hi, I am Lily. What’s Your Name?",
+    note: "The left pane reads “Hi, I am Lily / What’s Your Name?”; this is the right pane: the person alone. Nothing is verified here.",
     body: <WhoForm idSuffix="-p0" />,
   },
   {

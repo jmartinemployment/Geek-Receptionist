@@ -14,6 +14,8 @@ type HeroSectionProps = {
    * its columns to fill their width and centre only vertically passes its own (the signup steps do, Jeff, 2026-11-21).
    */
   largeGridClassName?: string;
+  /** The colour of the summary line under the title: white, as on every page, or the brand orange. */
+  summaryTone?: "white" | "orange";
   /** The home page's title size in the large block, as geekatyourspot.com's hero h1: lg:text-7xl, xl:text-[6.5rem]. Other pages keep lg:text-[4.0rem]. */
   largeTitle?: boolean;
   /**
@@ -29,7 +31,8 @@ type HeroSectionProps = {
  * there): two blocks, a phone block with lg:hidden and a large block with hidden lg:block, each with its own classes and its own navy
  * background, never one responsive block. The large block is twelve columns, the text in seven and the other five beside it.
  */
-export default function HeroSection({ title, summary, action, image, imgAlt, largeTitle, largeGridClassName, children }: HeroSectionProps) {
+export default function HeroSection({ title, summary, action, image, imgAlt, largeTitle, largeGridClassName, summaryTone = "white", children }: HeroSectionProps) {
+  const summaryColor = summaryTone === "orange" ? "text-brand-orange" : "text-white";
   return (
     <>
       <header className="min-h-screen w-full bg-[#0B162A] lg:hidden">
@@ -37,7 +40,7 @@ export default function HeroSection({ title, summary, action, image, imgAlt, lar
           <div className="grid min-h-screen grid-cols-1 place-items-center">
             <div className="col-span-1 w-full">
               <h1 className="font-[var(--font-sora)] text-[9vw] font-black leading-[0.95] text-white shadow-text sm:text-6xl md:text-7xl">{title}</h1>
-              <p className="pt-3 text-xl text-white shadow-text">{summary}</p>
+              <p className={`pt-3 text-xl ${summaryColor} shadow-text`}>{summary}</p>
               {action ? <div className="pt-6">{action}</div> : null}
               {children ? <div className="pt-8 text-white">{children("")}</div> : null}
             </div>
@@ -58,7 +61,7 @@ export default function HeroSection({ title, summary, action, image, imgAlt, lar
               >
                 {title}
               </h1>
-              <p className="pt-3 text-2xl text-white shadow-text">{summary}</p>
+              <p className={`pt-3 text-2xl ${summaryColor} shadow-text`}>{summary}</p>
               {action ? <div className="pt-8">{action}</div> : null}
             </div>
             <div className="col-span-5 flex min-h-screen w-full min-w-0 flex-col items-center justify-center text-center text-white">

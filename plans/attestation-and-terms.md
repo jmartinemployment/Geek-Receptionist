@@ -56,15 +56,29 @@ are not blocked on the drafting.
 exists, and it is already where all eight answers are sent (`answersThrough("medicare_tpmo", false)` in
 `businessAction`). Nothing moves.
 
-- **Portal** — `BusinessForm` gains the name and title of the person answering (today no person's name is collected
-  until the login step, at the very end) and the attestation itself, **as radio buttons, not a checkbox**. Jeff,
-  2026-11-21: *"If checkbox wording pertains to exclusions, use radio buttons."* The reason is the one that already
-  governs the eight questions: a statement about exclusions is a yes or no the visitor answers, none pre-selected, not
-  a box that can be ticked by habit. And because 2026-11-18 split HIPAA into four questions so that no answer covers
-  several claims, the attestation is **two rows, not one**: *Are you authorised to answer for this business?* and
-  *Are the answers you gave above true?* (wording is a draft of mine). A No to either stops the signup in a modal and
-  creates no tenant. Both Yes answers are stored with the exact words shown, as `0068` stores the industry answers.
-  The AI-disclosure checkbox is about recording, not exclusions, so it stays a checkbox, as it is.
+- **Portal** — the attestation is a **legal document, and nothing in it is a checkbox.** Jeff, 2026-11-21: *"The
+  attestation should look like a legal doc, name, address, phone, business name, agreement radio button, [the
+  statement] is true to ..."*, and then, without exception: *"I do not wish to use checkboxes in legal acceptance
+  documents."* This replaces the narrower rule recorded an hour earlier (*"If checkbox wording pertains to
+  exclusions, use radio buttons"*), and it is the rule that already governs the eight questions: a statement a
+  person is bound by is a yes or no they answer, none pre-selected, never a box that can be ticked by habit.
+
+  It reads top to bottom like a declaration: the **declarant** (name and title), the **business** (name, address,
+  phone, email), and then the **agreement**, a statement the declarant answers Yes or No to with neither selected,
+  in the form *I declare that I am authorised to answer for this business and that the answers given are true to the
+  best of my knowledge.* A No stops the signup in a modal and creates no tenant. A Yes is stored with the declarant,
+  the exact words shown and the time, as `0068` stores the industry answers. Today no person's name is collected until
+  the login step, at the very end.
+
+  Two things in that are mine and are flagged rather than decided. The wording is a draft and wants a lawyer's eye
+  with the Terms. And it is **one declaration where I had earlier proposed two rows** (authority, truth): a legal
+  declaration conventionally reads as one, and the eight answers it covers stay separate answers above it, which is
+  where 2026-11-18's rule lives. Say if you want it split.
+
+  **The existing AI-disclosure checkbox falls under the same rule.** `BusinessForm`'s `complianceAttested` is a
+  checkbox today (*"Calls to this business may be answered and recorded by an AI receptionist that tells callers
+  so"*), and it is a statement a person is bound by, so it becomes an Agree / Do not agree pair when this form is
+  rebuilt. Until then it is the one place the app still breaks the rule.
 - **GeekAPI** — `ValidateEligibilityRequest` gains `AttestorName`, `AttestorTitle` and `AnswersAttested`. **Fail
   closed**: missing, blank or false is `400` and no tenant is created, the same way `ComplianceAttested` already works.
 - **Store** — a new table, not a column. `signup_industry_answers` is append-only by trigger, has no person columns, and
@@ -78,15 +92,20 @@ because it will otherwise look like a gap and get "fixed".
 
 ## Stage 3: accepting the Terms, which nothing currently does
 
-**Recommended placement: the same step 3 screen, as a required checkbox** — a clickwrap acceptance, not an answer about
-exclusions, so it is a checkbox under Jeff's rule above. That also settles the earlier question of merging it with the
-attestation into one assent: they are different controls for different things, so they stay separate. No new screen:
-it is where a person is being identified, and it is before anything is configured or paid for. The alternative is its own screen before the
+**Recommended placement: the same document, as its own agreement beneath the declaration, as Agree / Do not agree
+radio buttons, neither pre-selected.** Not a checkbox, under the rule above. No new screen: it is where a person is
+being identified, and it is before anything is configured or paid for. The alternative is its own screen before the
 plan, which is more ceremony for the same assent. **Placement and wording are Jeff's.**
 
+**Whether it merges with the declaration into one agreement is open again, and I am withdrawing the reason I gave
+for keeping them apart.** I had written that they stay separate because they are different controls. With both now
+radio buttons that is no longer true. The reason that does hold is that they are different legal acts: the
+declaration states facts about the business, and the Terms are a contract the business enters. So the recommendation
+is two agreements, each its own Agree / Do not agree. Jeff's call.
+
 Stored on the same `signup_attestations` row: `terms_version` and `terms_accepted_at`. One submission, one row, two
-assents. A Terms page has to exist at a stable address before this ships, because a checkbox pointing at nothing is
-worse than no checkbox.
+assents. A Terms page has to exist at a stable address before this ships, because an agreement pointing at nothing is
+worse than no agreement.
 
 ## Stage 4: giving the continuing obligation somewhere to land
 
@@ -124,7 +143,7 @@ and let the three headings do the work of making it look short.
 already takes the whole set, and step 3 already sends all eight noes. It collapses `rp_gates`' eight gates to one and
 replaces eight branches in `page.tsx` with one form. Nothing in `excluded.ts` or `OnboardingEligibility.cs` moves.
 
-**Not folded into this plan's other stages:** the attestation checkbox stays at step 3 even if this lands, because at
+**Not folded into this plan's other stages:** the attestation stays at step 3 even if this lands, because at
 the eligibility screen the business has not been named yet.
 
 **What this stage must not become:** collapsing the four HIPAA questions into one. That reaches five questions by

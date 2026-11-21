@@ -95,7 +95,13 @@ supported; it is merely written.
 
 ## Stages
 
-### Stage 1: the provider registry
+### Stage 1: the provider registry — **landed**
+
+`McpProviders` exists (`GeekAPI/Services/Voice/Mcp/McpProviders.cs`), carrying each vendor's authorize and token endpoints,
+scopes, credential variable names, external id, partial-grant sentence, the vendor-specific authorization parameters and
+`RotatesRefreshToken`. `VoiceMcpProvider` carries `Booking`/`Contacts`/`Storage`, and `VoiceMcpProviders.Calendars`,
+`.Crms` and `.Stores` are all derived from them rather than hand-kept. The rest of this stage is the record of why.
+
 
 `GoogleConnections` becomes `McpProviders` — every provider, each carrying what differs: display name, **capabilities**,
 OAuth authorization and token endpoints, the client credentials' variable names, scopes, external id, and the
@@ -113,7 +119,10 @@ Google-specific.
 A provider with no credentials configured stays `OAuthNotConfigured` and is **not offered**: a connect button that cannot
 complete is worse than an absent one.
 
-### Stage 2: the catalog becomes per-provider
+### Stage 2: the catalog becomes per-provider — **landed**
+
+`McpToolCatalog.ToolsAsync(provider, …)` is keyed by provider, refuses a provider the product does not have, and
+`CalendarToolsTests` proves a second provider is fetched separately rather than served the first one's list.
 
 `ToolsAsync(provider, …)`, cached per provider, and a tenant is offered only the tools of the providers it has actually
 connected. This lands **before** the second provider, not with it.
@@ -138,7 +147,21 @@ registry avoided by deliberately not adding a CHECK constraint in `0085`.
 Do the same here: **drop the CHECK constraints and let the code's list govern**, with a test binding `VoiceMcpProviders` to
 the registry. One list, in the place that can refuse a connection with a message.
 
+**Superseded, 2026-11-20, and this stage is wrong as written.** Migration `0086` went the other way: it kept the
+constraint on `appointments.mcp_provider` and *narrowed* it to the three providers that book, so a row naming HubSpot is
+refused by the database. That is the better call and the argument above missed it — a CHECK constraint that drifts from
+the code is a nuisance, but an appointment row naming a provider nothing books through is a lie in the data, and the
+database is the last place that can refuse it. What is left of this stage is the test binding `VoiceMcpProviders` to the
+two constraints, so the drift is caught rather than designed away.
+
 ### Stage 5: the names that will be read as claims
+
+**Half done, 2026-11-20 (`f3ad93d1`).** `CalendarTools` → `McpTools` and `CalendarToolCatalog` → `McpToolCatalog`:
+neither did anything calendar-specific, so neither should have said calendar. `GoogleConnections` went earlier, with the
+registry. **`CalendarToolbox` deliberately keeps its name** — it really is calendar-only, filtering to
+`list_calendars`/`list_events`/`get_event`/`suggest_time` plus `create_event` and reconciling a lost booking against a
+calendar. Renaming it now would be this same defect pointing the other way: a name claiming a breadth the code has not
+got. It is renamed when it reaches a second kind of provider, which is Stage 3's work.
 
 `CalendarTools`, `CalendarToolCatalog`, `CalendarToolbox`, `calendar_not_connected`, `GoogleConnections` — every one says
 *calendar* about something that will be reaching a CRM. This project's own rule: *"the test for an occurrence is not 'does

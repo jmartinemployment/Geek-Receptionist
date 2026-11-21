@@ -9,6 +9,11 @@ type HeroSectionProps = {
   /** As on geekatyourspot.com's home hero: the large block shows the image in the five columns beside the text. The phone block has none. */
   image?: string;
   imgAlt?: string;
+  /**
+   * The large block's grid classes. The default centres both columns on both axes, as geekatyourspot.com's hero does. A page that wants
+   * its columns to fill their width and centre only vertically passes its own (the signup steps do, Jeff, 2026-11-21).
+   */
+  largeGridClassName?: string;
   /** The home page's title size in the large block, as geekatyourspot.com's hero h1: lg:text-7xl, xl:text-[6.5rem]. Other pages keep lg:text-[4.0rem]. */
   largeTitle?: boolean;
   /**
@@ -24,7 +29,7 @@ type HeroSectionProps = {
  * there): two blocks, a phone block with lg:hidden and a large block with hidden lg:block, each with its own classes and its own navy
  * background, never one responsive block. The large block is twelve columns, the text in seven and the other five beside it.
  */
-export default function HeroSection({ title, summary, action, image, imgAlt, largeTitle, children }: HeroSectionProps) {
+export default function HeroSection({ title, summary, action, image, imgAlt, largeTitle, largeGridClassName, children }: HeroSectionProps) {
   return (
     <>
       <header className="min-h-screen w-full bg-[#0B162A] lg:hidden">
@@ -42,7 +47,7 @@ export default function HeroSection({ title, summary, action, image, imgAlt, lar
 
       <header className="hidden min-h-screen bg-[#0B162A] lg:block">
         <div className="container min-h-screen">
-          <div className="grid min-h-screen grid-cols-12 place-items-center">
+          <div className={largeGridClassName ?? "grid min-h-screen grid-cols-12 place-items-center"}>
             <div className="col-span-7">
               <h1
                 className={

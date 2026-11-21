@@ -34,26 +34,43 @@ export async function captchaAction(_previous: SignupFormState, form: FormData):
   redirect("/signup?start=1");
 }
 
-/** The longest a name, business name, address, email or phone is accepted at the first screen; a longer one is refused, never cut short. */
+/** The longest any answer at the first screen is accepted; a longer one is refused, never cut short. */
 const WHO_MAX = 300;
+const US_STATE = /^[A-Za-z]{2}$/;
+const US_ZIP = /^\d{5}(-\d{4})?$/;
 
 /**
- * The first screen: who is talking to us and which business, before anything is verified or created (Jeff, 2026-11-21: "who we are
- * talking to first"). All five are required. Nothing is checked beyond being given and being sensible in length: the email and phone are
- * confirmed after payment, and GeekAPI checks their shape again when the business is submitted. What was typed is held in a signed
- * cookie so the declaration can show it again.
+ * The first screen: who is talking to us and which business, before anything is verified or created (Jeff, 2026-11-21: First Name,
+ * Middle Initial, Last Name, Address, City, State, Zip Code, Telephone; Business Name, Business Address, City, State, Zip, Business
+ * Telephone). Everything but the middle initial is required. A state must be two letters and a zip five digits or ZIP+4, and each is
+ * refused otherwise, never fixed up. Nothing else is checked here: the telephones are confirmed after payment, and GeekAPI checks their
+ * shape again when the business is submitted. What was typed is held in a signed cookie so the declaration can show it again.
  */
 export async function whoAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
-    name: text(form, "name"),
-    businessName: text(form, "businessName"),
+    firstName: text(form, "firstName"),
+    middleInitial: text(form, "middleInitial"),
+    lastName: text(form, "lastName"),
     address: text(form, "address"),
-    email: text(form, "email"),
+    city: text(form, "city"),
+    state: text(form, "state").toUpperCase(),
+    zip: text(form, "zip"),
     phone: text(form, "phone"),
+    businessName: text(form, "businessName"),
+    businessAddress: text(form, "businessAddress"),
+    businessCity: text(form, "businessCity"),
+    businessState: text(form, "businessState").toUpperCase(),
+    businessZip: text(form, "businessZip"),
+    businessPhone: text(form, "businessPhone"),
   };
   if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired"), fields };
-  if (Object.values(fields).some((value) => value.length === 0)) return { error: "Fill in all five.", fields };
+
+  const { middleInitial, ...required } = fields;
+  if (Object.values(required).some((value) => value.length === 0)) return { error: "Fill in every answer except the middle initial.", fields };
   if (Object.values(fields).some((value) => value.length > WHO_MAX)) return { error: `Each answer must be ${WHO_MAX} characters or fewer.`, fields };
+  if (middleInitial.length > 2) return { error: "The middle initial is one letter.", fields };
+  if (!US_STATE.test(fields.state) || !US_STATE.test(fields.businessState)) return { error: "A state is its two-letter code, such as FL.", fields };
+  if (!US_ZIP.test(fields.zip) || !US_ZIP.test(fields.businessZip)) return { error: "A zip code is five digits, such as 33432.", fields };
 
   await writeWho(fields);
   await passGate("who");
@@ -122,6 +139,8 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     businessName: text(form, "businessName"),
     businessDescription: text(form, "businessDescription"),
     businessAddress: text(form, "businessAddress"),
+    declarantAddress: text(form, "declarantAddress"),
+    declarantPhone: text(form, "declarantPhone"),
     stateCode: text(form, "stateCode").toUpperCase(),
     contactEmail: text(form, "contactEmail"),
     contactPhone: text(form, "contactPhone"),
@@ -155,6 +174,8 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     attestorName: fields.declarantName,
     attestorTitle: fields.declarantTitle,
     businessAddress: fields.businessAddress,
+    declarantAddress: fields.declarantAddress,
+    declarantPhone: fields.declarantPhone,
     declarationStatement: DECLARATION_STATEMENT,
     declarationAgreed: true,
     termsStatement: TERMS_STATEMENT,

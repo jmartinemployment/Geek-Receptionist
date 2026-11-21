@@ -120,11 +120,13 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
             initial={
               who
                 ? {
-                    declarantName: who.name,
+                    declarantName: [who.firstName, who.middleInitial, who.lastName].filter(Boolean).join(" "),
+                    declarantAddress: `${who.address}, ${who.city}, ${who.state} ${who.zip}`,
+                    declarantPhone: who.phone,
                     businessName: who.businessName,
-                    businessAddress: who.address,
-                    contactEmail: who.email,
-                    contactPhone: who.phone,
+                    businessAddress: `${who.businessAddress}, ${who.businessCity}, ${who.businessState} ${who.businessZip}`,
+                    stateCode: who.businessState,
+                    contactPhone: who.businessPhone,
                   }
                 : {}
             }

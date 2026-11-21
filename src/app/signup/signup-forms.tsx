@@ -155,20 +155,60 @@ export function WhoForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(whoAction, start());
   const value = (name: string) => state.fields[name] ?? "";
   const id = (name: string) => `${name}${idSuffix}`;
+  const text = (name: string, labelText: string, extra: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <label htmlFor={id(name)} className={label}>{labelText}</label>
+      <input id={id(name)} name={name} maxLength={300} defaultValue={value(name)} className={field} {...extra} />
+    </div>
+  );
 
   return (
     <form action={action} className="flex flex-col gap-4 text-left">
       <Refusal error={state.error} />
-      <label htmlFor={id("name")} className={label}>Your name</label>
-      <input id={id("name")} name="name" required maxLength={300} autoComplete="name" defaultValue={value("name")} className={field} />
-      <label htmlFor={id("businessName")} className={label}>Business name</label>
-      <input id={id("businessName")} name="businessName" required maxLength={300} autoComplete="organization" defaultValue={value("businessName")} className={field} />
-      <label htmlFor={id("address")} className={label}>Business address</label>
-      <input id={id("address")} name="address" required maxLength={300} autoComplete="street-address" defaultValue={value("address")} className={field} />
-      <label htmlFor={id("email")} className={label}>Email</label>
-      <input id={id("email")} name="email" type="email" required maxLength={300} autoComplete="email" defaultValue={value("email")} className={field} />
-      <label htmlFor={id("phone")} className={label}>Telephone</label>
-      <input id={id("phone")} name="phone" type="tel" required maxLength={300} autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" defaultValue={value("phone")} className={field} />
+
+      <fieldset className="flex min-w-0 flex-col gap-3">
+        <legend className="mb-1 font-display text-lg font-bold">About you</legend>
+        <div className="flex gap-3">
+          {text("firstName", "First name", { required: true, autoComplete: "given-name" })}
+          <div className="flex w-20 flex-col gap-1">
+            <label htmlFor={id("middleInitial")} className={label}>M.I.</label>
+            <input id={id("middleInitial")} name="middleInitial" maxLength={2} autoComplete="additional-name" defaultValue={value("middleInitial")} className={field} />
+          </div>
+          {text("lastName", "Last name", { required: true, autoComplete: "family-name" })}
+        </div>
+        {text("address", "Address", { required: true, autoComplete: "street-address" })}
+        <div className="flex gap-3">
+          {text("city", "City", { required: true, autoComplete: "address-level2" })}
+          <div className="flex w-20 flex-col gap-1">
+            <label htmlFor={id("state")} className={label}>State</label>
+            <input id={id("state")} name="state" required maxLength={2} placeholder="FL" autoComplete="address-level1" defaultValue={value("state")} className={`${field} uppercase`} />
+          </div>
+          <div className="flex w-28 flex-col gap-1">
+            <label htmlFor={id("zip")} className={label}>Zip code</label>
+            <input id={id("zip")} name="zip" required maxLength={10} inputMode="numeric" autoComplete="postal-code" defaultValue={value("zip")} className={field} />
+          </div>
+        </div>
+        {text("phone", "Telephone", { required: true, type: "tel", inputMode: "tel", autoComplete: "tel-national", placeholder: "(561) 555-0101" })}
+      </fieldset>
+
+      <fieldset className="flex min-w-0 flex-col gap-3">
+        <legend className="mb-1 font-display text-lg font-bold">Your business</legend>
+        {text("businessName", "Business name", { required: true, autoComplete: "organization" })}
+        {text("businessAddress", "Business address", { required: true })}
+        <div className="flex gap-3">
+          {text("businessCity", "City", { required: true })}
+          <div className="flex w-20 flex-col gap-1">
+            <label htmlFor={id("businessState")} className={label}>State</label>
+            <input id={id("businessState")} name="businessState" required maxLength={2} placeholder="FL" defaultValue={value("businessState")} className={`${field} uppercase`} />
+          </div>
+          <div className="flex w-28 flex-col gap-1">
+            <label htmlFor={id("businessZip")} className={label}>Zip</label>
+            <input id={id("businessZip")} name="businessZip" required maxLength={10} inputMode="numeric" defaultValue={value("businessZip")} className={field} />
+          </div>
+        </div>
+        {text("businessPhone", "Business telephone", { required: true, type: "tel", inputMode: "tel", placeholder: "(561) 555-0101" })}
+      </fieldset>
+
       <button className={`${ui.button} mt-2 w-fit`} type="submit" disabled={pending}>
         {pending ? "One moment…" : "Continue"}
       </button>
@@ -280,6 +320,8 @@ export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; ini
       <Part number={1} title="The declarant">
         <Line id={id("declarantName")} name="declarantName" label="Full name" autoComplete="name" maxLength={300} state={state} />
         <Line id={id("declarantTitle")} name="declarantTitle" label="Title" autoComplete="organization-title" maxLength={300} state={state} />
+        <Line id={id("declarantAddress")} name="declarantAddress" label="Address" autoComplete="street-address" maxLength={300} state={state} />
+        <Line id={id("declarantPhone")} name="declarantPhone" label="Telephone" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" state={state} />
       </Part>
 
       <Part number={2} title="The business">

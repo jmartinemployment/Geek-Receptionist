@@ -47,9 +47,27 @@ export function parseGates(raw: string | undefined, key: string): ReadonlySet<Ga
  */
 export const WHO_COOKIE = "rp_who";
 
-export type Who = { name: string; businessName: string; address: string; email: string; phone: string };
+export type Who = {
+  firstName: string;
+  middleInitial: string;
+  lastName: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: string;
+  businessName: string;
+  businessAddress: string;
+  businessCity: string;
+  businessState: string;
+  businessZip: string;
+  businessPhone: string;
+};
 
-const WHO_FIELDS = ["name", "businessName", "address", "email", "phone"] as const;
+const WHO_FIELDS = [
+  "firstName", "middleInitial", "lastName", "address", "city", "state", "zip", "phone",
+  "businessName", "businessAddress", "businessCity", "businessState", "businessZip", "businessPhone",
+] as const satisfies readonly (keyof Who)[];
 
 /** The cookie's value for this person: their words as base64url, a dot, and the signature of those words. */
 export function signWho(who: Who, key: string): string {
@@ -57,7 +75,7 @@ export function signWho(who: Who, key: string): string {
   return `${body}.${createHmac("sha256", key).update(body).digest("hex")}`;
 }
 
-/** Who a cookie value names, or null when it is missing, not signed by this key, altered, or not five pieces of text. */
+/** Who a cookie value names, or null when it is missing, not signed by this key, altered, or not fourteen pieces of text. */
 export function parseWho(raw: string | undefined, key: string): Who | null {
   if (!raw) return null;
   const dot = raw.lastIndexOf(".");
@@ -75,7 +93,7 @@ export function parseWho(raw: string | undefined, key: string): Who | null {
   if (typeof value !== "object" || value === null) return null;
   const v = value as Record<string, unknown>;
   if (!WHO_FIELDS.every((field) => typeof v[field] === "string")) return null;
-  return { name: v.name as string, businessName: v.businessName as string, address: v.address as string, email: v.email as string, phone: v.phone as string };
+  return Object.fromEntries(WHO_FIELDS.map((field) => [field, v[field] as string])) as Who;
 }
 
 /**

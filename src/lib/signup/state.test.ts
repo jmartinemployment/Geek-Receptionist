@@ -26,17 +26,20 @@ test("each step follows from what is already done", () => {
 });
 
 test("who the visitor said they are is signed, and a forged or altered value reads as nobody", () => {
-  const who = { name: "Pat Rivera", businessName: "Boca Cool HVAC", address: "12 Palm Way, Boca Raton, FL", email: "pat@bocacool.example", phone: "(561) 555-0101" };
+  const who = {
+    firstName: "Pat", middleInitial: "", lastName: "Rivera", address: "9 Ocean Blvd", city: "Delray Beach", state: "FL", zip: "33444", phone: "(561) 555-0199",
+    businessName: "Boca Cool HVAC", businessAddress: "12 Palm Way", businessCity: "Boca Raton", businessState: "FL", businessZip: "33432", businessPhone: "(561) 555-0101",
+  };
   const signed = signWho(who, "secret-one");
   assert.deepEqual(parseWho(signed, "secret-one"), who);
   assert.equal(parseWho(signed, "secret-two"), null);
   assert.equal(parseWho(undefined, "secret-one"), null);
   assert.equal(parseWho("nodot", "secret-one"), null);
   const dot = signed.lastIndexOf(".");
-  const forged = Buffer.from(JSON.stringify({ ...who, name: "Someone Else" }), "utf8").toString("base64url") + signed.slice(dot);
+  const forged = Buffer.from(JSON.stringify({ ...who, firstName: "Someone" }), "utf8").toString("base64url") + signed.slice(dot);
   assert.equal(parseWho(forged, "secret-one"), null);
-  // Validly signed, but not five pieces of text.
-  const partial = Buffer.from(JSON.stringify({ name: "Pat" }), "utf8").toString("base64url");
+  // Validly signed, but not fourteen pieces of text.
+  const partial = Buffer.from(JSON.stringify({ firstName: "Pat" }), "utf8").toString("base64url");
   const sig = createHmac("sha256", "secret-one").update(partial).digest("hex");
   assert.equal(parseWho(`${partial}.${sig}`, "secret-one"), null);
 });

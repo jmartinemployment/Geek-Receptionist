@@ -1,4 +1,4 @@
-# The /signup step order, as the code runs it — 2026-11-21
+# The /signup step order, as the code runs it — 2026-11-21 (updated: the eight industry questions now share one screen)
 
 **What this is for: the step order is written down in three places and two of them are wrong**, so anyone asking "what
 does signup do" gets a stale answer. `CLAUDE.md` still calls `/signup` "a five-step flow" and numbers
@@ -7,14 +7,14 @@ at `30bdd94`, with the file that decides each one. It is a record, not a proposa
 
 ## The order
 
-Thirteen screens, plus the robot check before them. The bracketed numbers are `src/app/signup/actions.ts`' own comments,
+Thirteen screens, plus the robot check before them (it was twenty before the eight industry questions shared one screen). The bracketed numbers are `src/app/signup/actions.ts`' own comments,
 which skip the six receptionist steps — that is why the numbering jumps from 3 to 4.
 
 | # | Screen | Decided by | What happens |
 |---|---|---|---|
 | — | Robot check | `captcha.ts`, `RobotCheckButton` | reCAPTCHA. A gate, not a numbered step |
 | **[1]** | Is the business in the United States? | `countryAction` | A no ends the signup and says so. Nothing is sent to GeekAPI |
-| **[2]** | Eight excluded-industry questions | `excludedIndustryAction` | Asked one per screen in `EXCLUDED_CODES` order. A no is remembered; a yes ends it, is sent at once with every no before it (`industry-refusals`) and is kept forever |
+| **[2]** | Eight excluded-industry questions | `eligibilityAction` | One screen, three headings, each question its own yes or no, none pre-selected, all required. All noes are one `industries` gate; a yes to any ends it, is sent at once with all eight answers (`industry-refusals`) and is kept forever |
 | **[3]** | Your business | `businessAction` | Name, what it does, state, email, phone, AI-disclosure checkbox, plus all eight noes → `validate-eligibility`. **A tenant now exists, `pending_payment`** |
 | | Your greeting | `saveConfigStep` | ↓ |
 | | When you're open | `saveConfigStep` | ↓ |
@@ -30,8 +30,8 @@ which skip the six receptionist steps — that is why the numbering jumps from 3
 ## Where the progress lives
 
 - **Before [3]: `rp_gates`**, HMAC-signed with `RECAPTCHA_SECRET_KEY` so a visitor cannot write `captcha` into it and
-  skip the check. `GATES` is `captcha`, `country` and the eight industry codes — one gate per question, each gate
-  meaning a no. Country is only a bookmark; GeekAPI decides it again at [3].
+  skip the check. `GATES` is `captcha`, `country` and `industries` — the last meaning a no to all eight questions.
+  Country is only a bookmark; GeekAPI decides it again at [3].
 - **From [3]: `rp_signup`**, httpOnly, one day, **ids only** — tenant, PayPal subscription, setup token, vault token,
   number, and which receptionist steps are done. Never an answer, never a password. A greeting and a question list would
   overflow a 4 KB cookie and break resumption silently; the row already holds them.
@@ -55,14 +55,14 @@ before it is asked to pay for it."*
 
 ## What is written about this and is wrong
 
-- `CLAUDE.md`: "a five-step flow", and "Step 4 (`activate-subscription`) buys a phone number". It is step 6 in the
-  code's numbering, and there are thirteen screens.
-- `README.md`: stale on `/` being a sign-in page; `/` is the public sales page and `/login` is sign-in.
+- Fixed 2026-11-21, with the one-screen change: `CLAUDE.md` called this "a five-step flow" and numbered
+  `activate-subscription` step 4, and `README.md` listed five steps. Both now describe the order above.
+- Still stale in `CLAUDE.md`: its note that `README.md` is wrong about `/` being a sign-in page — the README no longer says so.
 
 ## Changes proposed to this order, and where they are
 
 `plans/attestation-and-terms.md`, which is a plan and not this record:
 
-- the eight screens of [2] as one grouped screen (portal-only, awaiting a go-ahead),
+- ~~the eight screens of [2] as one grouped screen~~ — done, see above,
 - an attestor's name, title and truth checkbox added to [3],
 - Terms acceptance, which nothing in this order currently does.

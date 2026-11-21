@@ -8,11 +8,12 @@ import { isConsentMode } from "@/lib/receptionist/controls";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
-import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, answersThrough, isExcludedCode, type ExcludedCode } from "@/lib/signup/excluded";
+import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, industryAnswers, type ExcludedCode } from "@/lib/signup/excluded";
 import { postOnboarding } from "@/services/onboarding";
 import { setSessionCookies, signIn, visitorIpFrom } from "@/services/owner-auth";
 
-export type SignupFormState = { error: string | null; fields: Record<string, string> };
+/** What a signup step hands back. `refused` names the excluded industry a yes was given to, which ends the signup. */
+export type SignupFormState = { error: string | null; fields: Record<string, string>; refused?: ExcludedCode };
 
 const TIERS = new Set(["STARTER", "STANDARD", "PRO", "PREMIUM"]);
 
@@ -46,21 +47,33 @@ export async function forgetRobotCheckAction(): Promise<void> {
 }
 
 /**
- * Step 2, once for each excluded industry, in order: is the business that kind of business. A no is remembered and goes on to the
- * next. A yes is the end of it: GeekAPI is told at once, with the noes before it, and keeps them forever; then the refusal is said.
- * If GeekAPI could not store the yes the visitor is still stopped, and is told what failed.
+ * Step 2: the eight excluded-industry questions, on one screen, each its own yes or no. Every one must be answered; none is taken as
+ * a no for being left blank. All noes are remembered as one gate and the form goes on. A yes to any of them is the end of it: GeekAPI
+ * is told at once, all eight answers as given, and keeps them forever; then the refusal of the first industry answered yes is said.
+ * If GeekAPI could not store them the visitor is still stopped, and is told what failed.
  */
-export async function excludedIndustryAction(code: ExcludedCode, isExcluded: boolean): Promise<{ error: string | null }> {
-  if (!isExcludedCode(code)) return { error: signupMessage("signup_expired") };
-  const gates = await readGates();
-  const before = EXCLUDED_CODES.slice(0, EXCLUDED_CODES.indexOf(code));
-  if (!gates.has("country") || !before.every((earlier) => gates.has(earlier))) return { error: signupMessage("signup_expired") };
-
-  if (isExcluded) {
-    const kept = await postOnboarding("/api/v1/onboarding/industry-refusals", { answers: answersThrough(code, true) }, await headers());
-    return { error: kept.status === 200 ? EXCLUDED_INDUSTRIES[code].refusal : refusalOf(kept.body, kept.status) };
+export async function eligibilityAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const fields: Record<string, string> = {};
+  const yes = new Set<ExcludedCode>();
+  let unanswered = false;
+  for (const code of EXCLUDED_CODES) {
+    const answer = form.get(code);
+    if (answer === "yes" || answer === "no") fields[code] = answer;
+    else unanswered = true;
+    if (answer === "yes") yes.add(code);
   }
-  await passGate(code);
+
+  const gates = await readGates();
+  if (!gates.has("captcha") || !gates.has("country")) return { error: signupMessage("signup_expired"), fields };
+  if (unanswered) return { error: "Answer yes or no to every question.", fields };
+
+  const refused = EXCLUDED_CODES.find((code) => yes.has(code));
+  if (refused) {
+    const kept = await postOnboarding("/api/v1/onboarding/industry-refusals", { answers: industryAnswers(yes) }, await headers());
+    if (kept.status !== 200) return { error: refusalOf(kept.body, kept.status), fields };
+    return { error: EXCLUDED_INDUSTRIES[refused].refusal, fields, refused };
+  }
+  await passGate("industries");
   redirect("/signup?start=1");
 }
 
@@ -76,7 +89,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   const attested = form.get("complianceAttested") === "on";
 
   const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("country") || !EXCLUDED_CODES.every((code) => gates.has(code))) return { error: signupMessage("signup_expired"), fields };
+  if (!gates.has("captcha") || !gates.has("country") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
 
   const visitor = await headers();
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
@@ -87,7 +100,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     contactEmail: fields.contactEmail,
     contactPhone: fields.contactPhone,
     complianceAttested: attested,
-    industryAnswers: answersThrough("medicare_tpmo", false),
+    industryAnswers: industryAnswers(new Set()),
   }, visitor);
 
   const tenantId = answer.body?.tenantId;

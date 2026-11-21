@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, answersThrough, isExcludedCode } from "./excluded";
+import { EXCLUDED_CODES, EXCLUDED_GROUPS, EXCLUDED_INDUSTRIES, industryAnswers, isExcludedCode } from "./excluded";
 
 test("there are eight questions for the five excluded industries, each with its own code, in the order GeekAPI holds them", () => {
   assert.deepEqual([...EXCLUDED_CODES], [
@@ -25,21 +25,22 @@ test("there are eight questions for the five excluded industries, each with its 
   ]);
 });
 
-test("a yes is sent with the noes before it and nothing after it", () => {
-  assert.deepEqual(answersThrough("investment_adviser", true), [
-    { industry: "hipaa_healthcare_provider", question: "Is the business a healthcare provider?", answer: false },
-    { industry: "hipaa_health_plan", question: "Is the business a health insurer, HMO or other health plan?", answer: false },
-    { industry: "hipaa_clearinghouse", question: "Is the business a healthcare clearinghouse?", answer: false },
-    { industry: "hipaa_business_associate", question: "Does the business handle patient health information for a healthcare provider or health plan?", answer: false },
-    { industry: "securities_broker_dealer", question: "Is the business a securities broker-dealer?", answer: false },
-    { industry: "investment_adviser", question: "Is the business an investment adviser?", answer: true },
-  ]);
+test("all eight answers are sent in GeekAPI's order, a yes for each industry named and a no for every other", () => {
+  const sent = industryAnswers(new Set(["investment_adviser", "hipaa_health_plan"]));
+  assert.deepEqual(sent.map((a) => a.industry), [...EXCLUDED_CODES]);
+  assert.deepEqual(sent.filter((a) => a.answer).map((a) => a.industry), ["hipaa_health_plan", "investment_adviser"]);
+  assert.ok(sent.every((a) => a.question === EXCLUDED_INDUSTRIES[a.industry].question));
 });
 
-test("the last question answered no is all eight answered no", () => {
-  const all = answersThrough("medicare_tpmo", false);
+test("no yes at all is all eight answered no", () => {
+  const all = industryAnswers(new Set());
   assert.equal(all.length, 8);
   assert.ok(all.every((a) => a.answer === false));
+});
+
+test("the three headings hold every industry exactly once, in the order GeekAPI holds them", () => {
+  assert.deepEqual(EXCLUDED_GROUPS.map((g) => g.heading), ["Healthcare", "Financial services", "Medicare"]);
+  assert.deepEqual(EXCLUDED_GROUPS.flatMap((g) => [...g.codes]), [...EXCLUDED_CODES]);
 });
 
 test("only the eight codes are industries", () => {

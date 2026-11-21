@@ -6,24 +6,18 @@ const tenantId = "22222222-2222-2222-2222-222222222222";
 
 test("each step follows from what is already done", () => {
   assert.equal(stepOf(null, new Set()), "captcha");
-  assert.equal(stepOf(null, new Set<Gate>(["country", "hipaa_healthcare_provider"])), "captcha");
+  assert.equal(stepOf(null, new Set<Gate>(["country", "industries"])), "captcha");
   assert.equal(stepOf(null, new Set<Gate>(["captcha"])), "country");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "hipaa_healthcare_provider"])), "country");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country"])), "hipaa_healthcare_provider");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider", "hipaa_health_plan"])), "hipaa_clearinghouse");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider", "hipaa_health_plan", "hipaa_clearinghouse", "hipaa_business_associate"])), "securities_broker_dealer");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider", "hipaa_health_plan", "hipaa_clearinghouse", "hipaa_business_associate", "securities_broker_dealer"])), "investment_adviser");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider", "hipaa_health_plan", "hipaa_clearinghouse", "hipaa_business_associate", "securities_broker_dealer", "investment_adviser"])), "commodity_futures_derivatives");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider", "hipaa_health_plan", "hipaa_clearinghouse", "hipaa_business_associate", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives"])), "medicare_tpmo");
-  // A later industry answered no does not let an earlier one be skipped.
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider", "hipaa_health_plan", "hipaa_clearinghouse", "hipaa_business_associate", "medicare_tpmo"])), "securities_broker_dealer");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider", "hipaa_health_plan", "hipaa_clearinghouse", "hipaa_business_associate", "securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives", "medicare_tpmo"])), "business");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider"])), "greeting");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider"])), "greeting");
+  // The eight industry answers are one gate: a later gate does not let an earlier one be skipped.
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "industries"])), "country");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country"])), "industries");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "country", "industries"])), "business");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, new Set<Gate>(["captcha", "country", "industries"])), "greeting");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, new Set<Gate>(["captcha", "country", "industries"])), "greeting");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", configDone: CONFIG_STEPS.slice(), subscriptionApproved: false }, new Set<Gate>()), "plan");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true }, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider"])), "payment_method");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1" }, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider"])), "number");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1", phoneNumber: "+15615550100" }, new Set<Gate>(["captcha", "country", "hipaa_healthcare_provider"])), "login");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true }, new Set<Gate>(["captcha", "country", "industries"])), "payment_method");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1" }, new Set<Gate>(["captcha", "country", "industries"])), "number");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1", phoneNumber: "+15615550100" }, new Set<Gate>(["captcha", "country", "industries"])), "login");
 });
 
 test("the receptionist questions are asked in order, each once, and only before anything is paid", () => {

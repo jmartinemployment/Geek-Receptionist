@@ -5,12 +5,12 @@ import HeroSection from "@/components/shared/shared-hero-section";
 import { readGates, readSignup, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
-import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, isExcludedCode } from "@/lib/signup/excluded";
-import { choosePlanAction, countryAction, excludedIndustryAction, forgetRobotCheckAction, savePaymentMethodAction, startOverAction } from "./actions";
+import { choosePlanAction, countryAction, forgetRobotCheckAction, savePaymentMethodAction, startOverAction } from "./actions";
 import { captchaSiteKey } from "@/lib/captcha";
 import {
   AppointmentsForm,
   BusinessForm,
+  EligibilityForm,
   GreetingForm,
   HoursForm,
   KnowledgeForm,
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 
 const STEPS: { step: SignupStep; title: string }[] = [
   { step: "country", title: "Is Business located in United States?" },
-  ...EXCLUDED_CODES.map((code) => ({ step: code as SignupStep, title: EXCLUDED_INDUSTRIES[code].question })),
+  { step: "industries", title: "Check eligibility" },
   { step: "business", title: "Your business" },
   // The receptionist's own settings, in the owner's words rather than the field names. Approved by Jeff, 2026-11-20.
   { step: "greeting", title: "Your greeting" },
@@ -93,7 +93,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   }
 
   const step = gateStep === "captcha" ? "country" : gateStep;
-  const compact = step === "country" || isExcludedCode(step);
+  const compact = step === "country";
   const index = STEPS.findIndex((s) => s.step === step);
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
 
@@ -118,12 +118,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           </div>
         )}
 
-        {isExcludedCode(step) && (
-          <div className="flex flex-nowrap justify-center gap-3">
-            <ActionButton action={excludedIndustryAction.bind(null, step, true)} label="Yes" pendingLabel="One moment…" dialogTitle={EXCLUDED_INDUSTRIES[step].dialogTitle} onDialogClose={forgetRobotCheckAction} />
-            <ActionButton action={excludedIndustryAction.bind(null, step, false)} label="No" pendingLabel="One moment…" quiet />
-          </div>
-        )}
+        {step === "industries" && <EligibilityForm idSuffix={s} />}
 
         {step === "business" && <BusinessForm idSuffix={s} />}
 

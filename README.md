@@ -41,16 +41,21 @@ failed sign-ins per email per hour never keeps the owner out of a browser they h
 - `/billing/paid` and `/oauth/mcp/google_calendar/callback`: the return trips above.
 - The tenant is always taken from the owner's own `tenant_id` claim on the server, never from the browser's request.
 
-- `/signup`: self-service signup, five steps, each a Server Action. (1) The business and the compliance statement go to GeekAPI
-  `POST /api/v1/onboarding/validate-eligibility`, which makes the tenant. (2) A plan: GeekAPI `POST .../onboarding/paypal/subscription`
-  starts a PayPal subscription to that tier's plan, the visitor approves it in PayPal and comes back to `/signup/paypal/subscribed`.
-  (3) Saving the PayPal account for overage minutes: `POST .../onboarding/paypal/vault`, approved in PayPal, back to
-  `/signup/paypal/saved`, which calls `.../paypal/vault/complete`. (4) The area code: `POST .../onboarding/activate-subscription` checks
-  both with PayPal, then buys the number and sets up the receptionist; this is the step that spends money. (5) The owner's login:
-  `POST .../onboarding/create-owner-login`, then sign-in and the dashboard. Every onboarding call carries GeekAPI's key, the visitor's
+- `/signup`: self-service signup, each step a Server Action, in this order. After a robot check: (1) is the business in the United
+  States; (2) the eight excluded-industry questions, on one screen under three headings, each its own yes or no with none
+  pre-selected (a yes to any ends the signup and is sent to `POST .../onboarding/industry-refusals`); (3) the business and the compliance
+  statement go to GeekAPI `POST /api/v1/onboarding/validate-eligibility`, which makes the tenant in `pending_payment`, with the eight
+  noes. Then six receptionist steps (greeting, hours, questions, knowledge, messages, appointments), each to `POST .../receptionist-config`.
+  Then (4) a plan: `POST .../onboarding/paypal/subscription` starts a PayPal subscription to that tier's plan, the visitor approves it in
+  PayPal and comes back to `/signup/paypal/subscribed`; (5) saving the PayPal account for overage minutes: `POST .../paypal/vault`,
+  approved in PayPal, back to `/signup/paypal/saved`, which calls `.../paypal/vault/complete`; (6) the area code: `POST
+  .../onboarding/activate-subscription` checks both with PayPal, then buys the number and sets up the receptionist, and the tenant
+  becomes `active`: this is the step that spends money; (7) the owner's login: `POST .../onboarding/create-owner-login`, which GeekAPI
+  refuses until the tenant is active, then sign-in and the dashboard. Every onboarding call carries GeekAPI's key, the visitor's
   address (`X-Visitor-Ip`) and Vercel's country for it (`X-Visitor-Country`, from `x-vercel-ip-country`), which GeekAPI requires;
-  signup therefore cannot pass its first step on this machine. Progress between steps and across the PayPal trips is an httpOnly cookie
-  (`rp_signup`, one day) holding ids only, never a password.
+  signup therefore cannot pass its first step on this machine. Progress before the business is a signed cookie (`rp_gates`); after it, an
+  httpOnly cookie (`rp_signup`, one day) holding ids only, never a password. The order as the code runs it, and why it cannot be
+  rearranged, is `plans/signup-step-order.md`.
 
 ## What does not exist
 

@@ -88,13 +88,20 @@ decorative.** The minimum is a line on the dashboard saying so, with a route tha
 schedule — annually, or at renewal — is the fuller answer and is a decision, not a detail: it is Jeff's call whether a
 paying customer is asked again.
 
-## Stage 5: the eligibility questions as one screen — awaiting a go-ahead
+## Stage 5: the eligibility questions as one screen — **built, 2026-11-21**
 
 Jeff, 2026-11-21: *"a quite long, intimidating list of excluded industries. Asking a client to read a massive 'do not'
 list creates onboarding friction."* True, and the friction is the **eight screens**, not the eight answers. The rule
 set on 2026-11-18 — *"more enforceable to ask each separately"* — is about separate **answers**, not separate screens.
 Eight yes/no rows on one page, none pre-selected, is still eight affirmative acts and eight rows with their own question
 strings; the record is unchanged.
+
+**Built 2026-11-21.** `EligibilityForm` and `eligibilityAction`; `rp_gates` now carries `captcha`, `country` and one
+`industries` gate instead of ten; `EXCLUDED_GROUPS` and `industryAnswers` replace `answersThrough`. A yes to any row sends
+all eight answers to `industry-refusals` (GeekAPI and the repository both accept any set with at least one yes, checked
+before building) and opens the refusal dialog naming the first industry answered yes; closing it forgets the robot check,
+as before. Every row is `required` and the action refuses a missing answer, so a blank is never taken as a no. The
+signup went from twenty screens to thirteen. Nothing in GeekAPI changed.
 
 One screen, three groups: **Healthcare (HIPAA)** — provider, health plan, clearinghouse, handles PHI for one;
 **Financial services** — broker-dealer, investment adviser, commodity futures or derivatives; **Medicare** — Advantage
@@ -142,8 +149,10 @@ vendor, which is the thing this architecture exists to avoid.
 
 **Two fixes, and the small one should not wait for the large one.**
 
-- **Now, and cheap:** reword the yes option to say what is true today, without naming Google as the only calendar and
-  without promising booking to a business whose calendar we cannot reach.
+- **Now, and cheap — done 2026-11-21:** the yes option now says a Google Calendar can be connected today, that a
+  business keeping its calendar elsewhere gets a message-taking receptionist that does not book, and that it takes
+  messages until a calendar is connected. The wording is a draft of mine; Jeff said the old sentence "isn't quite
+  right" and the new one has not been shown to him.
 - **Properly:** Stage 6 of `plans/connecting-client-systems.md` — ask *"which calendar does your business use?"* before
   they pay, offering only what can actually be connected plus "something else", which records the answer and promises
   nothing. It stops the promise, tells the business what to expect while they can still walk away, and makes every
@@ -428,13 +437,14 @@ copy.
 
 ## Order, and what blocks what
 
-1. Stage 6's rewording, which depends on nothing and removes a promise being made to visitors today.
-2. Stage 7's decision on the unpaid-login surface, because Stage 7 reorders what every stage below sits in.
-3. Stage 5 (portal-only, no dependencies) or Stage 2's portal and API halves — either can go next.
-4. Stage 1's version string and address, before Stage 3 ships.
-5. Stage 3 with it.
-6. Stage 4 after the Terms exist, since it enforces one of their clauses.
-7. Stage 6's signup question and Stage 7's verification step, which are the same screen once the order moves.
+1. ~~Stage 6's rewording~~ — done.
+2. ~~Stage 5~~ — done.
+3. Stage 2's portal and API halves, the next buildable thing; it needs no decision.
+4. Stage 7's reorder, which changes what every stage below sits in and needs the unpaid-login surface built first.
+5. Stage 1's version string and address, before Stage 3 ships.
+6. Stage 3 with it.
+7. Stage 4 after the Terms exist, since it enforces one of their clauses.
+8. Stage 6's signup question and Stage 7's verification step, which are the same screen once the order moves.
 
 ## Noticed while reading, not part of this plan
 

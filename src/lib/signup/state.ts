@@ -1,20 +1,19 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { EXCLUDED_CODES, type ExcludedCode } from "./excluded";
 
 export const SIGNUP_COOKIE = "rp_signup";
 
 /**
  * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, the country
- * question, then the eight excluded-industry questions. The cookie is signed
- * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. Each excluded industry has its own
- * gate, named by its code, which is a no to that industry's question. Country is only a bookmark, which GeekAPI decides again when
- * the business is submitted. The industry answers are sent to GeekAPI from these gates; it stores every one forever and refuses
+ * question, then the eight excluded-industry questions, which share one screen and so one gate. The cookie is signed
+ * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. The "industries" gate is a no to every
+ * one of the eight questions: a yes to any of them never passes it. Country is only a bookmark, which GeekAPI decides again when
+ * the business is submitted. The industry answers are sent to GeekAPI from this gate; it stores every one forever and refuses
  * an excluded industry and a missing answer.
  */
 export const GATES_COOKIE = "rp_gates";
 
-export const GATES = ["captcha", "country", ...EXCLUDED_CODES] as const;
+export const GATES = ["captcha", "country", "industries"] as const;
 export type Gate = (typeof GATES)[number];
 
 const gateKey = (): string | null => {
@@ -78,7 +77,7 @@ export type SignupState = {
 export type SignupStep =
   | "captcha"
   | "country"
-  | ExcludedCode
+  | "industries"
   | "business"
   | ConfigStep
   | "plan"
@@ -94,7 +93,7 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
   if (!state) {
     if (!gates.has("captcha")) return "captcha";
     if (!gates.has("country")) return "country";
-    for (const code of EXCLUDED_CODES) if (!gates.has(code)) return code;
+    if (!gates.has("industries")) return "industries";
     return "business";
   }
   // The receptionist questions, while nothing has been paid for. They are asked only here, and never after the subscription is

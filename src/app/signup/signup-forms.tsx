@@ -1,16 +1,19 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { ui } from "@/lib/ui";
 import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
 import { DAYS, TIMEZONES } from "@/lib/signup/hours";
+import { EXCLUDED_GROUPS, EXCLUDED_INDUSTRIES } from "@/lib/signup/excluded";
 import {
   activateAction,
   appointmentsAction,
   businessAction,
   captchaAction,
   createLoginAction,
+  eligibilityAction,
+  forgetRobotCheckAction,
   greetingAction,
   hoursAction,
   knowledgeAction,
@@ -72,6 +75,72 @@ export function RobotCheckButton({ captchaSiteKey }: { captchaSiteKey: string })
       </button>
       {open ? <RobotDialog captchaSiteKey={captchaSiteKey} onClose={() => setOpen(false)} /> : null}
     </>
+  );
+}
+
+/**
+ * The eight excluded-industry questions on one screen, under three headings. Each is still its own yes or no with its own stored
+ * words (Jeff, 2026-11-18: "more enforceable to ask each separately"), so nothing arrives selected and none is taken as a no for being
+ * left blank: the visitor answers all eight or the form does not send. The words above them say what the screen is for and nothing
+ * about how most businesses answer, because telling someone that most people say no, in front of a regulated screening, nudges the
+ * answer. A yes to any of them ends the signup in a dialog naming the industry, and closing it forgets the robot check.
+ */
+export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(eligibilityAction, start());
+  const [closed, setClosed] = useState<SignupFormState | null>(null);
+  const [, afterClose] = useTransition();
+  const close = () => {
+    setClosed(state);
+    afterClose(forgetRobotCheckAction);
+  };
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <p className={hint}>To check eligibility, confirm whether the business operates in any of these regulated sectors.</p>
+      {state.refused ? null : <Refusal error={state.error} />}
+
+      {EXCLUDED_GROUPS.map((group) => (
+        <fieldset key={group.heading} className="flex min-w-0 flex-col gap-4">
+          <legend className="mb-1 font-display text-lg font-bold">{group.heading}</legend>
+          {group.codes.map((code) => (
+            <fieldset key={code} className="flex min-w-0 flex-col gap-1">
+              <legend className={label}>{EXCLUDED_INDUSTRIES[code].question}</legend>
+              <div className="flex gap-6">
+                {(["yes", "no"] as const).map((answer) => (
+                  <label key={answer} htmlFor={`${code}-${answer}${idSuffix}`} className="flex items-center gap-2">
+                    <input
+                      id={`${code}-${answer}${idSuffix}`}
+                      type="radio"
+                      name={code}
+                      value={answer}
+                      required
+                      defaultChecked={state.fields[code] === answer}
+                      className="size-4 accent-[#c83803]"
+                    />
+                    {answer === "yes" ? "Yes" : "No"}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+        </fieldset>
+      ))}
+
+      <button className={ui.button} type="submit" disabled={pending}>
+        {pending ? "One moment…" : "Continue"}
+      </button>
+
+      {state.refused && closed !== state ? (
+        <Dialog title={EXCLUDED_INDUSTRIES[state.refused].dialogTitle} onClose={close}>
+          <p className="mb-4" role="alert">
+            {state.error}
+          </p>
+          <button type="button" className={ui.button} onClick={close}>
+            Close
+          </button>
+        </Dialog>
+      ) : null}
+    </form>
   );
 }
 
@@ -512,6 +581,10 @@ export function MessagesForm({ email, idSuffix }: { email: string; idSuffix: str
  * Appointments. The answer is recorded now and acted on at first sign-in: booking needs a calendar connected, which needs the login
  * created at the end of this form, so a yes here cannot switch booking on yet. The step says so rather than implying it is already
  * working, and a no is left alone — the dashboard never asks again.
+ *
+ * The yes says which calendar can be connected today (Google) and what happens for any other, before the visitor pays: it used to name
+ * Google as though no other calendar existed, and a business on Outlook found that out after paying (Jeff, 2026-11-21: "isn't quite
+ * right"). This is the stopgap; plans/attestation-and-terms.md stage 7 asks which calendar they use, and verifies it, before the plan.
  */
 export function AppointmentsForm() {
   const [state, action, pending] = useActionState(appointmentsAction, start({ wantsBooking: "no" }));
@@ -530,7 +603,7 @@ export function AppointmentsForm() {
             value: "yes",
             label: "Yes, let callers book",
             detail:
-              "You connect your Google Calendar the first time you sign in, and booking switches on then. Until it is connected your receptionist takes a message, because a receptionist that books into nothing is worse than one that says it will pass the message on.",
+              "You connect your calendar after you sign in, and booking switches on once it is connected. Today a Google Calendar can be connected; if your business keeps its calendar somewhere else, your receptionist takes a message and does not book. Until a calendar is connected it takes a message too, because a receptionist that books into nothing is worse than one that says it will pass the message on.",
           },
           {
             value: "no",

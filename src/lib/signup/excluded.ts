@@ -1,6 +1,8 @@
 /**
  * The industries that cannot sign up, each asked about in its own question (Jeff, 2026-11-18: "more enforceable to ask each
- * separately"). Exactly these five (Jeff, 2026-11-18); veterinary and telemarketing are no longer excluded.
+ * separately"). Separately means its own answer, not its own screen: since 2026-11-21 the eight share one screen under three headings
+ * (Jeff: eight screens of "do not" were an intimidating list), and each is still its own yes or no, sent and kept as its own answer.
+ * Exactly these five (Jeff, 2026-11-18); veterinary and telemarketing are no longer excluded.
  * HIPAA is asked as four questions, one each (Jeff, 2026-11-18), so the five industries are eight questions; the single `hipaa`
  * question is retired, and GeekAPI accepts only these eight. The codes and the questions are the same ones GeekAPI holds (ExcludedIndustries); GeekAPI refuses an answer whose
  * question differs from its own, and stores every answer forever, so the two lists change together.
@@ -68,8 +70,17 @@ export const isExcludedCode = (value: unknown): value is ExcludedCode =>
 /** One question as GeekAPI stores it: the industry, the words shown, and the answer. */
 export type IndustryAnswer = { industry: ExcludedCode; question: string; answer: boolean };
 
-/** The questions up to and including this one, each answered no except this one, which takes the answer given. */
-export function answersThrough(code: ExcludedCode, answer: boolean): IndustryAnswer[] {
-  const upTo = EXCLUDED_CODES.slice(0, EXCLUDED_CODES.indexOf(code) + 1);
-  return upTo.map((industry) => ({ industry, question: EXCLUDED_INDUSTRIES[industry].question, answer: industry === code ? answer : false }));
+/**
+ * The headings the form shows the eight questions under, in the order GeekAPI holds them. Every code is in exactly one group: three
+ * headings read as three things where eight screens read as eight.
+ */
+export const EXCLUDED_GROUPS: readonly { heading: string; codes: readonly ExcludedCode[] }[] = [
+  { heading: "Healthcare", codes: ["hipaa_healthcare_provider", "hipaa_health_plan", "hipaa_clearinghouse", "hipaa_business_associate"] },
+  { heading: "Financial services", codes: ["securities_broker_dealer", "investment_adviser", "commodity_futures_derivatives"] },
+  { heading: "Medicare", codes: ["medicare_tpmo"] },
+];
+
+/** All eight questions as GeekAPI stores them, in its order: a yes for each industry named, a no for every other. */
+export function industryAnswers(yes: ReadonlySet<ExcludedCode>): IndustryAnswer[] {
+  return EXCLUDED_CODES.map((industry) => ({ industry, question: EXCLUDED_INDUSTRIES[industry].question, answer: yes.has(industry) }));
 }

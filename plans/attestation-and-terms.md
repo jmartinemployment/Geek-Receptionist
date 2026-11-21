@@ -435,16 +435,51 @@ the never-take-a-dollar rule holds in both branches — a visitor who continues 
 verify for that system, so the sale matches what was actually proved. Wording is Jeff's, with the rest of the signup
 copy.
 
+## Stage 8: who we are talking to comes first, and nothing is confirmed until it is paid for
+
+Jeff, 2026-11-21: ask *"who we are talking to first, & business name, address, and both telephone, email
+confirmations"*; then, on the cost of confirming before payment, *"that incurs charges and no way I know whether I will
+ever get paid"*, and, settling it, *"the rest holds true, who are we talking to, confirmation after payment."*
+
+**Two rules, one for each direction of money.** Never take a dollar until every required connection is verified
+(Stage 7). Never spend a dollar until the dollar is in hand. The existing order already keeps the second: the number is
+bought only at `activate-subscription`, after PayPal clears. This stage extends it to confirmation.
+
+**Collected first, unverified.** The person's name and title, the business name, its address, and the contact phone and
+email are asked for at the front, before the eligibility questions. Today the phone and email are only format-checked
+(`UsPhone.ToE164`, `IsEmailAddress`) and no address is captured anywhere: `tenants` holds `state_code` and `county`
+and nothing else. So this adds an address column, and Stage 2's attestor name and title ride the same screen. A
+refused visitor now leaves a name and a business, not just an IP address. That means personal details held, forever,
+on people we turned away, and Jeff accepted it.
+
+**Confirmed after payment: both the email and the phone.** Neither is confirmed before the plan, because a phone code
+is a per-message charge to whoever asks for one and an open "text me a code" box is how bots run up an SMS bill. I
+have not checked Twilio's or Resend's prices; the argument does not depend on the amount, only on the money not
+being in hand. Eligibility stays ahead of everything else because it costs nothing, and we never pay to confirm
+someone we are about to refuse.
+
+**The mechanism is not chosen, and one free signal may already exist.** PayPal verifies the payer's name and email
+when the subscription is approved. Whether GeekAPI keeps that has not been checked; if it does, part of "who are we
+talking to" is proven for nothing. For the phone, the options are an SMS code or a call from the number just bought,
+and either is paid for by a sale already made.
+
+**This collides with Stage 7, and the collision is Jeff's to settle.** Stage 7 gives an unpaid tenant a real login so
+the owner can connect before paying. With confirmation after payment, that login sits on an unconfirmed email. Nothing
+is sent to it and nothing is spent, so the cost is small, but anyone can reserve someone else's address for the
+14-day window (`owner_exists` on the unique index), and the login proves a password, not a mailbox. The alternatives
+are to accept that, or to let the email code, the cheap one, be the one confirmation allowed before payment.
+
 ## Order, and what blocks what
 
 1. ~~Stage 6's rewording~~ — done.
 2. ~~Stage 5~~ — done.
 3. Stage 2's portal and API halves, the next buildable thing; it needs no decision.
 4. Stage 7's reorder, which changes what every stage below sits in and needs the unpaid-login surface built first.
-5. Stage 1's version string and address, before Stage 3 ships.
-6. Stage 3 with it.
-7. Stage 4 after the Terms exist, since it enforces one of their clauses.
-8. Stage 6's signup question and Stage 7's verification step, which are the same screen once the order moves.
+5. Stage 8's decision on the unpaid login's unconfirmed email, which Stage 7's login depends on.
+6. Stage 1's version string and address, before Stage 3 ships.
+7. Stage 3 with it.
+8. Stage 4 after the Terms exist, since it enforces one of their clauses.
+9. Stage 6's signup question and Stage 7's verification step, which are the same screen once the order moves.
 
 ## Noticed while reading, not part of this plan
 

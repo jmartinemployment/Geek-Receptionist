@@ -302,6 +302,53 @@ binding, and it must not be built by relaxing the tenant-match rule.
 Graph call under `https://graph.microsoft.com/`, and the prefix to strip is `https://graph.microsoft.com/`. It also
 says "post-Stripe webhook"; billing here is PayPal.
 
+### Parking on admin consent: what it costs here, and the one line of code that is wrong for it
+
+Two things about Microsoft's admin consent workflow bear directly on the design, and one of them lands on code that
+exists today.
+
+**`CompleteAsync` calls every failure a decline, and that is wrong for this case.** Its error branch logs the value and
+returns one code for all of them:
+
+> *"The calendar connection was declined."* — `McpFailureCodes.AuthorizationDenied`
+
+An owner blocked by tenant policy did not decline anything. They would be told they refused their own connection, and
+the thing they actually need — the address to hand their administrator — would never appear. This is the fail-loud rule
+in its less obvious form: the failure is surfaced, loudly, and is **the wrong failure**. Parking needs that branch to
+tell a decline apart from a consent block, per provider, and the registry entry is where that belongs, not an `if` in
+the service.
+
+**`prompt=consent` must not be sent to Microsoft, and the registry already says so.** The advice warns that leaving it
+on re-prompts for admin approval even after tenant-wide consent exists. `McpProviders` anticipated this: Google's
+`ExtraAuthorizationParameters` carries `access_type=offline` and `prompt=consent` because without them a second Google
+connection returns no refresh token, and the doc comment already states *"Microsoft needs neither, because it returns
+one whenever `offline_access` is among the scopes."* It is per-provider data, so Microsoft's entry simply does not
+carry it. Nothing to fix; worth knowing it was not an accident.
+
+**The admin's return needs a route of its own, on the API-key path.** Already noted above that the approving
+administrator is not the owner, so `CompleteAsync`'s tenant-match check cannot be used and must not be relaxed. Two
+further specifics:
+
+- **The state is already solved.** `McpOAuthState` seals the tenant and provider together, AES-GCM, bound to its
+  purpose so one sealed value cannot be opened as another. The admin-consent return reuses it. No new signing scheme.
+- **Tenant-wide consent is not a token.** The `/adminconsent` endpoint grants the application consent across the
+  tenant; it mints no access or refresh token for anybody. **The owner must still complete an ordinary connection
+  afterwards** to get their own delegated tokens. So the admin's return marks the block cleared and tells the owner to
+  come back — it never completes the connection itself. A design that treats the admin callback as the end of the flow
+  would leave the tenant with consent and no stored token, and nothing would be connected.
+
+**Resuming:** a silent re-authorization (`prompt=none`) is the clean way to ask "has it been approved yet" without
+showing the owner a login screen, and a plain "check again" button beats polling for a wait measured in days. Worth
+noting that the admin may approve inside the Entra portal instead of through our link, in which case our route never
+fires and the re-check is the only thing that notices.
+
+**Not verified, and it should be before any of this is coded.** The specific `AADSTS` numbers in the advice —
+`65001`, `90094`, `900941`, `900942` — are quoted from a summary, not read from Microsoft, and this project's own
+Outlook report associates `AADSTS90094` with risk-based step-up consent rather than with the managed-policy block.
+The branch above turns on getting these right, so they come from Microsoft's error reference, read directly. The same
+goes for the claim that the consent request expiry is tenant-configurable and commonly 7 or 30 days: it is the number
+the window is sized against, so it is checked rather than inherited.
+
 **Still open under the rule:** what signup does when a required system cannot be connected at all — no supported
 provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you cannot sign up" or
 as "sign up without booking, which is the message-taking receptionist", is a product answer, not a technical one.

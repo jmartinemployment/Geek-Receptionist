@@ -279,8 +279,8 @@ What that needs, none of it free:
   created a login *burns that address*: the same owner retrying hits `409 owner_exists`. Today the abandoned-signup
   problem is only a lost cookie; moving the login earlier makes it a hard block on retry. Expiry is what unblocks it,
   which makes the release part of the feature rather than housekeeping.
-- **The window is Jeff's, and seven days may be short.** Seven is the usual figure and it is defensible, but this
-  product's own research cuts against it: `reports/Outlook calendar booking without licensing.md` found that on a
+- **The window is 14 days (Jeff, 2026-11-21: seven is probably right, "but it hurts nothing to double").** Seven is
+  the usual figure and it is defensible, but this product's own research cuts against it: `reports/Outlook calendar booking without licensing.md` found that on a
   default-policy Microsoft tenant the owner **cannot self-consent to a calendar scope at all** — an administrator must.
   A business whose admin is a part-time contractor will not clear that in a week, and the expiry would delete the
   connection work they had done.
@@ -402,7 +402,7 @@ Corrections to what this section said before the research: `AADSTS900941` and `9
 error reference page (the full 370-row table was read; 900941 lives only on the troubleshoot page, 900942 was found on
 no Microsoft page at all). And the parked TTL is sized blind: no primary source states a range or default for the
 tenant's consent-request window, the vendor cannot read it, a reviewer's **Block** is terminal and indistinguishable
-from a slow admin — so the parked state is **re-enterable**, not one-shot, and the TTL choice (Jeff's) governs only
+from a slow admin — so the parked state is **re-enterable**, not one-shot, and the TTL (14 days, decided) governs only
 housekeeping, never a hard refusal to try again.
 
 **Decided, 2026-11-21 — the park is passive, and refusal at the block is rejected.** Jeff, verbatim: *"park

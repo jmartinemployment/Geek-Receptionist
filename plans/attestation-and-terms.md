@@ -57,9 +57,14 @@ exists, and it is already where all eight answers are sent (`answersThrough("med
 `businessAction`). Nothing moves.
 
 - **Portal** — `BusinessForm` gains the name and title of the person answering (today no person's name is collected
-  until the login step, at the very end) and one checkbox: *authorised to answer for this business, and the answers
-  given are true*. Separate from the AI-disclosure checkbox, which stays as it is: two distinct assents, two distinct
-  checkboxes, neither pre-ticked.
+  until the login step, at the very end) and the attestation itself, **as radio buttons, not a checkbox**. Jeff,
+  2026-11-21: *"If checkbox wording pertains to exclusions, use radio buttons."* The reason is the one that already
+  governs the eight questions: a statement about exclusions is a yes or no the visitor answers, none pre-selected, not
+  a box that can be ticked by habit. And because 2026-11-18 split HIPAA into four questions so that no answer covers
+  several claims, the attestation is **two rows, not one**: *Are you authorised to answer for this business?* and
+  *Are the answers you gave above true?* (wording is a draft of mine). A No to either stops the signup in a modal and
+  creates no tenant. Both Yes answers are stored with the exact words shown, as `0068` stores the industry answers.
+  The AI-disclosure checkbox is about recording, not exclusions, so it stays a checkbox, as it is.
 - **GeekAPI** — `ValidateEligibilityRequest` gains `AttestorName`, `AttestorTitle` and `AnswersAttested`. **Fail
   closed**: missing, blank or false is `400` and no tenant is created, the same way `ComplianceAttested` already works.
 - **Store** — a new table, not a column. `signup_industry_answers` is append-only by trigger, has no person columns, and
@@ -73,8 +78,10 @@ because it will otherwise look like a gap and get "fixed".
 
 ## Stage 3: accepting the Terms, which nothing currently does
 
-**Recommended placement: the same step 3 screen, as a second required checkbox** — no new screen, it is where a person
-is being identified, and it is before anything is configured or paid for. The alternative is its own screen before the
+**Recommended placement: the same step 3 screen, as a required checkbox** — a clickwrap acceptance, not an answer about
+exclusions, so it is a checkbox under Jeff's rule above. That also settles the earlier question of merging it with the
+attestation into one assent: they are different controls for different things, so they stay separate. No new screen:
+it is where a person is being identified, and it is before anything is configured or paid for. The alternative is its own screen before the
 plan, which is more ceremony for the same assent. **Placement and wording are Jeff's.**
 
 Stored on the same `signup_attestations` row: `terms_version` and `terms_accepted_at`. One submission, one row, two

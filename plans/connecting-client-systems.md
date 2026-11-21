@@ -180,8 +180,16 @@ the registry. One list, in the place that can refuse a connection with a message
 constraint on `appointments.mcp_provider` and *narrowed* it to the three providers that book, so a row naming HubSpot is
 refused by the database. That is the better call and the argument above missed it — a CHECK constraint that drifts from
 the code is a nuisance, but an appointment row naming a provider nothing books through is a lie in the data, and the
-database is the last place that can refuse it. What is left of this stage is the test binding `VoiceMcpProviders` to the
+database is the last place that can refuse it. What was left of this stage was the test binding `VoiceMcpProviders` to the
 two constraints, so the drift is caught rather than designed away.
+
+**Landed, 2026-11-20 (`cb8ec518`), and this stage is done.** `VoiceMigrationIntegrityTests` binds both constraints to the
+code's lists *in both directions*: `tenant_mcp_connections` must admit exactly `VoiceMcpProviders.All`, and
+`appointments.mcp_provider` exactly `VoiceMcpProviders.Calendars`, which is itself derived from each provider's `Booking`
+capability. The one-directional check that preceded it would have let a retired provider survive in SQL — the code stops
+offering it, every test still passes, and the constraint goes on admitting rows naming a connection the product can no
+longer make. Both constraints are read by constraint name rather than by table, because each has been dropped and re-added
+and only the last `ADD` is in force.
 
 ### Stage 5: the names that will be read as claims
 

@@ -375,6 +375,22 @@ tenant's consent-request window, the vendor cannot read it, a reviewer's **Block
 from a slow admin — so the parked state is **re-enterable**, not one-shot, and the TTL choice (Jeff's) governs only
 housekeeping, never a hard refusal to try again.
 
+**Decided, 2026-11-21 — the park is passive, and refusal at the block is rejected.** Jeff, verbatim: *"park
+passively, never pursue. No nurture emails, no follow-up motion, no countdown pressure. They come back with approval
+or they quietly expire. The deliberately-hardened org self-selects out by never returning; the plumber self-selects
+in by clicking their own link."* The reasoning that settled it: the wire cannot distinguish a deliberately hardened
+organization from a small business on Microsoft's default policy — the same `access_denied` comes from both, and the
+managed default excludes every calendar scope from end-user consent, so the blocked path is the *normal* path for the
+target market, whose owner is usually the admin. Refusing at the block would refuse that majority. Parking already
+honours the never-take-a-dollar rule — a parked tenant has paid nothing, holds no number, and soft-expires.
+
+What "passive" rules out, so it is not rebuilt as a feature: no outbound contact of any kind from the parked state —
+no nurture sequence, no reminder, no countdown, and not the "your admin approved, come finish" email the earlier
+advice had the `/adminconsent` callback dispatch. This matches the standing no-notification-channel decision of
+2026-11-19. The owner's one resume surface is the connect card itself: it says the connection is waiting on their
+administrator, offers the admin-consent link again, and offers "check again" — and the owner finds it by coming back
+on their own.
+
 **Still open under the rule:** what signup does when a required system cannot be connected at all — no supported
 provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you cannot sign up" or
 as "sign up without booking, which is the message-taking receptionist", is a product answer, not a technical one.

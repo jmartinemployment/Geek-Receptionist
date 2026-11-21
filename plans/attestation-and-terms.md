@@ -103,6 +103,14 @@ radio buttons that is no longer true. The reason that does hold is that they are
 declaration states facts about the business, and the Terms are a contract the business enters. So the recommendation
 is two agreements, each its own Agree / Do not agree. Jeff's call.
 
+**The acceptance is subject to the connections being verified.** Jeff, 2026-11-21: the Terms are what the person is
+accepting, and *"if this is prior to confirming connectors, have wording such as 'subject to'."* The Terms are accepted at
+step 3, before any system is connected, so the agreement says so on its face: it is **subject to Geek-Receptionist
+verifying a connection to each system the business requires; no payment is taken before that connection is verified;
+and if a required system cannot be connected, the business may continue without it or stop.** That keeps the acceptance
+honest with Stage 7: nothing is owed on a sale that was never completed. The sentence is a draft of mine and wants the
+same lawyer's eye as the Terms. The page at https://claude.ai/artifact/HcUzTzyWFUQ6fiDB9jiemE shows it in place.
+
 Stored on the same `signup_attestations` row: `terms_version` and `terms_accepted_at`. One submission, one row, two
 assents. A Terms page has to exist at a stable address before this ships, because an agreement pointing at nothing is
 worse than no agreement.

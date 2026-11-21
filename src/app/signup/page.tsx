@@ -123,10 +123,12 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
                     declarantName: [who.firstName, who.middleInitial, who.lastName].filter(Boolean).join(" "),
                     declarantAddress: `${who.address}, ${who.city}, ${who.state} ${who.zip}`,
                     declarantPhone: who.phone,
+                    declarantEmail: who.email,
                     businessName: who.businessName,
                     businessAddress: `${who.businessAddress}, ${who.businessCity}, ${who.businessState} ${who.businessZip}`,
                     stateCode: who.businessState,
                     contactPhone: who.businessPhone,
+                    contactEmail: who.businessEmail,
                   }
                 : {}
             }

@@ -189,6 +189,7 @@ export function WhoForm({ idSuffix }: { idSuffix: string }) {
           </div>
         </div>
         {text("phone", "Telephone", { required: true, type: "tel", inputMode: "tel", autoComplete: "tel-national", placeholder: "(561) 555-0101" })}
+        {text("email", "Email", { required: true, type: "email", autoComplete: "email" })}
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-3">
@@ -207,6 +208,7 @@ export function WhoForm({ idSuffix }: { idSuffix: string }) {
           </div>
         </div>
         {text("businessPhone", "Business telephone", { required: true, type: "tel", inputMode: "tel", placeholder: "(561) 555-0101" })}
+        {text("businessEmail", "Business email", { required: true, type: "email" })}
       </fieldset>
 
       <button className={`${ui.button} mt-2 w-fit`} type="submit" disabled={pending}>
@@ -321,6 +323,7 @@ export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; ini
         <Line id={id("declarantName")} name="declarantName" label="Full name" autoComplete="name" maxLength={300} state={state} />
         <Line id={id("declarantTitle")} name="declarantTitle" label="Title" autoComplete="organization-title" maxLength={300} state={state} />
         <Line id={id("declarantAddress")} name="declarantAddress" label="Address" autoComplete="street-address" maxLength={300} state={state} />
+        <Line id={id("declarantEmail")} name="declarantEmail" label="Email" type="email" autoComplete="email" state={state} />
         <Line id={id("declarantPhone")} name="declarantPhone" label="Telephone" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" state={state} />
       </Part>
 

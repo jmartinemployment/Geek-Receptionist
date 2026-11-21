@@ -41,8 +41,8 @@ const US_ZIP = /^\d{5}(-\d{4})?$/;
 
 /**
  * The first screen: who is talking to us and which business, before anything is verified or created (Jeff, 2026-11-21: First Name,
- * Middle Initial, Last Name, Address, City, State, Zip Code, Telephone; Business Name, Business Address, City, State, Zip, Business
- * Telephone). Everything but the middle initial is required. A state must be two letters and a zip five digits or ZIP+4, and each is
+ * Middle Initial, Last Name, Address, City, State, Zip Code, Telephone, Email; Business Name, Business Address, City, State, Zip, Business
+ * Telephone, Business Email). Everything but the middle initial is required. A state must be two letters and a zip five digits or ZIP+4, and each is
  * refused otherwise, never fixed up. Nothing else is checked here: the telephones are confirmed after payment, and GeekAPI checks their
  * shape again when the business is submitted. What was typed is held in a signed cookie so the declaration can show it again.
  */
@@ -56,12 +56,14 @@ export async function whoAction(_previous: SignupFormState, form: FormData): Pro
     state: text(form, "state").toUpperCase(),
     zip: text(form, "zip"),
     phone: text(form, "phone"),
+    email: text(form, "email"),
     businessName: text(form, "businessName"),
     businessAddress: text(form, "businessAddress"),
     businessCity: text(form, "businessCity"),
     businessState: text(form, "businessState").toUpperCase(),
     businessZip: text(form, "businessZip"),
     businessPhone: text(form, "businessPhone"),
+    businessEmail: text(form, "businessEmail"),
   };
   if (!(await readGates()).has("captcha")) return { error: signupMessage("signup_expired"), fields };
 
@@ -141,6 +143,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     businessAddress: text(form, "businessAddress"),
     declarantAddress: text(form, "declarantAddress"),
     declarantPhone: text(form, "declarantPhone"),
+    declarantEmail: text(form, "declarantEmail"),
     stateCode: text(form, "stateCode").toUpperCase(),
     contactEmail: text(form, "contactEmail"),
     contactPhone: text(form, "contactPhone"),
@@ -176,6 +179,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
     businessAddress: fields.businessAddress,
     declarantAddress: fields.declarantAddress,
     declarantPhone: fields.declarantPhone,
+    declarantEmail: fields.declarantEmail,
     declarationStatement: DECLARATION_STATEMENT,
     declarationAgreed: true,
     termsStatement: TERMS_STATEMENT,

@@ -391,6 +391,27 @@ advice had the `/adminconsent` callback dispatch. This matches the standing no-n
 administrator, offers the admin-consent link again, and offers "check again" — and the owner finds it by coming back
 on their own.
 
+**Decided, 2026-11-21 — the window is 14 days, and instructions come before parking.** Jeff: 7 days is probably right
+for the target audience, *"but it hurts nothing to double to 14"* — and, more importantly: *"providing Joe step by
+step instructions to immediately enable is probably our best course of action."* That reshapes the surface from
+wait-and-retry to teach-first, and the research says it works at two moments:
+
+1. **At connect, before any block.** On a managed-policy tenant an owner who *is* an administrator sees Microsoft's
+   own consent screen with a **"Consent on behalf of your organization"** checkbox — tick it and there is no block,
+   no park, no second trip. The connect card says so in advance, in plain words, with the reassurance the Outlook
+   report says the owner needs spelled out: approving as the administrator does **not** give the receptionist reach
+   into anyone else's mailbox or calendar — it still acts only as whoever signed in. The owner will otherwise assume
+   the opposite and balk at their own checkbox.
+2. **At the parked screen, for the owner who hit the block anyway.** Step by step, two branches: *if you are the
+   administrator* (in a small business, you probably are) — open this link, sign in with your Microsoft account,
+   select Accept, come back here, press "check again"; *if you are not* — send the link to whoever manages your
+   Microsoft 365, and come back when they say it is done. The link is the tenant's `/adminconsent` address; the
+   reassurance line appears here too.
+
+Teaching first does not soften the gate: the dollar still waits for a redeemed code, and the park stays passive —
+the instructions are on the card when the owner is looking at it, never sent after them. Exact wording is Jeff's,
+with the rest of the signup copy.
+
 **Still open under the rule:** what signup does when a required system cannot be connected at all — no supported
 provider, or the connection fails. The rule says the dollar is not taken. Whether that reads as "you cannot sign up" or
 as "sign up without booking, which is the message-taking receptionist", is a product answer, not a technical one.

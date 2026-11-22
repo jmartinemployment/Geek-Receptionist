@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import {
-  AppointmentsForm,
   EligibilityForm,
   GreetingForm,
   HoursForm,
@@ -65,7 +64,6 @@ const before: Screen[] = [
   { title: "What it should ask", body: <QuestionsForm idSuffix="-p6" /> },
   { title: "What it should know", body: <KnowledgeForm idSuffix="-p7" /> },
   { title: "After the call", body: <MessagesForm email="owner@example.com" idSuffix="-p8" /> },
-  { title: "Appointments", body: <AppointmentsForm /> },
   {
     title: "Connect and verify each system the business uses",
     note: "Stage 7 of the plan: before any payment.",

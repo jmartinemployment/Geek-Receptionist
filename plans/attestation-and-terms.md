@@ -12,6 +12,16 @@
 > a business's calls are recorded, and where, is that business's own setting. The caller's consent is separate and happens on every call,
 > by keypad (`GeekBackend/docs/Geek-Receptionist.md` section 5, "Consent before the AI is connected").
 >
+> **What "Connect" would do, read from the code on 2026-11-22.**
+> - **Google Drive:** one Google sign-in, the same OAuth client as the calendar, with the single scope `drive.file`: it can reach only a folder this
+>   app creates, "Geek-Receptionist Logs". All tiers. Needs nothing typed.
+> - **Amazon S3:** bucket, region, access key and secret, sealed on arrival. Standard tier and above only (`VoiceSubscriptionTiers.WithObjectStorage`), and the
+>   plan is chosen after the business exists, so an S3 owner on a lower tier is refused at the plan, not here.
+> - **What is written is the call record, not audio:** a summary (Markdown) or the transcript (JSON), one file per call, at
+>   `YYYY/MM/DD/call-{time}-{last4}`. Nothing in our code records audio, so "record conversations" can mean only the call record unless audio recording is built.
+> - **Blocked today:** both routes need the owner's own sign-in token, and refuse a business that is not yet active (`McpConnectionService`, line 34).
+>   Connecting during signup needs a way to connect without a sign-in and that rule relaxed for a business awaiting payment.
+>
 > **Order still to build (Jeff, 2026-11-22):** confirming that the receptionist can connect to what the business uses (calendar, drive,
 > CRM) comes **before** the Terms, not after: Stage 7 of this plan, connect-and-verify, which is not built. When it is, the Terms move
 > behind it, still ahead of the plan and the payment.

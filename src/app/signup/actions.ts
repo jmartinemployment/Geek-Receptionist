@@ -447,8 +447,3 @@ export async function createLoginAction(_previous: SignupFormState, form: FormDa
   redirect("/dashboard?notice=signup_complete");
 }
 
-/** Start over: forget this browser's signup. The tenant GeekAPI made stays waiting for payment and is never charged. */
-export async function startOverAction(): Promise<{ error: string | null }> {
-  await clearSignup();
-  redirect("/signup");
-}

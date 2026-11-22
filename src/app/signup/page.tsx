@@ -1,11 +1,9 @@
 import Link from "next/link";
-import { ActionButton } from "@/components/action-button";
 import { SchedulerShell } from "@/components/shared/scheduler/scheduler-shell";
 import HeroSection from "@/components/shared/shared-hero-section";
 import { readGates, readSignup, readWho, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
-import { startOverAction } from "./actions";
 import { SubmitFromLeft } from "@/components/submit-from-left";
 import { PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
@@ -157,10 +155,6 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           </>
         )}
       </section>
-
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        {state && step !== "login" ? <ActionButton action={startOverAction} label="Start over" pendingLabel="Starting over…" quiet /> : null}
-      </div>
     </div>
   );
 

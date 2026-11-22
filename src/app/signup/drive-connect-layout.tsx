@@ -57,7 +57,11 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
             </fieldset>
           ))}
           </div>
-          <Text>Sign in with the Google account whose Drive should hold them. A Google Workspace account may need its administrator&rsquo;s approval.</Text>
+          <Text>
+            Sign in with the Google account whose Drive should hold them.
+            <br />
+            Note: A Google Workspace account may need its administrator&rsquo;s approval.
+          </Text>
           <Button>Connect Google Drive</Button>
         </Panel>
       );

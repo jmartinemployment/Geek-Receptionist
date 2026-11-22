@@ -3,7 +3,7 @@
 ## Context
 The signup step "Crew location tools" is laid out but undefined. Jeff wants crew mobile-device location tied into the receptionist's dispatching, using open-source iOS and Android tracking apps. Commercial tools have no place in this plan (Jeff, 2026-11-22). Rules that apply: zero data retention by default; the owner, not us, decides how the receptionist behaves; no CRM; connect-then-test as with Drive.
 
-Research: `reports/Crew location tracking and dispatch.md` and `research_notes/Crew location tracking and dispatch/open_source_trackers.md` and `consent_and_retention.md`. The commercial-tools note in that folder is not used by this plan.
+Research: `research_notes/Crew location tracking and dispatch/open_source_trackers.md` and `consent_and_retention.md`.
 
 ## The open-source candidates found
 - **Traccar:** Apache 2.0, Java server on any SQL database, phone apps on Google Play, the App Store and as a GitHub APK. REST API: `GET /positions` returns last-known positions, or history with a device id and time range; authentication is Basic, a session cookie or a bearer token. Self-hosted (free software, a VPS) or run by Traccar from $9.95 a month. History is kept by default; `DELETE /positions` removes a time range.

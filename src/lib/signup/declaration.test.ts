@@ -1,29 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AGREEMENTS, DECLINED, TERMS_STATEMENT, isAgreement } from "./declaration";
+import { PRIVACY_URL, TERMS_PARTS, TERMS_STATEMENT, TERMS_URL } from "./declaration";
 
-test("the Terms are the exact words GeekAPI holds", () => {
+test("the statement is the exact words GeekAPI holds", () => {
   assert.equal(
     TERMS_STATEMENT,
-    "I agree to the Geek-Receptionist Subscription Terms, subject to Geek-Receptionist verifying a connection to each system the business requires. No payment is taken before that connection is verified, and if a required system cannot be connected I may continue without it or stop.",
+    "By continuing, I agree to the Terms of Service and the Privacy Policy of Geek @ Your Spot LLC, and that calls to this business may be answered and recorded by an AI receptionist that tells callers so.",
   );
 });
 
-test("the Terms are subject to the required connections being verified, because they are accepted before any is made", () => {
-  assert.match(TERMS_STATEMENT, /subject to/);
-  assert.match(TERMS_STATEMENT, /No payment is taken before that connection is verified/);
+test("the statement names the company and the AI receptionist, and no longer says 'subject to'", () => {
+  assert.match(TERMS_STATEMENT, /Geek @ Your Spot LLC/);
+  assert.match(TERMS_STATEMENT, /AI receptionist/);
+  assert.doesNotMatch(TERMS_STATEMENT, /subject to/);
 });
 
-test("every agreement says what happens when a person declines it, and each names that nothing was created", () => {
-  for (const agreement of AGREEMENTS) {
-    assert.ok(DECLINED[agreement].title.length > 0);
-    assert.match(DECLINED[agreement].message, /Nothing was created\.$/);
-  }
+test("the parts around the two links join back into the statement", () => {
+  assert.equal(`${TERMS_PARTS.before}Terms of Service${TERMS_PARTS.between}Privacy Policy${TERMS_PARTS.after}`, TERMS_STATEMENT);
 });
 
-test("only the two agreements are agreements", () => {
-  assert.ok(isAgreement("terms"));
-  assert.ok(!isAgreement("declaration"));
-  assert.ok(isAgreement("complianceAttested"));
-  assert.ok(!isAgreement("password"));
+test("both documents are real https addresses", () => {
+  for (const address of [TERMS_URL, PRIVACY_URL]) assert.equal(new URL(address).protocol, "https:");
 });

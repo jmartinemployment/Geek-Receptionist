@@ -170,7 +170,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
           // The four screens that are filled in have their Continue here, in the left pane, and it submits the form beside it. The phone
           // block has no left pane, so each form keeps its own button there, and this returns nothing for it.
           step === "who" || step === "company" || step === "industries" || step === "business" ? (
-            suffix === "-lg" ? <SubmitFromLeft key={step} form={`signup-form${suffix}`} pendingLabel={step === "business" ? "Checking…" : "One moment…"} /> : null
+            suffix === "-lg" ? <SubmitFromLeft key={step} form={`signup-form${suffix}`} label={step === "business" ? "Agree and continue" : "Continue"} /> : null
           ) : (
             <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>
               Continue

@@ -8,16 +8,16 @@ import { isConsentMode } from "@/lib/receptionist/controls";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
-import { AGREEMENTS, DECLINED, TERMS_STATEMENT, type Agreement } from "@/lib/signup/declaration";
+import { TERMS_STATEMENT } from "@/lib/signup/declaration";
 import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, industryAnswers, type ExcludedCode } from "@/lib/signup/excluded";
 import { postOnboarding } from "@/services/onboarding";
 import { setSessionCookies, signIn, visitorIpFrom } from "@/services/owner-auth";
 
 /**
- * What a signup step hands back. `refused` names the excluded industry a yes was given to, or `country` when the business is not in the United States, and `declined` the agreement a No was given to;
+ * What a signup step hands back. `refused` names the excluded industry a yes was given to, or `country` when the business is not in the United States;
  * either ends the signup.
  */
-export type SignupFormState = { error: string | null; fields: Record<string, string>; refused?: ExcludedCode | "country"; declined?: Agreement };
+export type SignupFormState = { error: string | null; fields: Record<string, string>; refused?: ExcludedCode | "country" };
 
 const TIERS = new Set(["STARTER", "STANDARD", "PRO", "PREMIUM"]);
 
@@ -160,33 +160,21 @@ export async function eligibilityAction(_previous: SignupFormState, form: FormDa
 }
 
 /**
- * The agreements screen: the AI disclosure and the Subscription Terms, two yes-or-no answers with nothing pre-selected (Jeff, 2026-11-22:
- * the declaration of authority is gone; the person and the business are what the first two screens already asked). One left unanswered
- * is refused, never read as a no or a yes. A No to either ends the signup and creates nothing. Only a person who agreed to both reaches
- * GeekAPI, which holds the same words and refuses any other; a business that passes becomes a tenant waiting for payment, with the Terms
- * they accepted stored beside them forever. The person and the business are read from the signed cookies the first two screens wrote,
- * never from this form, so nothing about either can be changed here.
+ * The acceptance screen (Jeff, 2026-11-22: a standard SaaS acceptance, not a sheet of agreements): continuing is agreeing, to the Terms of
+ * Service and Privacy Policy of Geek @ Your Spot LLC and to calls being answered by an AI receptionist that tells callers so. There is no
+ * second answer, so there is nothing to read as a yes or a no. What is stored beside the person is the exact sentence they were shown
+ * (`TERMS_STATEMENT`), which GeekAPI holds too and refuses any other of. The business becomes a tenant waiting for payment. The person
+ * and the business are read from the signed cookies the first two screens wrote, never from this form, so nothing about either can be
+ * changed here.
  */
-export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+export async function businessAction(): Promise<SignupFormState> {
   const fields: Record<string, string> = {};
-  const answers = new Map<Agreement, "yes" | "no">();
-  for (const agreement of AGREEMENTS) {
-    const answer = form.get(agreement);
-    if (answer === "yes" || answer === "no") {
-      answers.set(agreement, answer);
-      fields[agreement] = answer;
-    }
-  }
 
   const gates = await readGates();
   if (!gates.has("captcha") || !gates.has("who") || !gates.has("company") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
   const who = await readWho();
   const company = await readCompany();
   if (!who || !company) return { error: signupMessage("signup_expired"), fields };
-  if (answers.size !== AGREEMENTS.length) return { error: "Answer every agreement, Agree or Do not agree.", fields };
-
-  const declined = AGREEMENTS.find((agreement) => answers.get(agreement) === "no");
-  if (declined) return { error: DECLINED[declined].message, fields, declined };
 
   const visitor = await headers();
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {

@@ -6,7 +6,7 @@ import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
 import { DAYS, TIMEZONES } from "@/lib/signup/hours";
 import { EXCLUDED_GROUPS, EXCLUDED_INDUSTRIES } from "@/lib/signup/excluded";
-import { AI_DISCLOSURE_STATEMENT, DECLINED, TERMS_STATEMENT, type Agreement } from "@/lib/signup/declaration";
+import { PRIVACY_URL, TERMS_PARTS, TERMS_URL } from "@/lib/signup/declaration";
 import {
   activateAction,
   appointmentsAction,
@@ -265,106 +265,32 @@ export function CompanyForm({ idSuffix }: { idSuffix: string }) {
   );
 }
 
-/** One numbered part of the declaration, set as a legal document is: a serif heading, a rule above every part but the first. */
-function Part({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
-  return (
-    <section className="grid gap-2 border-t border-slate-300 pt-3 first:border-t-0 first:pt-0">
-      <h3 className="font-serif text-base font-semibold text-slate-900">
-        <span className="mr-2 text-slate-500">{number}.</span>
-        {title}
-      </h3>
-      {children}
-    </section>
-  );
-}
-
-/** A statement the person answers, never pre-selected. Not a checkbox: a statement a person is bound by is a yes or no they answer. */
-function Agree({ name, statement, state, idSuffix, yes = "Agree", no = "Do not agree", children }: {
-  name: Agreement;
-  statement: string;
-  state: SignupFormState;
-  idSuffix: string;
-  yes?: string;
-  no?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <fieldset className="grid gap-2">
-      <legend className="font-serif text-sm leading-snug text-slate-900">{statement}</legend>
-      {children}
-      <div className="flex flex-wrap gap-x-6 gap-y-1 font-sans text-sm text-slate-900">
-        {[
-          { value: "yes", text: yes },
-          { value: "no", text: no },
-        ].map((option) => (
-          <label key={option.value} htmlFor={`${name}-${option.value}${idSuffix}`} className="flex items-center gap-2">
-            <input
-              id={`${name}-${option.value}${idSuffix}`}
-              type="radio"
-              name={name}
-              value={option.value}
-              required
-              defaultChecked={state.fields[name] === option.value}
-              className="size-4 accent-[#c83803]"
-            />
-            {option.text}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
 /**
- * The agreements screen, laid out as the document it is (plans/attestation-and-terms.md): the AI disclosure and the Subscription Terms,
- * each a pair of radio buttons with nothing selected (Jeff, 2026-11-21: "I do not wish to use checkboxes in legal acceptance documents").
- * The person and the business are not asked again; the first two screens already did (Jeff, 2026-11-22, removing the declaration of
- * authority). A No to either ends the signup in a dialog and creates nothing; closing it forgets the robot check, as every other ending
- * does. The Terms are accepted before any system is connected, and say so: they are subject to the required connections being verified.
+ * The acceptance screen, as any SaaS signup has it (Jeff, 2026-11-22: "make the screen acceptable"): one paragraph with the two documents
+ * linked, and one button, in the hero's left pane, that says it is the acceptance. Not agreeing is not continuing; there is no second
+ * answer to give. What is accepted is stored word for word (`TERMS_STATEMENT`), so the paragraph below is that statement with its
+ * document names made into links, and the two are changed together.
  */
 export function BusinessForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(businessAction, start());
-  const [closed, setClosed] = useState<SignupFormState | null>(null);
-  const [, afterClose] = useTransition();
-  const close = () => {
-    setClosed(state);
-    afterClose(forgetRobotCheckAction);
-  };
 
   return (
-    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="grid gap-3 rounded-sm bg-white p-5 text-slate-900 shadow-xl sm:p-6">
-      <header className="grid gap-0.5 border-b-2 border-slate-900 pb-2 text-center">
-        <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Geek-Receptionist</p>
-        <h3 className="font-serif text-xl font-semibold tracking-wide text-slate-900 uppercase">Disclosure and Terms</h3>
-      </header>
-
-      {state.declined ? null : <Refusal error={state.error} />}
-
-      <Part number={1} title="Disclosure">
-        <Agree name="complianceAttested" statement={AI_DISCLOSURE_STATEMENT} state={state} idSuffix={idSuffix} />
-      </Part>
-
-      <Part number={2} title="Subscription Terms">
-        <Agree name="terms" statement={TERMS_STATEMENT} state={state} idSuffix={idSuffix} />
-      </Part>
-
-      <footer className="grid gap-2 border-t border-slate-400 pt-3 font-sans text-xs text-slate-600">
-        <p>A No, or a Do not agree, stops the signup and creates nothing. Nothing is charged in this step. You choose a plan next.</p>
-        <button className={`${ui.button} w-fit lg:hidden`} type="submit" disabled={pending}>
-          {pending ? "Checking…" : "Continue"}
-        </button>
-      </footer>
-
-      {state.declined && closed !== state ? (
-        <Dialog title={DECLINED[state.declined].title} onClose={close}>
-          <p className="mb-4" role="alert">
-            {state.error}
-          </p>
-          <button type="button" className={ui.button} onClick={close}>
-            Close
-          </button>
-        </Dialog>
-      ) : null}
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-4 text-left">
+      <Refusal error={state.error} />
+      <p className="text-sm leading-snug">
+        {TERMS_PARTS.before}
+        <a href={TERMS_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-[#c83803] underline-offset-4 hover:text-white">
+          Terms of Service
+        </a>
+        {TERMS_PARTS.between}
+        <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-[#c83803] underline-offset-4 hover:text-white">
+          Privacy Policy
+        </a>
+        {TERMS_PARTS.after}
+      </p>
+      <button className={`${ui.button} w-fit lg:hidden`} type="submit" disabled={pending}>
+        {pending ? "One moment…" : "Agree and continue"}
+      </button>
     </form>
   );
 }

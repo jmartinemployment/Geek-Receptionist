@@ -9,7 +9,7 @@ import { ui } from "@/lib/ui";
  * says so on its own `data-pending` attribute and this watches it: while an answer is being sent the button is disabled, so a second click
  * cannot send the same declaration twice.
  */
-export function SubmitFromLeft({ form, pendingLabel = "One moment…" }: { form: string; pendingLabel?: string }) {
+export function SubmitFromLeft({ form, label = "Continue", pendingLabel = "One moment…" }: { form: string; label?: string; pendingLabel?: string }) {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function SubmitFromLeft({ form, pendingLabel = "One moment…" }: { form:
 
   return (
     <button type="submit" form={form} className={ui.button} disabled={pending}>
-      {pending ? pendingLabel : "Continue"}
+      {pending ? pendingLabel : label}
     </button>
   );
 }

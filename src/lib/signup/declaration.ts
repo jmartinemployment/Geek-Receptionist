@@ -1,32 +1,20 @@
 /**
- * The words a person agrees to at the end of the signup, and what is said when they decline (plans/attestation-and-terms.md). GeekAPI holds
- * the same statement (`SignupStatements` in OnboardingEligibility.cs) and refuses a signup whose
- * words differ from its own, so what is stored beside the person is what they were shown. Change both together.
+ * What a person accepts when the signup creates their business, as one sentence with two documents named in it (Jeff, 2026-11-22: a
+ * standard SaaS acceptance; the long "subject to" Terms and the sheet that showed them are gone). The sentence is held as the parts
+ * around its two links so the screen can link them, and `TERMS_STATEMENT` is those parts joined, which is the exact words GeekAPI holds
+ * (`SignupStatements.Terms` in OnboardingEligibility.cs) and refuses any other of, so what is stored beside the person is what they
+ * were shown. Change both together.
  *
- * The Terms are accepted before any connection is made, so they say so on their face: "subject to" the required systems being
- * verified, no payment before that, and the business's own decision when a system cannot be connected (Jeff, 2026-11-21).
+ * The documents are the ones geekatyourspot.com already publishes. They do not yet say anything about a subscription, its billing or
+ * refunds; Subscription Terms are still to be written, and when they are, only the two addresses here change.
  */
-export const TERMS_STATEMENT =
-  "I agree to the Geek-Receptionist Subscription Terms, subject to Geek-Receptionist verifying a connection to each system the business requires. " +
-  "No payment is taken before that connection is verified, and if a required system cannot be connected I may continue without it or stop.";
+export const TERMS_URL = "https://geekatyourspot.com/terms-and-conditions";
+export const PRIVACY_URL = "https://geekatyourspot.com/privacy-policy";
 
-/** The existing disclosure about AI answering and recording. GeekAPI takes it as a plain yes, not as words, as before. */
-export const AI_DISCLOSURE_STATEMENT = "Calls to this business may be answered and recorded by an AI receptionist that tells callers so.";
+export const TERMS_PARTS = {
+  before: "By continuing, I agree to the ",
+  between: " and the ",
+  after: " of Geek @ Your Spot LLC, and that calls to this business may be answered and recorded by an AI receptionist that tells callers so.",
+} as const;
 
-/** The two agreements, by the form field each is answered in. */
-export const AGREEMENTS = ["complianceAttested", "terms"] as const;
-export type Agreement = (typeof AGREEMENTS)[number];
-
-/** What is said when a person answers No to an agreement: the signup stops, and nothing is created. */
-export const DECLINED: Record<Agreement, { title: string; message: string }> = {
-  complianceAttested: {
-    title: "Callers are told it is an AI receptionist",
-    message: "Geek-Receptionist answers calls with an AI receptionist that tells callers so, so it cannot be set up without this. Nothing was created.",
-  },
-  terms: {
-    title: "The Terms were not accepted",
-    message: "Geek-Receptionist cannot be set up without the Subscription Terms being accepted. Nothing was created.",
-  },
-};
-
-export const isAgreement = (value: string): value is Agreement => (AGREEMENTS as readonly string[]).includes(value);
+export const TERMS_STATEMENT = `${TERMS_PARTS.before}Terms of Service${TERMS_PARTS.between}Privacy Policy${TERMS_PARTS.after}`;

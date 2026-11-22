@@ -6,6 +6,7 @@ import { readCompany, readGates, readSignup, readWho, stepOf, type SignupStep } 
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
 import { startOverAction } from "./actions";
+import { SubmitFromLeft } from "@/components/submit-from-left";
 import { PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
 import {
@@ -186,8 +187,12 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         summaryTone={step === "who" || step === "company" || step === "industries" ? "orange" : "white"}
         title={step === "who" ? "Hi, I am Lily" : step === "company" ? `Nice to meet you${who?.firstName ? `, ${who.firstName}` : ""}` : step === "industries" ? "Check Eligibility" : title}
         summary={step === "who" ? "What’s Your Name?" : step === "company" ? "Tell me about your business" : step === "industries" ? "Zero Data Retention (ZDR) prohibits offering our services to some industries." : summary}
-        action={
-          step === "who" || step === "company" ? undefined : (
+        action={(suffix) =>
+          // The four screens that are filled in have their Continue here, in the left pane, and it submits the form beside it. The phone
+          // block has no left pane, so each form keeps its own button there, and this returns nothing for it.
+          step === "who" || step === "company" || step === "industries" || step === "business" ? (
+            suffix === "-lg" ? <SubmitFromLeft form={`signup-form${suffix}`} pendingLabel={step === "business" ? "Checking…" : "One moment…"} /> : null
+          ) : (
             <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>
               Continue
             </button>

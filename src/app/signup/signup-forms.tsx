@@ -98,7 +98,7 @@ export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
   };
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
       {state.refused ? null : <Refusal error={state.error} />}
 
       <div className="flex flex-col gap-6 md:block md:columns-2 md:gap-x-10 md:[&>fieldset]:mb-6">
@@ -151,7 +151,7 @@ export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
         ))}
       </div>
 
-      <button className={ui.button} type="submit" disabled={pending}>
+      <button className={`${ui.button} lg:hidden`} type="submit" disabled={pending}>
         {pending ? "One moment…" : "Continue"}
       </button>
 
@@ -219,7 +219,7 @@ export function WhoForm({ idSuffix }: { idSuffix: string }) {
   const id = (name: string) => `${name}${idSuffix}`;
 
   return (
-    <form action={action} className="flex flex-col gap-3 text-left">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-3 text-left">
       <Refusal error={state.error} />
       <div className="flex gap-3">
         <Box name="firstName" label="First name" id={id} state={state} extra={{ required: true, autoComplete: "given-name" }} />
@@ -233,7 +233,7 @@ export function WhoForm({ idSuffix }: { idSuffix: string }) {
       <CityStateZip city="city" state="state" zip="zip" zipLabel="Zip code" id={id} form={state} />
       <Box name="phone" label="Telephone" id={id} state={state} extra={{ required: true, type: "tel", inputMode: "tel", autoComplete: "tel-national", placeholder: "(561) 555-0101" }} />
       <Box name="email" label="Email" id={id} state={state} extra={{ required: true, type: "email", autoComplete: "email" }} />
-      <button className={`${ui.button} mt-2 w-fit`} type="submit" disabled={pending}>
+      <button className={`${ui.button} mt-2 w-fit lg:hidden`} type="submit" disabled={pending}>
         {pending ? "One moment…" : "Continue"}
       </button>
     </form>
@@ -249,7 +249,7 @@ export function CompanyForm({ idSuffix }: { idSuffix: string }) {
   const id = (name: string) => `${name}${idSuffix}`;
 
   return (
-    <form action={action} className="flex flex-col gap-3 text-left">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-3 text-left">
       <Refusal error={state.error} />
       <Box name="businessName" label="Business name" id={id} state={state} extra={{ required: true, autoComplete: "organization" }} />
       <Box name="businessAddress" label="Business address" id={id} state={state} extra={{ required: true }} />
@@ -257,7 +257,7 @@ export function CompanyForm({ idSuffix }: { idSuffix: string }) {
       <Box name="businessPhone" label="Business telephone" id={id} state={state} extra={{ required: true, type: "tel", inputMode: "tel", placeholder: "(561) 555-0101" }} />
       <Box name="businessEmail" label="Business email" id={id} state={state} extra={{ required: true, type: "email" }} />
       <Box name="businessWebsite" label="Business website (leave empty if there is none)" id={id} state={state} extra={{ type: "url", placeholder: "https://" }} />
-      <button className={`${ui.button} mt-2 w-fit`} type="submit" disabled={pending}>
+      <button className={`${ui.button} mt-2 w-fit lg:hidden`} type="submit" disabled={pending}>
         {pending ? "One moment…" : "Continue"}
       </button>
     </form>
@@ -358,7 +358,7 @@ export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; ini
   const id = (name: string) => `${name}${idSuffix}`;
 
   return (
-    <form action={action} className="grid gap-6 rounded-sm bg-white p-6 text-slate-900 shadow-xl sm:p-10">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="grid gap-6 rounded-sm bg-white p-6 text-slate-900 shadow-xl sm:p-10">
       <header className="grid gap-1 border-b-2 border-slate-900 pb-4 text-center">
         <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Geek-Receptionist</p>
         <h3 className="font-serif text-2xl font-semibold tracking-wide text-slate-900 uppercase">Declaration of eligibility</h3>
@@ -398,7 +398,7 @@ export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; ini
 
       <footer className="grid gap-3 border-t border-slate-400 pt-4 font-sans text-sm text-slate-600">
         <p>A No, or a Do not agree, stops the signup and creates nothing. Nothing is charged in this step. You choose a plan next.</p>
-        <button className={`${ui.button} w-fit`} type="submit" disabled={pending}>
+        <button className={`${ui.button} w-fit lg:hidden`} type="submit" disabled={pending}>
           {pending ? "Checking…" : "Continue"}
         </button>
       </footer>

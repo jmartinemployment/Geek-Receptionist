@@ -4,8 +4,12 @@ import type { ReactNode } from "react";
 type HeroSectionProps = {
   title: string;
   summary: string;
-  /** The page's one button, under the summary: a link or a button the page makes. Left out when the page has none. */
-  action?: ReactNode;
+  /**
+   * The page's one button, under the summary: a link or a button the page makes. Left out when the page has none. A function is given the
+   * block's id suffix ("" for the phone block, "-lg" for the large one) and may return nothing for either, so a button can name the form
+   * in its own block.
+   */
+  action?: ReactNode | ((idSuffix: string) => ReactNode);
   /** As on geekatyourspot.com's home hero: the large block shows the image in the five columns beside the text. The phone block has none. */
   image?: string;
   imgAlt?: string;
@@ -33,6 +37,9 @@ type HeroSectionProps = {
  */
 export default function HeroSection({ title, summary, action, image, imgAlt, largeTitle, largeGridClassName, summaryTone = "white", children }: HeroSectionProps) {
   const summaryColor = summaryTone === "orange" ? "text-brand-orange" : "text-white";
+  const actionFor = (idSuffix: string) => (typeof action === "function" ? action(idSuffix) : action);
+  const phoneAction = actionFor("");
+  const largeAction = actionFor("-lg");
   return (
     <>
       <header className="min-h-screen w-full bg-[#0B162A] lg:hidden">
@@ -41,7 +48,7 @@ export default function HeroSection({ title, summary, action, image, imgAlt, lar
             <div className="col-span-1 w-full">
               <h1 className="font-[var(--font-sora)] text-[9vw] font-black leading-[0.95] text-white shadow-text sm:text-6xl md:text-7xl">{title}</h1>
               <p className={`pt-3 text-xl ${summaryColor} shadow-text`}>{summary}</p>
-              {action ? <div className="pt-6">{action}</div> : null}
+              {phoneAction ? <div className="pt-6">{phoneAction}</div> : null}
               {children ? <div className="pt-8 text-white">{children("")}</div> : null}
             </div>
           </div>
@@ -62,7 +69,7 @@ export default function HeroSection({ title, summary, action, image, imgAlt, lar
                 {title}
               </h1>
               <p className={`pt-3 text-2xl ${summaryColor} shadow-text`}>{summary}</p>
-              {action ? <div className="pt-8">{action}</div> : null}
+              {largeAction ? <div className="pt-8">{largeAction}</div> : null}
             </div>
             <div className="col-span-5 flex min-h-screen w-full min-w-0 flex-col items-center justify-center text-center text-white">
               {image ? (

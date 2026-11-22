@@ -2,9 +2,10 @@
 
 **Current order, 2026-11-22 (the table below is the 2026-11-21 record and is out of date on these points).** Robot check, who, the
 business, eligibility (this now creates the business: there is no `industries` gate and no "Your business" screen), then eight setup
-steps in this order: Recording (a Google Drive or Amazon S3 drive, connected and shown to work), Scheduling (a calendar, connected and shown to
-work), Crew location tools (laid out only, nothing behind it), When you're open, What it should ask, What it should know, After the call, Your
-greeting; the old Appointments step is gone; then the Terms, the plan, the payment method, the number, the login.
+steps in this order: Recording, Scheduling and Crew location tools (all three laid out only: they ask a yes or no and call nothing),
+When you're open, What it should ask, What it should know, After the call, Your greeting; the old Appointments step is still in the code
+and still shown; the working connect-and-prove version of Recording and Scheduling is on the branch `connect-and-prove`, not in
+production, until the workflow is defined and the functionality is proven; then the Terms, the plan, the payment method, the number, the login.
 The order lives in `CONFIG_STEPS` (`src/lib/signup/state.ts`) and `STEPS` (`src/app/signup/page.tsx`).
 
 **What this is for: the step order is written down in three places and two of them are wrong**, so anyone asking "what

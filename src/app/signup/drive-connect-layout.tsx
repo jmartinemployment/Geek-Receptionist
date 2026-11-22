@@ -37,15 +37,24 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
             We create a folder named &ldquo;Geek-Receptionist Logs&rdquo; in your Google Drive and save what you choose there. The files are yours
             and stay in your Drive.
           </Text>
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm text-white">What should be saved?</legend>
-            {["Audio recordings", "Transcripts", "Summaries"].map((what) => (
-              <label key={what} className="flex items-center gap-3">
-                <input type="checkbox" disabled className="size-4" />
-                {what}
-              </label>
-            ))}
-          </fieldset>
+          {[
+            ["audio", "Save audio recordings?"],
+            ["transcript", "Save transcripts?"],
+            ["summary", "Save summaries?"],
+          ].map(([name, question]) => (
+            <fieldset key={name} className="flex flex-col gap-2">
+              <legend className="mb-1 font-semibold text-white">{question}</legend>
+              {[
+                ["yes", "Yes"],
+                ["no", "No"],
+              ].map(([value, label]) => (
+                <label key={value} className="flex items-start gap-3">
+                  <input type="radio" name={`save_${name}`} value={value} className="mt-1.5 size-4 accent-[#c83803]" />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </fieldset>
+          ))}
           <Text>Sign in with the Google account whose Drive should hold them. A Google Workspace account may need its administrator&rsquo;s approval.</Text>
           <Button>Connect Google Drive</Button>
         </Panel>

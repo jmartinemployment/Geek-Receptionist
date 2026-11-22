@@ -361,7 +361,8 @@ export function GreetingForm({ idSuffix }: { idSuffix: string }) {
           How should your receptionist answer the phone?
         </label>
         <p id={`greetingHint${idSuffix}`} className={hint}>
-          Leave this empty to keep the greeting it already has, which names your business and says it is the AI receptionist.
+          Leave this empty to keep the greeting it already has: &ldquo;Thank you for calling [your business]. I&rsquo;m the AI
+          receptionist, and this call may be recorded. How can I help you today?&rdquo;
         </p>
         <textarea
           id={`greeting${idSuffix}`}
@@ -384,7 +385,7 @@ export function GreetingForm({ idSuffix }: { idSuffix: string }) {
             value: "strict_keypress",
             label: "Press a key to carry on",
             detail:
-              "A caller hears that this line is answered by an AI assistant, and presses a key first. Some callers will not, and those calls end there — and a machine dialling you cannot press it, so you are not billed for the minute.",
+              "A caller hears that this line is answered by an AI assistant and may be recorded, and presses a key first. Some callers will not, and those calls end there — and a machine dialling you cannot press it, so you are not billed for the minute.",
           },
           {
             value: "passive_disclosure",

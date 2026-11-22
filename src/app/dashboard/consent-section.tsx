@@ -15,7 +15,7 @@ const CHOICES: Record<ConsentMode, { heading: string; experience: string; trade:
   strict_keypress: {
     heading: "Callers press a key",
     experience:
-      "A caller hears a short notice that this line is answered by an AI assistant, and presses a key before your " +
+      "A caller hears a short notice that this line is answered by an AI assistant and may be recorded, and presses a key before your " +
       "receptionist speaks. Pressing it is something the caller did, rather than something taken from their not hanging up.",
     trade:
       "Some callers will not press it, and those calls end there. A machine dialling you cannot press it either, so it never reaches " +
@@ -26,7 +26,7 @@ const CHOICES: Record<ConsentMode, { heading: string; experience: string; trade:
   passive_disclosure: {
     heading: "Your receptionist carries straight on",
     experience:
-      "A caller hears a short notice that this line is answered by an AI assistant, and your receptionist carries " +
+      "A caller hears a short notice that this line is answered by an AI assistant and may be recorded, and your receptionist carries " +
       "straight on. Nothing is asked of the caller, and nobody is turned away by a keypad they would not use.",
     trade:
       "Nothing else is turned away either. A machine dialling you stays on the line exactly as a person does and reaches your " +

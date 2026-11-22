@@ -312,7 +312,7 @@ function StepButton({ pending, label = "Save and continue" }: { pending: boolean
  * owner is choosing on. Nothing here is marked as recommended. Jeff, 2026-11-20: "I am not comfortable making decisions on behalf of
  * others." A preset is the choice that arrives already selected, and selecting another is one click.
  */
-function Choice({
+export function Choice({
   name,
   legend,
   help,

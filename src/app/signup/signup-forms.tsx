@@ -267,8 +267,8 @@ export function CompanyForm({ idSuffix }: { idSuffix: string }) {
 /** One numbered part of the declaration, set as a legal document is: a serif heading, a rule above every part but the first. */
 function Part({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
   return (
-    <section className="grid gap-4 border-t border-slate-300 pt-6 first:border-t-0 first:pt-0">
-      <h3 className="font-serif text-lg font-semibold text-slate-900">
+    <section className="grid gap-2 border-t border-slate-300 pt-3 first:border-t-0 first:pt-0">
+      <h3 className="font-serif text-base font-semibold text-slate-900">
         <span className="mr-2 text-slate-500">{number}.</span>
         {title}
       </h3>
@@ -278,8 +278,8 @@ function Part({ number, title, children }: { number: number; title: string; chil
 }
 
 const sheetField =
-  "w-full min-w-0 border-0 border-b border-slate-400 bg-transparent px-0 py-1 font-serif text-base text-slate-900 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f5fae]";
-const sheetLabel = "font-sans text-sm text-slate-600";
+  "w-full min-w-0 border-0 border-b border-slate-400 bg-transparent px-0 py-0.5 font-serif text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f5fae]";
+const sheetLabel = "font-sans text-xs text-slate-600";
 
 /** One line of the document: a label, and a ruled line to write on. */
 function Line({ id, name, label, hintText, state, required = true, ...input }: {
@@ -291,7 +291,7 @@ function Line({ id, name, label, hintText, state, required = true, ...input }: {
   state: SignupFormState;
 } & Pick<React.InputHTMLAttributes<HTMLInputElement>, "type" | "autoComplete" | "inputMode" | "maxLength" | "placeholder">) {
   return (
-    <div className="grid gap-1 sm:grid-cols-[11rem_1fr] sm:items-end sm:gap-4">
+    <div className="grid gap-0.5 sm:grid-cols-[9rem_1fr] sm:items-end sm:gap-3">
       <label htmlFor={id} className={sheetLabel}>
         {label}
       </label>
@@ -314,10 +314,10 @@ function Agree({ name, statement, state, idSuffix, yes = "Agree", no = "Do not a
   children?: React.ReactNode;
 }) {
   return (
-    <fieldset className="grid gap-3">
-      <legend className="font-serif text-base leading-relaxed text-slate-900">{statement}</legend>
+    <fieldset className="grid gap-2">
+      <legend className="font-serif text-sm leading-snug text-slate-900">{statement}</legend>
       {children}
-      <div className="flex flex-wrap gap-x-8 gap-y-2 font-sans text-base text-slate-900">
+      <div className="flex flex-wrap gap-x-6 gap-y-1 font-sans text-sm text-slate-900">
         {[
           { value: "yes", text: yes },
           { value: "no", text: no },
@@ -358,10 +358,10 @@ export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; ini
   const id = (name: string) => `${name}${idSuffix}`;
 
   return (
-    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="grid gap-6 rounded-sm bg-white p-6 text-slate-900 shadow-xl sm:p-10">
-      <header className="grid gap-1 border-b-2 border-slate-900 pb-4 text-center">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="grid gap-3 rounded-sm bg-white p-5 text-slate-900 shadow-xl sm:p-6">
+      <header className="grid gap-0.5 border-b-2 border-slate-900 pb-2 text-center">
         <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Geek-Receptionist</p>
-        <h3 className="font-serif text-2xl font-semibold tracking-wide text-slate-900 uppercase">Declaration of eligibility</h3>
+        <h3 className="font-serif text-xl font-semibold tracking-wide text-slate-900 uppercase">Declaration of eligibility</h3>
       </header>
 
       {state.declined ? null : <Refusal error={state.error} />}
@@ -396,7 +396,7 @@ export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; ini
         <Agree name="terms" statement={TERMS_STATEMENT} state={state} idSuffix={idSuffix} />
       </Part>
 
-      <footer className="grid gap-3 border-t border-slate-400 pt-4 font-sans text-sm text-slate-600">
+      <footer className="grid gap-2 border-t border-slate-400 pt-3 font-sans text-xs text-slate-600">
         <p>A No, or a Do not agree, stops the signup and creates nothing. Nothing is charged in this step. You choose a plan next.</p>
         <button className={`${ui.button} w-fit lg:hidden`} type="submit" disabled={pending}>
           {pending ? "Checking…" : "Continue"}

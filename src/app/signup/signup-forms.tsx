@@ -6,7 +6,7 @@ import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
 import { DAYS, TIMEZONES } from "@/lib/signup/hours";
 import { EXCLUDED_GROUPS, EXCLUDED_INDUSTRIES } from "@/lib/signup/excluded";
-import { AI_DISCLOSURE_STATEMENT, DECLARATION_STATEMENT, DECLINED, TERMS_STATEMENT, type Agreement } from "@/lib/signup/declaration";
+import { AI_DISCLOSURE_STATEMENT, DECLINED, TERMS_STATEMENT, type Agreement } from "@/lib/signup/declaration";
 import {
   activateAction,
   appointmentsAction,
@@ -252,6 +252,7 @@ export function CompanyForm({ idSuffix }: { idSuffix: string }) {
     <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-3 text-left">
       <Refusal error={state.error} />
       <Box name="businessName" label="Business name" id={id} state={state} extra={{ required: true, autoComplete: "organization" }} />
+      <Box name="businessDescription" label="What it does" id={id} state={state} extra={{ required: true, maxLength: 120, placeholder: "Plumbing and heating" }} />
       <Box name="businessAddress" label="Business address" id={id} state={state} extra={{ required: true }} />
       <CityStateZip city="businessCity" state="businessState" zip="businessZip" zipLabel="Zip" id={id} form={state} />
       <Box name="businessPhone" label="Business telephone" id={id} state={state} extra={{ required: true, type: "tel", inputMode: "tel", placeholder: "(561) 555-0101" }} />
@@ -274,32 +275,6 @@ function Part({ number, title, children }: { number: number; title: string; chil
       </h3>
       {children}
     </section>
-  );
-}
-
-const sheetField =
-  "w-full min-w-0 border-0 border-b border-slate-400 bg-transparent px-0 py-0.5 font-serif text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f5fae]";
-const sheetLabel = "font-sans text-xs text-slate-600";
-
-/** One line of the document: a label, and a ruled line to write on. */
-function Line({ id, name, label, hintText, state, required = true, ...input }: {
-  id: string;
-  name: string;
-  label: string;
-  hintText?: string;
-  required?: boolean;
-  state: SignupFormState;
-} & Pick<React.InputHTMLAttributes<HTMLInputElement>, "type" | "autoComplete" | "inputMode" | "maxLength" | "placeholder">) {
-  return (
-    <div className="grid gap-0.5 sm:grid-cols-[9rem_1fr] sm:items-end sm:gap-3">
-      <label htmlFor={id} className={sheetLabel}>
-        {label}
-      </label>
-      <div className="grid gap-1">
-        <input id={id} name={name} required={required} defaultValue={state.fields[name] ?? ""} className={sheetField} {...input} />
-        {hintText ? <p className="font-sans text-xs text-slate-500">{hintText}</p> : null}
-      </div>
-    </div>
   );
 }
 
@@ -341,58 +316,35 @@ function Agree({ name, statement, state, idSuffix, yes = "Agree", no = "Do not a
 }
 
 /**
- * Step 3, laid out as the legal document it is (plans/attestation-and-terms.md, stages 2 and 3). A named person gives who they are and
- * what the business is, then answers three agreements, each a pair of radio buttons with nothing selected: Jeff, 2026-11-21, "I do not
- * wish to use checkboxes in legal acceptance documents." A No to any ends the signup in a dialog and creates nothing; closing it forgets
- * the robot check, as every other ending does. The Terms are accepted before any system is connected, and say so: they are subject to
- * the required connections being verified.
+ * The agreements screen, laid out as the document it is (plans/attestation-and-terms.md): the AI disclosure and the Subscription Terms,
+ * each a pair of radio buttons with nothing selected (Jeff, 2026-11-21: "I do not wish to use checkboxes in legal acceptance documents").
+ * The person and the business are not asked again; the first two screens already did (Jeff, 2026-11-22, removing the declaration of
+ * authority). A No to either ends the signup in a dialog and creates nothing; closing it forgets the robot check, as every other ending
+ * does. The Terms are accepted before any system is connected, and say so: they are subject to the required connections being verified.
  */
-export function BusinessForm({ idSuffix, initial = {} }: { idSuffix: string; initial?: Record<string, string> }) {
-  const [state, action, pending] = useActionState(businessAction, start(initial));
+export function BusinessForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(businessAction, start());
   const [closed, setClosed] = useState<SignupFormState | null>(null);
   const [, afterClose] = useTransition();
   const close = () => {
     setClosed(state);
     afterClose(forgetRobotCheckAction);
   };
-  const id = (name: string) => `${name}${idSuffix}`;
 
   return (
     <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="grid gap-3 rounded-sm bg-white p-5 text-slate-900 shadow-xl sm:p-6">
       <header className="grid gap-0.5 border-b-2 border-slate-900 pb-2 text-center">
         <p className="font-sans text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Geek-Receptionist</p>
-        <h3 className="font-serif text-xl font-semibold tracking-wide text-slate-900 uppercase">Declaration of eligibility</h3>
+        <h3 className="font-serif text-xl font-semibold tracking-wide text-slate-900 uppercase">Disclosure and Terms</h3>
       </header>
 
       {state.declined ? null : <Refusal error={state.error} />}
 
-      <Part number={1} title="The declarant">
-        <Line id={id("declarantName")} name="declarantName" label="Full name" autoComplete="name" maxLength={300} state={state} />
-        <Line id={id("declarantTitle")} name="declarantTitle" label="Title" autoComplete="organization-title" maxLength={300} state={state} />
-        <Line id={id("declarantAddress")} name="declarantAddress" label="Address" autoComplete="street-address" maxLength={300} state={state} />
-        <Line id={id("declarantEmail")} name="declarantEmail" label="Email" type="email" autoComplete="email" state={state} />
-        <Line id={id("declarantPhone")} name="declarantPhone" label="Telephone" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" state={state} />
-      </Part>
-
-      <Part number={2} title="The business">
-        <Line id={id("businessName")} name="businessName" label="Business name" autoComplete="organization" state={state} />
-        <Line id={id("businessDescription")} name="businessDescription" label="What it does" maxLength={120} placeholder="Plumbing and heating" state={state} />
-        <Line id={id("businessWebsite")} name="businessWebsite" label="Website" type="url" placeholder="https://" required={false} hintText="Leave empty if there is none." state={state} />
-        <Line id={id("businessAddress")} name="businessAddress" label="Address" autoComplete="street-address" maxLength={300} state={state} />
-        <Line id={id("stateCode")} name="stateCode" label="State" maxLength={2} placeholder="FL" autoComplete="address-level1" state={state} />
-        <Line id={id("contactPhone")} name="contactPhone" label="Phone" type="tel" autoComplete="tel-national" inputMode="tel" placeholder="(561) 555-0101" hintText="A US number, typed any way you like." state={state} />
-        <Line id={id("contactEmail")} name="contactEmail" label="Email" type="email" autoComplete="email" hintText="You will sign in with this email." state={state} />
-      </Part>
-
-      <Part number={3} title="Disclosure">
+      <Part number={1} title="Disclosure">
         <Agree name="complianceAttested" statement={AI_DISCLOSURE_STATEMENT} state={state} idSuffix={idSuffix} />
       </Part>
 
-      <Part number={4} title="Declaration">
-        <Agree name="declaration" statement={DECLARATION_STATEMENT} state={state} idSuffix={idSuffix} yes="Yes" no="No" />
-      </Part>
-
-      <Part number={5} title="Subscription Terms">
+      <Part number={2} title="Subscription Terms">
         <Agree name="terms" statement={TERMS_STATEMENT} state={state} idSuffix={idSuffix} />
       </Part>
 

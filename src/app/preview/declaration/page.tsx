@@ -61,8 +61,8 @@ const before: Screen[] = [
   },
   { title: "Check eligibility", note: "The country question first, then eight questions about regulated sectors, each its own Yes or No, none pre-selected.", body: <EligibilityForm idSuffix="-p2" /> },
   {
-    title: "Declaration",
-    note: "The person, the business, and three agreements as radio buttons. The Terms are here, before anything is configured or paid for.",
+    title: "Disclosure and Terms",
+    note: "Two agreements as radio buttons: the AI disclosure and the Terms. The person and the business are not asked again. The Terms are here, before anything is configured or paid for.",
     body: <BusinessForm idSuffix="-p3" />,
   },
   { title: "Your greeting", body: <GreetingForm idSuffix="-p4" /> },

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ActionButton } from "@/components/action-button";
 import { SchedulerShell } from "@/components/shared/scheduler/scheduler-shell";
 import HeroSection from "@/components/shared/shared-hero-section";
-import { readCompany, readGates, readSignup, readWho, stepOf, type SignupStep } from "@/lib/signup/state";
+import { readGates, readSignup, readWho, stepOf, type SignupStep } from "@/lib/signup/state";
 import { signupMessage } from "@/lib/signup/messages";
 import { ui } from "@/lib/ui";
 import { startOverAction } from "./actions";
@@ -89,7 +89,6 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
   const step = gateStep === "captcha" ? "who" : gateStep;
   const who = await readWho();
-  const company = await readCompany();
   const index = STEPS.findIndex((s) => s.step === step);
   const refusal = typeof error === "string" && CODE.test(error) ? signupMessage(error) : null;
 
@@ -114,26 +113,6 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         {step === "business" && (
           <BusinessForm
             idSuffix={s}
-            initial={{
-              ...(who
-                ? {
-                    declarantName: [who.firstName, who.middleInitial, who.lastName].filter(Boolean).join(" "),
-                    declarantAddress: `${who.address}, ${who.city}, ${who.state} ${who.zip}`,
-                    declarantPhone: who.phone,
-                    declarantEmail: who.email,
-                  }
-                : {}),
-              ...(company
-                ? {
-                    businessName: company.businessName,
-                    businessAddress: `${company.businessAddress}, ${company.businessCity}, ${company.businessState} ${company.businessZip}`,
-                    stateCode: company.businessState,
-                    businessWebsite: company.businessWebsite,
-                    contactPhone: company.businessPhone,
-                    contactEmail: company.businessEmail,
-                  }
-                : {}),
-            }}
           />
         )}
 

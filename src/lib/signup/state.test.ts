@@ -28,7 +28,7 @@ test("each step follows from what is already done", () => {
 
 const person = { firstName: "Pat", middleInitial: "", lastName: "Rivera", address: "9 Ocean Blvd", city: "Delray Beach", state: "FL", zip: "33444", phone: "(561) 555-0199", email: "pat@example.test" };
 const business = {
-  businessName: "Boca Cool HVAC", businessAddress: "12 Palm Way", businessCity: "Boca Raton", businessState: "FL", businessZip: "33432",
+  businessName: "Boca Cool HVAC", businessDescription: "Heating and air conditioning", businessAddress: "12 Palm Way", businessCity: "Boca Raton", businessState: "FL", businessZip: "33432",
   businessPhone: "(561) 555-0101", businessEmail: "office@bocacool.example", businessWebsite: "https://bocacool.example",
 };
 

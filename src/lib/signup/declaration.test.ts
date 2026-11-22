@@ -1,12 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AGREEMENTS, DECLARATION_STATEMENT, DECLINED, TERMS_STATEMENT, isAgreement } from "./declaration";
+import { AGREEMENTS, DECLINED, TERMS_STATEMENT, isAgreement } from "./declaration";
 
-test("the declaration and the Terms are the exact words GeekAPI holds", () => {
-  assert.equal(
-    DECLARATION_STATEMENT,
-    "I declare that I am authorised to answer for this business and that the answers given in this document are true to the best of my knowledge.",
-  );
+test("the Terms are the exact words GeekAPI holds", () => {
   assert.equal(
     TERMS_STATEMENT,
     "I agree to the Geek-Receptionist Subscription Terms, subject to Geek-Receptionist verifying a connection to each system the business requires. No payment is taken before that connection is verified, and if a required system cannot be connected I may continue without it or stop.",
@@ -25,9 +21,9 @@ test("every agreement says what happens when a person declines it, and each name
   }
 });
 
-test("only the three agreements are agreements", () => {
+test("only the two agreements are agreements", () => {
   assert.ok(isAgreement("terms"));
-  assert.ok(isAgreement("declaration"));
+  assert.ok(!isAgreement("declaration"));
   assert.ok(isAgreement("complianceAttested"));
   assert.ok(!isAgreement("password"));
 });

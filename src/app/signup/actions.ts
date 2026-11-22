@@ -3,12 +3,12 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { clearGates, clearSignup, passGate, readGates, readSignup, withConfigStepDone, writeCompany, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
+import { clearGates, clearSignup, passGate, readCompany, readGates, readSignup, readWho, withConfigStepDone, writeCompany, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
 import { isConsentMode } from "@/lib/receptionist/controls";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
-import { AGREEMENTS, DECLARATION_STATEMENT, DECLINED, TERMS_STATEMENT, type Agreement } from "@/lib/signup/declaration";
+import { AGREEMENTS, DECLINED, TERMS_STATEMENT, type Agreement } from "@/lib/signup/declaration";
 import { EXCLUDED_CODES, EXCLUDED_INDUSTRIES, industryAnswers, type ExcludedCode } from "@/lib/signup/excluded";
 import { postOnboarding } from "@/services/onboarding";
 import { setSessionCookies, signIn, visitorIpFrom } from "@/services/owner-auth";
@@ -83,13 +83,14 @@ export async function whoAction(_previous: SignupFormState, form: FormData): Pro
 }
 
 /**
- * The second screen, kept apart from the person's (Jeff, 2026-11-21: "split off business from personal"): Business Name, Business
- * Address, City, State, Zip, Business Telephone, Business Email, and the business's website, which is optional. The same rules as the
+ * The second screen, kept apart from the person's (Jeff, 2026-11-21: "split off business from personal"): Business Name, What it does
+ * (added 2026-11-22, when the declaration that used to ask it was removed), Business Address, City, State, Zip, Business Telephone, Business Email, and the business's website, which is optional. The same rules as the
  * first screen, and the website must be a full http or https address when one is given.
  */
 export async function companyAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const fields = {
     businessName: text(form, "businessName"),
+    businessDescription: text(form, "businessDescription"),
     businessAddress: text(form, "businessAddress"),
     businessCity: text(form, "businessCity"),
     businessState: text(form, "businessState").toUpperCase(),
@@ -104,6 +105,7 @@ export async function companyAction(_previous: SignupFormState, form: FormData):
   const { businessWebsite, ...required } = fields;
   if (Object.values(required).some((value) => value.length === 0)) return { error: "Fill in every answer except the website.", fields };
   if (Object.values(fields).some((value) => value.length > WHO_MAX)) return { error: `Each answer must be ${WHO_MAX} characters or fewer.`, fields };
+  if (fields.businessDescription.length > 120) return { error: "What the business does is 120 characters or fewer.", fields };
   if (!US_STATE.test(fields.businessState)) return { error: "A state is its two-letter code, such as FL.", fields };
   if (!US_ZIP.test(fields.businessZip)) return { error: "A zip code is five digits, such as 33432.", fields };
   if (businessWebsite.length > 0 && !isWebsite(businessWebsite)) return { error: signupMessage("business_website_invalid"), fields };
@@ -158,27 +160,15 @@ export async function eligibilityAction(_previous: SignupFormState, form: FormDa
 }
 
 /**
- * Step 3: the declaration. A named person gives their name and title, the business's details, and answers three agreements: the AI
- * disclosure, the declaration that they may answer for the business and that the answers are true, and the Terms. Each is a yes or a no
- * with nothing pre-selected; one left unanswered is refused, never read as a no or a yes. A No to any of them ends the signup and creates
- * nothing. Only a person who agreed to all three reaches GeekAPI, which holds the same words and refuses any other; a business that passes
- * becomes a tenant waiting for payment, with the declaration stored beside it forever.
+ * The agreements screen: the AI disclosure and the Subscription Terms, two yes-or-no answers with nothing pre-selected (Jeff, 2026-11-22:
+ * the declaration of authority is gone; the person and the business are what the first two screens already asked). One left unanswered
+ * is refused, never read as a no or a yes. A No to either ends the signup and creates nothing. Only a person who agreed to both reaches
+ * GeekAPI, which holds the same words and refuses any other; a business that passes becomes a tenant waiting for payment, with the Terms
+ * they accepted stored beside them forever. The person and the business are read from the signed cookies the first two screens wrote,
+ * never from this form, so nothing about either can be changed here.
  */
 export async function businessAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
-  const fields: Record<string, string> = {
-    declarantName: text(form, "declarantName"),
-    declarantTitle: text(form, "declarantTitle"),
-    businessName: text(form, "businessName"),
-    businessDescription: text(form, "businessDescription"),
-    businessAddress: text(form, "businessAddress"),
-    declarantAddress: text(form, "declarantAddress"),
-    declarantPhone: text(form, "declarantPhone"),
-    declarantEmail: text(form, "declarantEmail"),
-    businessWebsite: text(form, "businessWebsite"),
-    stateCode: text(form, "stateCode").toUpperCase(),
-    contactEmail: text(form, "contactEmail"),
-    contactPhone: text(form, "contactPhone"),
-  };
+  const fields: Record<string, string> = {};
   const answers = new Map<Agreement, "yes" | "no">();
   for (const agreement of AGREEMENTS) {
     const answer = form.get(agreement);
@@ -190,6 +180,9 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
 
   const gates = await readGates();
   if (!gates.has("captcha") || !gates.has("who") || !gates.has("company") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
+  const who = await readWho();
+  const company = await readCompany();
+  if (!who || !company) return { error: signupMessage("signup_expired"), fields };
   if (answers.size !== AGREEMENTS.length) return { error: "Answer every agreement, Agree or Do not agree.", fields };
 
   const declined = AGREEMENTS.find((agreement) => answers.get(agreement) === "no");
@@ -197,23 +190,20 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
 
   const visitor = await headers();
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
-    businessName: fields.businessName,
-    businessDescription: fields.businessDescription,
+    businessName: company.businessName,
+    businessDescription: company.businessDescription,
     countryCode: "US",
-    stateCode: fields.stateCode,
-    contactEmail: fields.contactEmail,
-    contactPhone: fields.contactPhone,
+    stateCode: company.businessState,
+    contactEmail: company.businessEmail,
+    contactPhone: company.businessPhone,
     complianceAttested: true,
     industryAnswers: industryAnswers(new Set()),
-    attestorName: fields.declarantName,
-    attestorTitle: fields.declarantTitle,
-    businessAddress: fields.businessAddress,
-    declarantAddress: fields.declarantAddress,
-    declarantPhone: fields.declarantPhone,
-    declarantEmail: fields.declarantEmail,
-    businessWebsite: fields.businessWebsite,
-    declarationStatement: DECLARATION_STATEMENT,
-    declarationAgreed: true,
+    attestorName: [who.firstName, who.middleInitial, who.lastName].filter(Boolean).join(" "),
+    businessAddress: `${company.businessAddress}, ${company.businessCity}, ${company.businessState} ${company.businessZip}`,
+    declarantAddress: `${who.address}, ${who.city}, ${who.state} ${who.zip}`,
+    declarantPhone: who.phone,
+    declarantEmail: who.email,
+    businessWebsite: company.businessWebsite,
     termsStatement: TERMS_STATEMENT,
     termsAgreed: true,
   }, visitor);
@@ -221,7 +211,7 @@ export async function businessAction(_previous: SignupFormState, form: FormData)
   const tenantId = answer.body?.tenantId;
   if (answer.status !== 200 || typeof tenantId !== "string") return { error: refusalOf(answer.body, answer.status), fields };
 
-  await writeSignup({ tenantId, contactEmail: fields.contactEmail });
+  await writeSignup({ tenantId, contactEmail: company.businessEmail });
   redirect("/signup");
 }
 

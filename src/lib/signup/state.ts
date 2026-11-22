@@ -65,6 +65,7 @@ export type Who = {
 /** The business: the second screen. */
 export type Company = {
   businessName: string;
+  businessDescription: string;
   businessAddress: string;
   businessCity: string;
   businessState: string;
@@ -79,7 +80,7 @@ const WHO_FIELDS = [
 ] as const satisfies readonly (keyof Who)[];
 
 const COMPANY_FIELDS = [
-  "businessName", "businessAddress", "businessCity", "businessState", "businessZip", "businessPhone", "businessEmail", "businessWebsite",
+  "businessName", "businessDescription", "businessAddress", "businessCity", "businessState", "businessZip", "businessPhone", "businessEmail", "businessWebsite",
 ] as const satisfies readonly (keyof Company)[];
 
 /** A cookie's value for these fields: their words as base64url, a dot, and the signature of those words. */

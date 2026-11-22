@@ -1,5 +1,13 @@
 # Plan: finishing the attestation, and putting a contract behind it
 
+> **2026-11-22 — the declaration of authority is removed (Jeff: "I don't like" it; most SaaS signups have none).** What stays is the AI
+> disclosure and the Subscription Terms, as two Agree / Do not agree radios on one screen. The declarant's title and the declaration
+> statement are no longer asked, sent or stored (migration `0091` makes their columns optional rather than dropping them, because
+> `0087`–`0089` are applied in production and the table is kept forever). The person and the business come from the first two screens'
+> signed cookies, not from this form, and "What it does" moved to the second screen. The Terms wording is still the "subject to"
+> text and is **not settled**: Jeff has said it lacks the company's name and he does not like "subject to"; a draft is waiting on him.
+> Everything below describing the declaration is superseded by this note.
+
 **What this is for: today the eight excluded-industry answers are a very well-kept record of a statement nobody is bound
 by.** The record itself is strong — `geek_voice.signup_industry_answers` holds the exact words shown, the answer, the
 timestamp, the IP and the country, a trigger refuses every UPDATE, DELETE and TRUNCATE, and the tenant cannot be deleted

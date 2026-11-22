@@ -67,7 +67,7 @@ test("the receptionist questions are asked in order, each once, and only before 
   const base = { tenantId, contactEmail: "o@example.test" };
   const none = new Set<Gate>();
 
-  const order = ["recording", "schedule", "crew", "hours", "questions", "knowledge", "messages", "greeting"] as const;
+  const order = ["recording", "schedule", "crew", "hours", "questions", "knowledge", "messages", "appointments", "greeting"] as const;
   order.forEach((step, i) => assert.equal(stepOf({ ...base, configDone: order.slice(0, i) as unknown as typeof CONFIG_STEPS[number][] }, none), step));
   assert.deepEqual([...CONFIG_STEPS], [...order]);
 

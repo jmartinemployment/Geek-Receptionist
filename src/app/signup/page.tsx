@@ -10,6 +10,7 @@ import { SubmitFromLeft } from "@/components/submit-from-left";
 import { PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
 import {
+  AppointmentsForm,
   TermsForm,
   CompanyForm,
   EligibilityForm,
@@ -41,6 +42,7 @@ const STEPS: { step: SignupStep; title: string }[] = [
   { step: "questions", title: "What it should ask" },
   { step: "knowledge", title: "What it should know" },
   { step: "messages", title: "After the call" },
+  { step: "appointments", title: "Appointments" },
   { step: "greeting", title: "Your greeting" },
   { step: "terms", title: "Terms" },
   { step: "plan", title: "Choose a plan" },
@@ -116,14 +118,15 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "terms" && <TermsForm idSuffix={s} />}
 
-        {step === "recording" && <RecordingConnectionForm proved={state?.proved ?? []} />}
-        {step === "schedule" && <ScheduleConnectionForm proved={state?.proved ?? []} />}
+        {step === "recording" && <RecordingConnectionForm />}
+        {step === "schedule" && <ScheduleConnectionForm />}
         {step === "crew" && <CrewConnectionForm />}
         {step === "greeting" && <GreetingForm idSuffix={s} />}
         {step === "hours" && <HoursForm idSuffix={s} />}
         {step === "questions" && <QuestionsForm idSuffix={s} />}
         {step === "knowledge" && <KnowledgeForm idSuffix={s} />}
         {step === "messages" && state && <MessagesForm email={state.contactEmail} idSuffix={s} />}
+        {step === "appointments" && <AppointmentsForm />}
 
         {step === "plan" && <PlanStep />}
 

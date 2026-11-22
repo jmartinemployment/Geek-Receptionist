@@ -9,12 +9,8 @@ import { EXCLUDED_GROUPS, EXCLUDED_INDUSTRIES } from "@/lib/signup/excluded";
 import { PRIVACY_URL, TERMS_PARTS, TERMS_URL } from "@/lib/signup/declaration";
 import {
   activateAction,
-  connectBucketAction,
-  connectGoogleAction,
-  crewLayoutAction,
-  proveConnectionAction,
-  recordingAction,
-  scheduleAction,
+  appointmentsAction,
+  connectionLayoutAction,
   termsAction,
   captchaAction,
   createLoginAction,
@@ -352,8 +348,8 @@ export function Choice({
 }
 
 /**
- * Your greeting: the sentence your receptionist opens with. The keypad before it speaks is on every call and is not asked, and whether
- * the call is recorded is the Recording screen's question.
+ * Your greeting. Two answers about the first few seconds of a call: the sentence your receptionist opens with, and whether they are
+ * told the call may be recorded. The keypad before it speaks is on every call and is not asked.
  *
  * The greeting it already has is the one GeekAPI wrote from this business's name (`ReceptionistDefaults.GreetingTemplate`; the same
  * words live there, change both together). Leaving the box empty keeps it, and no greeting is sent at all.
@@ -383,6 +379,17 @@ export function GreetingForm({ idSuffix }: { idSuffix: string }) {
           className={textarea}
         />
       </fieldset>
+
+      <Choice
+        name="recordingDisclosure"
+        legend="Should callers hear that the call may be recorded?"
+        help="Some states require every party to a call to consent to it being recorded. This is a legal question for your business, not ours."
+        selected={state.fields.recordingDisclosure ?? ""}
+        options={[
+          { value: "yes", label: "Yes, tell every caller" },
+          { value: "no", label: "No" },
+        ]}
+      />
 
       <StepButton pending={pending} />
     </form>
@@ -664,149 +671,137 @@ export function MessagesForm({ email, idSuffix }: { email: string; idSuffix: str
   );
 }
 
+/**
+ * Appointments. The answer is recorded now and acted on at first sign-in: booking needs a calendar connected, which needs the login
+ * created at the end of this form, so a yes here cannot switch booking on yet. The step says so rather than implying it is already
+ * working, and a no is left alone — the dashboard never asks again.
+ *
+ * The yes says which calendar can be connected today (Google) and what happens for any other, before the visitor pays: it used to name
+ * Google as though no other calendar existed, and a business on Outlook found that out after paying (Jeff, 2026-11-21: "isn't quite
+ * right"). This is the stopgap; plans/attestation-and-terms.md stage 7 asks which calendar they use, and verifies it, before the plan.
+ */
+export function AppointmentsForm() {
+  const [state, action, pending] = useActionState(appointmentsAction, start({ wantsBooking: "no" }));
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+
+      <Choice
+        name="wantsBooking"
+        legend="Should your receptionist book appointments in your calendar?"
+        help="Letting it see when you are free and letting a caller put something in your calendar are two different things. This is the second."
+        selected={state.fields.wantsBooking ?? "no"}
+        options={[
+          {
+            value: "yes",
+            label: "Yes, let callers book",
+            detail:
+              "You connect your calendar after you sign in, and booking switches on once it is connected. Today a Google Calendar can be connected; if your business keeps its calendar somewhere else, your receptionist takes a message and does not book. Until a calendar is connected it takes a message too, because a receptionist that books into nothing is worse than one that says it will pass the message on.",
+          },
+          {
+            value: "no",
+            label: "No, take a message instead",
+            detail: "Your receptionist takes the caller's details and you call them back. You can change this whenever you want.",
+          },
+        ]}
+      />
+
+      <StepButton pending={pending} />
+    </form>
+  );
+}
+
 const YES_NO = [
   { value: "yes", label: "Yes" },
   { value: "no", label: "No" },
 ];
 
-/** A button that runs its own action from inside the step's form, with the pending word shown while it runs. */
-function ActionButton({ action, pending, children, busy }: { action: (formData: FormData) => void; pending: boolean; children: React.ReactNode; busy: string }) {
-  return (
-    <button type="submit" formAction={action} disabled={pending} className={`${ui.button} self-start`}>
-      {pending ? busy : children}
-    </button>
-  );
-}
-
-/** What a connection that was shown to work says, with the button to show it again. */
-function Proof({ text, provider, action, pending }: { text: string; provider: string; action: (formData: FormData) => void; pending: boolean }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <input type="hidden" name="provider" value={provider} />
-      <p className="text-white" role="status">{text}</p>
-      <ActionButton action={action} pending={pending} busy="Testing…">Test it again</ActionButton>
-    </div>
-  );
-}
+const connectButton = (text: string) => (
+  <button type="button" disabled className={`${ui.button} self-start`}>
+    {text}
+  </button>
+);
 
 /**
- * Recording. Do you want to record: if yes, is there a Google Drive to record to: if yes, connect it; if no, is there an Amazon S3
- * drive: if yes, its details, then connect. A connection is shown to work (a small file is written to it) before the screen moves on.
- * A no to recording asks nothing more.
+ * One connection question: a yes or no, and under it the Connect button the answer would lead to. Layout only: Connect does nothing yet
+ * and the answer is not saved.
  */
-export function RecordingConnectionForm({ proved }: { proved: readonly string[] }) {
-  const [state, action, pending] = useActionState(recordingAction, start());
-  const [googleState, connectGoogle, connecting] = useActionState(connectGoogleAction, start());
-  const [bucketState, connectBucket, saving] = useActionState(connectBucketAction, start());
-  const [proofState, prove, proving] = useActionState(proveConnectionAction, start());
-
-  const driveProved = proved.includes("google_drive");
-  const s3Proved = proved.includes("aws_s3");
-  const [record, setRecord] = useState(driveProved || s3Proved ? "yes" : "");
-  const [drive, setDrive] = useState(driveProved ? "yes" : s3Proved ? "no" : "");
-  const [s3, setS3] = useState(s3Proved ? "yes" : "");
-
-  return (
-    <form action={action} className="flex flex-col gap-6">
-      <Refusal error={state.error ?? googleState.error ?? bucketState.error ?? proofState.error} />
-      <Choice
-        name="answer"
-        legend="Do you want to record conversations?"
-        help="Note: Caller must consent at the beginning of call."
-        helpClass="text-sm text-white"
-        selected={record}
-        onChange={setRecord}
-        options={YES_NO}
-      />
-
-      {record === "yes" ? (
-        <Choice name="drive" legend="Do you have a Google Drive to record them to?" selected={drive} onChange={setDrive} options={YES_NO} />
-      ) : null}
-      {record === "yes" && drive === "yes" ? (
-        driveProved ? (
-          <Proof text="Connected. A test file was written to your Google Drive." provider="google_drive" action={prove} pending={proving} />
-        ) : (
-          <>
-            <input type="hidden" name="provider" value="google_drive" />
-            <ActionButton action={connectGoogle} pending={connecting} busy="Opening Google…">Connect Google Drive</ActionButton>
-          </>
-        )
-      ) : null}
-
-      {record === "yes" && drive === "no" ? (
-        <Choice name="s3" legend="Do you have an Amazon S3 drive to record them to?" selected={s3} onChange={setS3} options={YES_NO} />
-      ) : null}
-      {record === "yes" && drive === "no" && s3 === "yes" ? (
-        s3Proved ? (
-          <Proof text="Connected. A test file was written to your Amazon S3 bucket." provider="aws_s3" action={prove} pending={proving} />
-        ) : (
-          <>
-            {[
-              ["bucket", "Bucket"],
-              ["region", "Region"],
-              ["accessKeyId", "Access key"],
-              ["secretAccessKey", "Secret"],
-            ].map(([name, text]) => (
-              <label key={name} className="flex flex-col gap-1">
-                <span className={label}>{text}</span>
-                <input name={name} type={name === "secretAccessKey" ? "password" : "text"} autoComplete="off" defaultValue={name === "secretAccessKey" ? "" : bucketState.fields[name] ?? ""} className={field} />
-              </label>
-            ))}
-            <ActionButton action={connectBucket} pending={saving} busy="Connecting…">Connect Amazon S3</ActionButton>
-          </>
-        )
-      ) : null}
-
-      <StepButton pending={pending} label="Continue" />
-    </form>
-  );
-}
-
-/** Scheduling. A yes needs a calendar that was shown to work: Google Calendar is asked for its calendars before the screen moves on. */
-export function ScheduleConnectionForm({ proved }: { proved: readonly string[] }) {
-  const [state, action, pending] = useActionState(scheduleAction, start());
-  const [googleState, connectGoogle, connecting] = useActionState(connectGoogleAction, start());
-  const [proofState, prove, proving] = useActionState(proveConnectionAction, start());
-
-  const calendarProved = proved.includes("google_calendar");
-  const [answer, setAnswer] = useState(calendarProved ? "yes" : "");
-
-  return (
-    <form action={action} className="flex flex-col gap-6">
-      <Refusal error={state.error ?? googleState.error ?? proofState.error} />
-      <Choice name="answer" legend="Do you want to schedule appointments?" selected={answer} onChange={setAnswer} options={YES_NO} />
-      {answer === "yes" ? (
-        calendarProved ? (
-          <Proof text="Connected. Your calendar answered." provider="google_calendar" action={prove} pending={proving} />
-        ) : (
-          <>
-            <input type="hidden" name="provider" value="google_calendar" />
-            <ActionButton action={connectGoogle} pending={connecting} busy="Opening Google…">Connect your calendar</ActionButton>
-          </>
-        )
-      ) : null}
-      <StepButton pending={pending} label="Continue" />
-    </form>
-  );
-}
-
-/** Crew location tools. Laid out for review: the question is asked and the screen moves on, nothing is saved or connected. */
-export function CrewConnectionForm() {
-  const [state, action, pending] = useActionState(crewLayoutAction, start());
+function ConnectionForm({ step, legend, connect }: { step: "schedule" | "crew"; legend: string; connect: string }) {
+  const [state, action, pending] = useActionState(connectionLayoutAction, start());
   const [answer, setAnswer] = useState("");
 
   return (
     <form action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
-      <Choice name="answer" legend="Do you have crew location tools?" selected="" onChange={setAnswer} options={YES_NO} />
-      {answer === "yes" ? (
-        <button type="button" disabled className={`${ui.button} self-start`}>
-          Connect
-        </button>
-      ) : null}
+      <input type="hidden" name="step" value={step} />
+      <Choice name="answer" legend={legend} selected="" onChange={setAnswer} options={YES_NO} />
+      {answer === "yes" ? connectButton(connect) : null}
       <StepButton pending={pending} label="Continue" />
     </form>
   );
+}
+
+/**
+ * Recording. Do you want to record: if yes, is there a Google Drive to record to: if yes, Connect; if no, is there an Amazon S3 drive:
+ * if yes, its details, then Connect. A no to recording asks nothing more. Layout only: Connect does nothing yet and nothing is saved.
+ */
+export function RecordingConnectionForm() {
+  const [state, action, pending] = useActionState(connectionLayoutAction, start());
+  const [record, setRecord] = useState("");
+  const [drive, setDrive] = useState("");
+  const [s3, setS3] = useState("");
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+      <input type="hidden" name="step" value="recording" />
+      <Choice
+        name="answer"
+        legend="Do you want to record conversations?"
+        help="Note: Caller must consent at the beginning of call."
+        helpClass="text-sm text-white"
+        selected=""
+        onChange={setRecord}
+        options={YES_NO}
+      />
+
+      {record === "yes" ? (
+        <Choice name="drive" legend="Do you have a Google Drive to record them to?" selected="" onChange={setDrive} options={YES_NO} />
+      ) : null}
+      {record === "yes" && drive === "yes" ? connectButton("Connect Google Drive") : null}
+
+      {record === "yes" && drive === "no" ? (
+        <Choice name="s3" legend="Do you have an Amazon S3 drive to record them to?" selected="" onChange={setS3} options={YES_NO} />
+      ) : null}
+      {record === "yes" && drive === "no" && s3 === "yes" ? (
+        <>
+          {[
+            ["bucket", "Bucket"],
+            ["region", "Region"],
+            ["accessKeyId", "Access key"],
+            ["secretAccessKey", "Secret"],
+          ].map(([name, text]) => (
+            <label key={name} className="flex flex-col gap-1">
+              <span className={label}>{text}</span>
+              <input name={name} disabled className={field} />
+            </label>
+          ))}
+          {connectButton("Connect Amazon S3")}
+        </>
+      ) : null}
+
+      <StepButton pending={pending} label="Continue" />
+    </form>
+  );
+}
+
+export function ScheduleConnectionForm() {
+  return <ConnectionForm step="schedule" legend="Do you want to schedule appointments?" connect="Connect your calendar" />;
+}
+
+export function CrewConnectionForm() {
+  return <ConnectionForm step="crew" legend="Do you have crew location tools?" connect="Connect" />;
 }
 
 export function NumberForm({ idSuffix }: { idSuffix: string }) {

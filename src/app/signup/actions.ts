@@ -3,8 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { CONNECTIONS, clearGates, clearSignup, passGate, readCompany, readGates, readSignup, readWho, withConfigStepDone, withProved, withTermsAccepted, writeCompany, writeSignup, writeWho, type ConfigStep, type Connection } from "@/lib/signup/state";
-import { beginGoogleConnection, proveConnection, saveBucket } from "@/services/signup-connections";
+import { clearGates, clearSignup, passGate, readCompany, readGates, readSignup, readWho, withConfigStepDone, withTermsAccepted, writeCompany, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
@@ -228,97 +227,20 @@ async function saveConfigStep(
   redirect("/signup");
 }
 
-const connectionOf = (value: string): Connection | null => (CONNECTIONS as readonly string[]).includes(value) ? (value as Connection) : null;
-
 /**
- * Recording. A no is saved as it is. A yes needs a Google Drive or an Amazon S3 bucket that was shown to work in this signup, because
- * that is where the recording goes and never to us; without one the screen does not move on. Saying yes is what turns on telling
- * callers the call is recorded.
+ * The three connection screens (recording, scheduling, crew location tools), laid out for review. They ask their question and move on:
+ * the answer is not saved and nothing is connected, because the backend behind them is not built. A screen is done only when the
+ * question was answered.
  */
-export async function recordingAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+export async function connectionLayoutAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const step = text(form, "step");
   const answer = text(form, "answer");
+  if (step !== "recording" && step !== "schedule" && step !== "crew") return { error: signupMessage("signup_expired"), fields: {} };
   if (answer !== "yes" && answer !== "no") return { error: "Answer yes or no.", fields: {} };
 
   const state = await readSignup();
   if (!state) return { error: signupMessage("signup_expired"), fields: {} };
-  if (answer === "yes" && !state.proved?.includes("google_drive") && !state.proved?.includes("aws_s3")) {
-    return { error: "Connect a Google Drive or an Amazon S3 drive to record to, and we will show it works, before you continue.", fields: { answer } };
-  }
-
-  return saveConfigStep("recording", { recordingDisclosureEnabled: answer === "yes" }, { answer });
-}
-
-/**
- * Scheduling. A no is saved as it is. A yes needs a calendar that was shown to work in this signup; the business asked for booking and
- * has a calendar that answered, so booking is switched on with it.
- */
-export async function scheduleAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
-  const answer = text(form, "answer");
-  if (answer !== "yes" && answer !== "no") return { error: "Answer yes or no.", fields: {} };
-
-  const state = await readSignup();
-  if (!state) return { error: signupMessage("signup_expired"), fields: {} };
-  if (answer === "yes" && !state.proved?.includes("google_calendar")) {
-    return { error: "Connect your calendar, and we will show it works, before you continue.", fields: { answer } };
-  }
-
-  return saveConfigStep("schedule", { bookingRequested: answer === "yes", bookingEnabled: answer === "yes" }, { answer });
-}
-
-/**
- * Crew location tools. Laid out for review: the question is asked and the screen moves on, the answer is not saved and nothing is
- * connected, because nothing behind it exists.
- */
-export async function crewLayoutAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
-  const answer = text(form, "answer");
-  if (answer !== "yes" && answer !== "no") return { error: "Answer yes or no.", fields: {} };
-
-  const state = await readSignup();
-  if (!state) return { error: signupMessage("signup_expired"), fields: {} };
-  await writeSignup(withConfigStepDone(state, "crew"));
-  redirect("/signup");
-}
-
-/** Sends the visitor to Google's approval screen for the calendar or the Drive folder. They come back to /oauth/mcp/{provider}/callback. */
-export async function connectGoogleAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
-  const provider = connectionOf(text(form, "provider"));
-  if (provider !== "google_calendar" && provider !== "google_drive") return { error: signupMessage("signup_expired"), fields: {} };
-  const state = await readSignup();
-  if (!state) return { error: signupMessage("signup_expired"), fields: {} };
-
-  const started = await beginGoogleConnection(state.tenantId, provider, await headers());
-  if ("error" in started) return { error: refusalOf(started.error.body, started.error.status), fields: {} };
-  redirect(started.url);
-}
-
-/** Saves the bucket the visitor typed in and uses it at once: a small file is written, and the answer says whether it worked. */
-export async function connectBucketAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
-  const fields = { bucket: text(form, "bucket"), region: text(form, "region"), accessKeyId: text(form, "accessKeyId") };
-  const state = await readSignup();
-  if (!state) return { error: signupMessage("signup_expired"), fields };
-
-  const visitor = await headers();
-  const saved = await saveBucket(state.tenantId, { ...fields, secretAccessKey: text(form, "secretAccessKey") }, visitor);
-  if (saved.status !== 200) return { error: refusalOf(saved.body, saved.status), fields };
-
-  const proved = await proveConnection(state.tenantId, "aws_s3", visitor);
-  if (proved.status !== 200) return { error: refusalOf(proved.body, proved.status), fields };
-
-  await writeSignup(withProved(state, "aws_s3"));
-  redirect("/signup");
-}
-
-/** Shows a connection that is already made working again: GeekAPI uses it and says what happened. */
-export async function proveConnectionAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
-  const provider = connectionOf(text(form, "provider"));
-  if (!provider) return { error: signupMessage("signup_expired"), fields: {} };
-  const state = await readSignup();
-  if (!state) return { error: signupMessage("signup_expired"), fields: {} };
-
-  const proved = await proveConnection(state.tenantId, provider, await headers());
-  if (proved.status !== 200) return { error: refusalOf(proved.body, proved.status), fields: {} };
-
-  await writeSignup(withProved(state, provider));
+  await writeSignup(withConfigStepDone(state, step));
   redirect("/signup");
 }
 
@@ -329,18 +251,22 @@ const lines = (form: FormData, name: string): string[] =>
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-/** Your greeting: what a caller hears first. Keypad consent is on every call, and recording is the Recording screen's question. */
+/** Your greeting: what a caller hears first, whether they press a key for it, and whether they are told about recording. */
 export async function greetingAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const greeting = text(form, "greeting");
-  const fields = { greeting };
+  const recording = text(form, "recordingDisclosure");
+  const fields = { greeting, recordingDisclosure: recording };
+  // No default: whether callers are told a call may be recorded is the business's own answer (Jeff, 2026-11-22), never assumed for it.
+  if (recording !== "yes" && recording !== "no") return { error: "Answer whether callers should hear that the call may be recorded.", fields };
 
   return saveConfigStep(
     "greeting",
     {
       // Left blank is the other answer the question offers: keep the greeting this receptionist already has, which no field changes.
       ...(greeting.length > 0 ? { greetingMessage: greeting } : {}),
-      // Keypad consent is on every call and is not a question: nothing here lets a business choose another.
+      // Keypad consent is on every call and is not a question (decided 2026-11-18): nothing here lets a business choose another.
       consentMode: "strict_keypress",
+      recordingDisclosureEnabled: recording === "yes",
     },
     fields,
   );
@@ -427,6 +353,25 @@ export async function messagesAction(_previous: SignupFormState, form: FormData)
     },
     fields,
   );
+}
+
+/**
+ * Appointments: whether this business wants its receptionist to book into its calendar.
+ *
+ * <p>
+ * This answers `bookingRequested` and never `bookingEnabled`. Booking itself is refused without a calendar that works, and no business
+ * has one during signup — connecting a calendar is a Google sign-in that needs the owner's token, and the login is the last step. So a
+ * yes here is the business's answer on the record; the first sign-in asks for the calendar and GeekAPI switches booking on when it
+ * arrives. Sending `bookingEnabled` would have the visitor refused for answering honestly.
+ * </p>
+ */
+export async function appointmentsAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const wants = text(form, "wantsBooking");
+  if (wants !== "yes" && wants !== "no") {
+    return { error: "Say whether your receptionist should book appointments.", fields: { wantsBooking: wants } };
+  }
+
+  return saveConfigStep("appointments", { bookingRequested: wants === "yes" }, { wantsBooking: wants });
 }
 
 /** Step 4: the plan. GeekAPI starts a PayPal subscription to it for this tenant and the visitor approves it in PayPal. */

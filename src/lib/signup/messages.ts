@@ -43,18 +43,6 @@ const MESSAGES: Record<string, string> = {
   api_unreachable: "Signup is not available right now. GeekAPI could not be reached.",
   store_unavailable: "Signup is not available right now. The account store could not be reached.",
   signup_expired: "This signup's progress was lost. Start again.",
-  no_approval: "Google did not send an approval back. Connect again.",
-  authorization_denied: "The connection was declined in Google. Connect again and approve it.",
-  code_exchange_failed: "Google would not accept the approval. Connect again.",
-  state_invalid: "That approval was not started from this signup. Connect again.",
-  state_expired: "That approval took too long. Connect again.",
-  oauth_not_configured: "Connecting is not available right now. Google is not set up on our side yet.",
-  storage_write_failed: "The connection was made but a test file could not be written to it. Check the access it was given and test it again.",
-  storage_not_connected: "Nothing is connected yet. Connect it first.",
-  calendar_not_connected: "No calendar is connected yet. Connect it first.",
-  reauthorization_required: "Google needs you to approve the connection again.",
-  tool_error: "The connection was made but the calendar did not answer. Test it again.",
-  tier_required: "Writing to your own Amazon S3 bucket is part of Standard and above. Choose Standard or above, or use Google Drive, which is on every plan.",
 };
 
 export function signupMessage(code: string | null, fallback: string | null = null): string {

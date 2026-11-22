@@ -1,5 +1,4 @@
 import { callOwnerTenant } from "@/lib/geekapi";
-import { finishSignupConnection } from "@/lib/signup/google-return";
 import { codeOf, sendTo } from "@/lib/return-trip";
 
 /**
@@ -8,10 +7,6 @@ import { codeOf, sendTo } from "@/lib/return-trip";
  * owner then lands on the dashboard, which says whether their Drive is connected.
  */
 export async function GET(request: Request) {
-  // A visitor still signing up is finished there; an owner signed in to their dashboard is finished below.
-  const signup = await finishSignupConnection(request, "google_drive");
-  if (signup) return signup;
-
   const params = new URL(request.url).searchParams;
   const text = (name: string, max: number) => {
     const value = params.get(name);

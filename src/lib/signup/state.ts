@@ -125,14 +125,9 @@ export const parseCompany = (raw: string | undefined, key: string): Company | nu
  * which of these steps have been submitted, so a refresh resumes in the right place: a greeting, a prompt and a list of questions would
  * overflow a 4 KB cookie and break resumption silently, and the row already holds them.
  */
-export const CONFIG_STEPS = ["recording", "schedule", "crew", "hours", "questions", "knowledge", "messages", "greeting"] as const;
+export const CONFIG_STEPS = ["recording", "schedule", "crew", "hours", "questions", "knowledge", "messages", "appointments", "greeting"] as const;
 
 export type ConfigStep = (typeof CONFIG_STEPS)[number];
-
-/** The connections a visitor can make during signup, and show to work. The names GeekAPI uses for them. */
-export const CONNECTIONS = ["google_calendar", "google_drive", "aws_s3"] as const;
-
-export type Connection = (typeof CONNECTIONS)[number];
 
 export function isConfigStep(value: unknown): value is ConfigStep {
   return typeof value === "string" && (CONFIG_STEPS as readonly string[]).includes(value);
@@ -149,8 +144,6 @@ export type SignupState = {
   configDone?: ConfigStep[];
   /** The Terms were accepted, which GeekAPI recorded and checks again before PayPal opens (Jeff, 2026-11-22). A fact, never an answer. */
   termsAccepted?: boolean;
-  /** The connections that were shown to work: GeekAPI used each one and it answered. A convenience for the screen; GeekAPI holds the truth. */
-  proved?: Connection[];
   tier?: string;
   subscriptionId?: string;
   subscriptionApproved?: boolean;
@@ -202,12 +195,6 @@ export function withConfigStepDone(state: SignupState, step: ConfigStep): Signup
   return done.includes(step) ? state : { ...state, configDone: [...done, step] };
 }
 
-/** This signup with one more connection shown to work. The same one twice is still one. */
-export function withProved(state: SignupState, connection: Connection): SignupState {
-  const proved = state.proved ?? [];
-  return proved.includes(connection) ? state : { ...state, proved: [...proved, connection] };
-}
-
 /** This signup once the Terms are accepted. */
 export function withTermsAccepted(state: SignupState): SignupState {
   return { ...state, termsAccepted: true };
@@ -233,7 +220,6 @@ export function parseSignup(raw: string | undefined): SignupState | null {
     tier: id("tier"),
     subscriptionId: id("subscriptionId"),
     termsAccepted: v.termsAccepted === true,
-    proved: Array.isArray(v.proved) ? CONNECTIONS.filter((connection) => (v.proved as unknown[]).includes(connection)) : undefined,
     subscriptionApproved: v.subscriptionApproved === true,
     setupTokenId: id("setupTokenId"),
     vaultTokenId: id("vaultTokenId"),

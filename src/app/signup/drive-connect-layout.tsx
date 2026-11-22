@@ -37,6 +37,7 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
             We create a folder named &ldquo;Geek-Receptionist Logs&rdquo; in your Google Drive and save what you choose there. The files are yours
             and stay in your Drive.
           </Text>
+          <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
           {[
             ["audio", "Save audio recordings?"],
             ["transcript", "Save transcripts?"],
@@ -55,6 +56,7 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
               ))}
             </fieldset>
           ))}
+          </div>
           <Text>Sign in with the Google account whose Drive should hold them. A Google Workspace account may need its administrator&rsquo;s approval.</Text>
           <Button>Connect Google Drive</Button>
         </Panel>

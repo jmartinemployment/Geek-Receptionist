@@ -712,7 +712,7 @@ export function AppointmentsForm() {
  * One connection question: a yes or no, and under it the Connect button the answer would lead to. Layout only: Connect does nothing yet
  * and the answer is not saved.
  */
-function ConnectionForm({ step, legend, connect, extra }: { step: "recording" | "schedule" | "crew"; legend: string; connect: string; extra?: { legend: string } }) {
+function ConnectionForm({ step, legend, help, connect, extra }: { step: "recording" | "schedule" | "crew"; legend: string; help?: string; connect: string; extra?: { legend: string } }) {
   const [state, action, pending] = useActionState(connectionLayoutAction, start());
 
   return (
@@ -722,6 +722,7 @@ function ConnectionForm({ step, legend, connect, extra }: { step: "recording" | 
       <Choice
         name="answer"
         legend={legend}
+        help={help}
         selected=""
         options={[
           { value: "yes", label: "Yes" },
@@ -751,7 +752,8 @@ export function RecordingConnectionForm() {
   return (
     <ConnectionForm
       step="recording"
-      legend="Do you need to record conversations?"
+      legend="Do you want to record conversations?"
+      help="Note: Caller must consent at the beginning of call."
       extra={{ legend: "Do you have a Google Drive or an Amazon S3 drive to record them to?" }}
       connect="Connect"
     />

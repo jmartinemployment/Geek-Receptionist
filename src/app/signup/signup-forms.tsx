@@ -2,7 +2,8 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { ui } from "@/lib/ui";
-import { DriveConnectLayout, type DriveState } from "./drive-connect-layout";
+import { DriveConnectLayout } from "./drive-connect-layout";
+import type { DriveState } from "./drive-states";
 import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
 import { DAYS, TIMEZONES } from "@/lib/signup/hours";

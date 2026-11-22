@@ -1,20 +1,16 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { ui } from "@/lib/ui";
+import type { DriveState } from "./drive-states";
 
 /**
  * The states of connecting a Google Drive, laid out from the research in plans/connecting-google-drive-for-recordings.md. Layout only:
- * every button is inert and nothing here calls Google or GeekAPI. A visitor sees `explain`; the other states are reached in development
- * with ?driveState=, so each can be looked at.
+ * nothing here calls Google or GeekAPI. In development the buttons walk from state to state, so what comes next can be seen; in
+ * production every button is inert and a visitor only ever sees `explain`. ?driveState= opens a given state in development.
  */
-export const DRIVE_STATES = ["explain", "waiting", "denied", "blocked", "trouble", "testing", "connected", "failed", "lost", "disconnect"] as const;
-
-export type DriveState = (typeof DRIVE_STATES)[number];
-
-export function isDriveState(value: unknown): value is DriveState {
-  return typeof value === "string" && (DRIVE_STATES as readonly string[]).includes(value);
-}
-
-const Button = ({ children, quiet }: { children: React.ReactNode; quiet?: boolean }) => (
-  <button type="button" disabled className={quiet ? `${ui.quietButton} self-start` : `${ui.button} self-start`}>
+const ActionButton = ({ demo, quiet, onClick, children }: { demo: boolean; quiet: boolean; onClick: () => void; children: React.ReactNode }) => (
+  <button type="button" disabled={!demo} onClick={onClick} className={quiet ? `${ui.quietButton} self-start` : `${ui.button} self-start`}>
     {children}
   </button>
 );
@@ -29,7 +25,23 @@ const Panel = ({ title, children }: { title: string; children: React.ReactNode }
 const Text = ({ children }: { children: React.ReactNode }) => <p className="text-sm text-white">{children}</p>;
 
 export function DriveConnectLayout({ state }: { state: DriveState }) {
-  switch (state) {
+  const demo = process.env.NODE_ENV !== "production";
+  const [view, setView] = useState<DriveState>(state);
+
+  // In development the two working states move on by themselves, as the real ones would once Google and the test had answered.
+  useEffect(() => {
+    if (!demo || (view !== "waiting" && view !== "testing")) return;
+    const timer = setTimeout(() => setView(view === "waiting" ? "testing" : "connected"), 1500);
+    return () => clearTimeout(timer);
+  }, [demo, view]);
+
+  const button = (label: string, to: DriveState, quiet = false) => (
+    <ActionButton demo={demo} quiet={quiet} onClick={() => setView(to)}>
+      {label}
+    </ActionButton>
+  );
+
+  switch (view) {
     case "explain":
       return (
         <Panel title="Connect your Google Drive">
@@ -38,31 +50,31 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
             and stay in your Drive.
           </Text>
           <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-          {[
-            ["audio", "Save audio recordings?"],
-            ["transcript", "Save transcripts?"],
-            ["summary", "Save summaries?"],
-          ].map(([name, question]) => (
-            <fieldset key={name} className="flex flex-col gap-2">
-              <legend className="mb-1 font-semibold text-white">{question}</legend>
-              {[
-                ["yes", "Yes"],
-                ["no", "No"],
-              ].map(([value, label]) => (
-                <label key={value} className="flex items-start gap-3">
-                  <input type="radio" name={`save_${name}`} value={value} className="mt-1.5 size-4 accent-[#c83803]" />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </fieldset>
-          ))}
+            {[
+              ["audio", "Save audio recordings?"],
+              ["transcript", "Save transcripts?"],
+              ["summary", "Save summaries?"],
+            ].map(([name, question]) => (
+              <fieldset key={name} className="flex flex-col gap-2">
+                <legend className="mb-1 font-semibold text-white">{question}</legend>
+                {[
+                  ["yes", "Yes"],
+                  ["no", "No"],
+                ].map(([value, label]) => (
+                  <label key={value} className="flex items-start gap-3">
+                    <input type="radio" name={`save_${name}`} value={value} className="mt-1.5 size-4 accent-[#c83803]" />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </fieldset>
+            ))}
           </div>
           <Text>
             Sign in with the Google account whose Drive should hold them.
             <br />
             Note: A Google Workspace account may need its administrator&rsquo;s approval.
           </Text>
-          <Button>Connect Google Drive</Button>
+          {button("Connect Google Drive", "waiting")}
         </Panel>
       );
     case "waiting":
@@ -75,7 +87,7 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
       return (
         <Panel title="Nothing was connected">
           <Text>Google did not get your approval, so nothing was connected. You can try again.</Text>
-          <Button>Connect Google Drive</Button>
+          {button("Connect Google Drive", "waiting")}
         </Panel>
       );
     case "blocked":
@@ -85,7 +97,7 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
           <Text>App name: Geek-Receptionist</Text>
           <Text>Client ID: shown here</Text>
           <Text>Or connect with a different Google account.</Text>
-          <Button>Connect a different account</Button>
+          {button("Connect a different account", "waiting")}
         </Panel>
       );
     case "trouble":
@@ -93,7 +105,7 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
         <Panel title="Google would not finish the connection">
           <Text>Check that pop-ups are allowed for this site and that third-party cookies are not blocked, then try again. A private window often helps.</Text>
           <Text>If Google shows a warning that the app is not verified, choose Advanced to continue.</Text>
-          <Button>Try again</Button>
+          {button("Try again", "waiting")}
         </Panel>
       );
     case "testing":
@@ -109,8 +121,8 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
           <Text>Folder: Geek-Receptionist Logs (opens in Google Drive)</Text>
           <Text>Last test: passed, today at 3:00 PM</Text>
           <div className="flex gap-3">
-            <Button quiet>Test again</Button>
-            <Button quiet>Disconnect</Button>
+            {button("Test again", "testing", true)}
+            {button("Disconnect", "disconnect", true)}
           </div>
         </Panel>
       );
@@ -120,7 +132,7 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
           <Text>Your Google Drive is full. Free some space in Google Drive, then test again.</Text>
           <Text>If the folder was deleted or moved to the trash, connect again to make a new one.</Text>
           <Text>If we were not allowed to write to it, connect again and approve the access.</Text>
-          <Button>Test again</Button>
+          {button("Test again", "testing")}
         </Panel>
       );
     case "lost":
@@ -130,7 +142,7 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
             Access was withdrawn in Google, was not used for six months, or your administrator changed what apps may do. Recordings that could not
             be saved are named in your call history.
           </Text>
-          <Button>Reconnect</Button>
+          {button("Reconnect", "waiting")}
         </Panel>
       );
     case "disconnect":
@@ -138,8 +150,8 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
         <Panel title="Disconnect Google Drive?">
           <Text>Files already in your Drive stay there. New recordings will stop being saved. If you reconnect later, test it before relying on it.</Text>
           <div className="flex gap-3">
-            <Button quiet>Disconnect</Button>
-            <Button quiet>Keep it connected</Button>
+            {button("Disconnect", "explain", true)}
+            {button("Keep it connected", "connected", true)}
           </div>
         </Panel>
       );

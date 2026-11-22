@@ -7,7 +7,7 @@ import { ui } from "@/lib/ui";
 import { SubmitFromLeft } from "@/components/submit-from-left";
 import { PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
-import { isDriveState } from "./drive-connect-layout";
+import { isDriveState } from "./drive-states";
 import {
   TermsForm,
   CompanyForm,

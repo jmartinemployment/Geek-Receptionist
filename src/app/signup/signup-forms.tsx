@@ -99,7 +99,6 @@ export function EligibilityForm({ idSuffix }: { idSuffix: string }) {
 
   return (
     <form action={action} className="flex flex-col gap-6">
-      <p className={hint}>To check eligibility, tell us where the business is and whether it operates in any of these regulated sectors.</p>
       {state.refused ? null : <Refusal error={state.error} />}
 
       <div className="flex flex-col gap-6 md:block md:columns-2 md:gap-x-10 md:[&>fieldset]:mb-6">

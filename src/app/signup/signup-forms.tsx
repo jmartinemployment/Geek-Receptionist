@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { ui } from "@/lib/ui";
+import { DriveConnectLayout, type DriveState } from "./drive-connect-layout";
 import { Captcha } from "@/components/captcha";
 import { Dialog } from "@/components/dialog";
 import { DAYS, TIMEZONES } from "@/lib/signup/hours";
@@ -693,10 +694,11 @@ function ConnectionForm({ step, legend, connect }: { step: "schedule" | "crew"; 
  * Recording. Do you want to record: if yes, is there a Google Drive to record to: if yes, Connect; if no, is there an Amazon S3 drive:
  * if yes, its details, then Connect. A no to recording asks nothing more. Layout only: Connect does nothing yet and nothing is saved.
  */
-export function RecordingConnectionForm() {
+export function RecordingConnectionForm({ driveState }: { driveState: DriveState | null }) {
   const [state, action, pending] = useActionState(connectionLayoutAction, start());
-  const [record, setRecord] = useState("");
-  const [drive, setDrive] = useState("");
+  // A state asked for in development opens the Drive question already answered, so the state can be looked at.
+  const [record, setRecord] = useState(driveState ? "yes" : "");
+  const [drive, setDrive] = useState(driveState ? "yes" : "");
   const [s3, setS3] = useState("");
 
   return (
@@ -708,15 +710,15 @@ export function RecordingConnectionForm() {
         legend="Do you want to record conversations?"
         help="Note: Caller must consent at the beginning of call."
         helpClass="text-sm text-white"
-        selected=""
+        selected={record}
         onChange={setRecord}
         options={YES_NO}
       />
 
       {record === "yes" ? (
-        <Choice name="drive" legend="Do you have a Google Drive to record them to?" selected="" onChange={setDrive} options={YES_NO} />
+        <Choice name="drive" legend="Do you have a Google Drive to record them to?" selected={drive} onChange={setDrive} options={YES_NO} />
       ) : null}
-      {record === "yes" && drive === "yes" ? connectButton("Connect Google Drive") : null}
+      {record === "yes" && drive === "yes" ? <DriveConnectLayout state={driveState ?? "explain"} /> : null}
 
       {record === "yes" && drive === "no" ? (
         <Choice name="s3" legend="Do you have an Amazon S3 drive to record them to?" selected="" onChange={setS3} options={YES_NO} />

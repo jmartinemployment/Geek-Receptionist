@@ -9,6 +9,7 @@ import { startOverAction } from "./actions";
 import { SubmitFromLeft } from "@/components/submit-from-left";
 import { PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
+import { DriveStateSwitcher, isDriveState } from "./drive-connect-layout";
 import {
   TermsForm,
   CompanyForm,
@@ -52,14 +53,16 @@ const STEPS: { step: SignupStep; title: string }[] = [
 const CODE = /^[a-z0-9_]{1,64}$/;
 
 /** Self-service signup, rendered on the server from where this browser's signup stands. Each step is a Server Action; no step reloads the page. */
-export default async function Signup({ searchParams }: { searchParams: Promise<{ error?: string | string[]; start?: string | string[] }> }) {
+export default async function Signup({ searchParams }: { searchParams: Promise<{ error?: string | string[]; start?: string | string[]; driveState?: string | string[] }> }) {
   const state = await readSignup();
   const gateStep = stepOf(state, await readGates());
   const siteKey = captchaSiteKey();
   const title = "Set up your receptionist";
   const summary = "Answer a few questions, choose a plan and get a phone number for your receptionist.";
 
-  const { error, start } = await searchParams;
+  const { error, start, driveState: requestedDriveState } = await searchParams;
+  // Development only: ?driveState= shows one state of connecting a Google Drive. A visitor in production never sees it.
+  const driveState = process.env.NODE_ENV !== "production" && isDriveState(requestedDriveState) ? requestedDriveState : null;
 
   // Every visit opens on the hero: the robot beside the text and the orange Continue. Continue opens the robot check when it has not been
   // passed, and takes the visitor on to the first question when it has. Once a business exists the visitor is already past it.
@@ -116,7 +119,12 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "terms" && <TermsForm idSuffix={s} />}
 
-        {step === "recording" && <RecordingConnectionForm />}
+        {step === "recording" && (
+          <>
+            {process.env.NODE_ENV !== "production" ? <DriveStateSwitcher current={driveState ?? "explain"} /> : null}
+            <RecordingConnectionForm driveState={driveState} />
+          </>
+        )}
         {step === "schedule" && <ScheduleConnectionForm />}
         {step === "crew" && <CrewConnectionForm />}
         {step === "greeting" && <GreetingForm idSuffix={s} />}

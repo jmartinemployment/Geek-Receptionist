@@ -96,7 +96,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const body = (s: string) => (
     <div className="w-full text-left">
       <section className="mb-4" aria-labelledby={`step-heading${s}`}>
-        <h2 id={`step-heading${s}`} className={step === "who" || step === "company" ? "sr-only" : ui.h2}>
+        <h2 id={`step-heading${s}`} className={step === "who" || step === "company" || step === "industries" ? "sr-only" : ui.h2}>
           {STEPS[index].title}
         </h2>
         {refusal ? (

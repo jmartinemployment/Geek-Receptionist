@@ -19,6 +19,9 @@
 >   plan is chosen after the business exists, so an S3 owner on a lower tier is refused at the plan, not here.
 > - **What is written is the call record, not audio:** a summary (Markdown) or the transcript (JSON), one file per call, at
 >   `YYYY/MM/DD/call-{time}-{last4}`. Nothing in our code records audio, so "record conversations" can mean only the call record unless audio recording is built.
+> - **Decided 2026-11-22: the owner must receive the audio**, not only the call record. Not built. It changes what Zero Data Retention can
+>   claim, because someone has to record the call to hand it over: Twilio would hold the file until it is delivered to the owner's drive or bucket
+>   and then deleted. The delivery, the deletion and the wording of the ZDR claim are all still to be designed.
 > - **Blocked today:** both routes need the owner's own sign-in token, and refuse a business that is not yet active (`McpConnectionService`, line 34).
 >   Connecting during signup needs a way to connect without a sign-in and that rule relaxed for a business awaiting payment.
 >

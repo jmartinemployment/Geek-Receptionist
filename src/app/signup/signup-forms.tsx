@@ -9,7 +9,6 @@ import { EXCLUDED_GROUPS, EXCLUDED_INDUSTRIES } from "@/lib/signup/excluded";
 import { PRIVACY_URL, TERMS_PARTS, TERMS_URL } from "@/lib/signup/declaration";
 import {
   activateAction,
-  appointmentsAction,
   connectionLayoutAction,
   termsAction,
   captchaAction,
@@ -348,8 +347,8 @@ export function Choice({
 }
 
 /**
- * Your greeting. Two answers about the first few seconds of a call: the sentence your receptionist opens with, and whether they are
- * told the call may be recorded. The keypad before it speaks is on every call and is not asked.
+ * Your greeting: the sentence your receptionist opens with. The keypad before it speaks is on every call and is not asked, and whether
+ * the call is recorded is the Recording screen's question.
  *
  * The greeting it already has is the one GeekAPI wrote from this business's name (`ReceptionistDefaults.GreetingTemplate`; the same
  * words live there, change both together). Leaving the box empty keeps it, and no greeting is sent at all.
@@ -379,17 +378,6 @@ export function GreetingForm({ idSuffix }: { idSuffix: string }) {
           className={textarea}
         />
       </fieldset>
-
-      <Choice
-        name="recordingDisclosure"
-        legend="Should callers hear that the call may be recorded?"
-        help="Some states require every party to a call to consent to it being recorded. This is a legal question for your business, not ours."
-        selected={state.fields.recordingDisclosure ?? ""}
-        options={[
-          { value: "yes", label: "Yes, tell every caller" },
-          { value: "no", label: "No" },
-        ]}
-      />
 
       <StepButton pending={pending} />
     </form>
@@ -665,47 +653,6 @@ export function MessagesForm({ email, idSuffix }: { email: string; idSuffix: str
           </span>
         </label>
       </fieldset>
-
-      <StepButton pending={pending} />
-    </form>
-  );
-}
-
-/**
- * Appointments. The answer is recorded now and acted on at first sign-in: booking needs a calendar connected, which needs the login
- * created at the end of this form, so a yes here cannot switch booking on yet. The step says so rather than implying it is already
- * working, and a no is left alone — the dashboard never asks again.
- *
- * The yes says which calendar can be connected today (Google) and what happens for any other, before the visitor pays: it used to name
- * Google as though no other calendar existed, and a business on Outlook found that out after paying (Jeff, 2026-11-21: "isn't quite
- * right"). This is the stopgap; plans/attestation-and-terms.md stage 7 asks which calendar they use, and verifies it, before the plan.
- */
-export function AppointmentsForm() {
-  const [state, action, pending] = useActionState(appointmentsAction, start({ wantsBooking: "no" }));
-
-  return (
-    <form action={action} className="flex flex-col gap-6">
-      <Refusal error={state.error} />
-
-      <Choice
-        name="wantsBooking"
-        legend="Should your receptionist book appointments in your calendar?"
-        help="Letting it see when you are free and letting a caller put something in your calendar are two different things. This is the second."
-        selected={state.fields.wantsBooking ?? "no"}
-        options={[
-          {
-            value: "yes",
-            label: "Yes, let callers book",
-            detail:
-              "You connect your calendar after you sign in, and booking switches on once it is connected. Today a Google Calendar can be connected; if your business keeps its calendar somewhere else, your receptionist takes a message and does not book. Until a calendar is connected it takes a message too, because a receptionist that books into nothing is worse than one that says it will pass the message on.",
-          },
-          {
-            value: "no",
-            label: "No, take a message instead",
-            detail: "Your receptionist takes the caller's details and you call them back. You can change this whenever you want.",
-          },
-        ]}
-      />
 
       <StepButton pending={pending} />
     </form>

@@ -15,8 +15,8 @@ test("each step follows from what is already done", () => {
   assert.equal(stepOf(null, new Set<Gate>(["captcha", "who"])), "company");
   // The country question and the eight sectors are one screen with no gate: answering them creates the business, and the signup state says so.
   assert.equal(stepOf(null, all), "industries");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, all), "greeting");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, all), "greeting");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, all), "hours");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, all), "hours");
   // The Terms come after the six setup steps and before the plan, and nothing is chosen until they are accepted.
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", configDone: CONFIG_STEPS.slice(), subscriptionApproved: false }, new Set<Gate>()), "terms");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", configDone: CONFIG_STEPS.slice(), termsAccepted: true, subscriptionApproved: false }, new Set<Gate>()), "plan");
@@ -67,31 +67,32 @@ test("the receptionist questions are asked in order, each once, and only before 
   const base = { tenantId, contactEmail: "o@example.test" };
   const none = new Set<Gate>();
 
-  assert.equal(stepOf({ ...base, configDone: [] }, none), "greeting");
-  assert.equal(stepOf({ ...base, configDone: ["greeting"] }, none), "hours");
-  assert.equal(stepOf({ ...base, configDone: ["greeting", "hours"] }, none), "questions");
-  assert.equal(stepOf({ ...base, configDone: ["greeting", "hours", "questions"] }, none), "knowledge");
-  assert.equal(stepOf({ ...base, configDone: ["greeting", "hours", "questions", "knowledge"] }, none), "messages");
-  assert.equal(stepOf({ ...base, configDone: ["greeting", "hours", "questions", "knowledge", "messages"] }, none), "appointments");
+  assert.equal(stepOf({ ...base, configDone: [] }, none), "hours");
+  assert.equal(stepOf({ ...base, configDone: ["hours"] }, none), "questions");
+  assert.equal(stepOf({ ...base, configDone: ["hours", "questions"] }, none), "knowledge");
+  assert.equal(stepOf({ ...base, configDone: ["hours", "questions", "knowledge"] }, none), "messages");
+  assert.equal(stepOf({ ...base, configDone: ["hours", "questions", "knowledge", "messages"] }, none), "appointments");
+  // The greeting is the last of them, not the first.
+  assert.equal(stepOf({ ...base, configDone: ["hours", "questions", "knowledge", "messages", "appointments"] }, none), "greeting");
 
   // A later step answered does not let an earlier one be skipped.
-  assert.equal(stepOf({ ...base, configDone: ["messages", "knowledge"] }, none), "greeting");
+  assert.equal(stepOf({ ...base, configDone: ["messages", "knowledge"] }, none), "hours");
 
   // Once a subscription is approved GeekAPI refuses these answers, so a visitor is never sent back to them with nowhere to go.
   assert.equal(stepOf({ ...base, subscriptionApproved: true }, none), "payment_method");
 });
 
 test("one step answered twice is still one step done", () => {
-  const state = { tenantId, contactEmail: "o@example.test", configDone: ["greeting" as const] };
-  assert.deepEqual(withConfigStepDone(state, "greeting").configDone, ["greeting"]);
-  assert.deepEqual(withConfigStepDone(state, "hours").configDone, ["greeting", "hours"]);
+  const state = { tenantId, contactEmail: "o@example.test", configDone: ["hours" as const] };
+  assert.deepEqual(withConfigStepDone(state, "hours").configDone, ["hours"]);
+  assert.deepEqual(withConfigStepDone(state, "questions").configDone, ["hours", "questions"]);
   assert.deepEqual(withConfigStepDone({ tenantId, contactEmail: "o@example.test" }, "hours").configDone, ["hours"]);
 });
 
 test("only steps this app asks are read back from the cookie", () => {
   const state = parseSignup(JSON.stringify({ tenantId, contactEmail: "o@example.test", configDone: ["hours", "greeting", "transfer", 7] }));
   // In the order they are asked, never the order the cookie happened to list, and nothing this app does not ask.
-  assert.deepEqual(state?.configDone, ["greeting", "hours"]);
+  assert.deepEqual(state?.configDone, ["hours", "greeting"]);
   assert.equal(parseSignup(JSON.stringify({ tenantId, contactEmail: "o@example.test", configDone: "greeting" }))?.configDone, undefined);
 });
 

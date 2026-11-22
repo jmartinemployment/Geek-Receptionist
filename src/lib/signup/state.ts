@@ -125,7 +125,7 @@ export const parseCompany = (raw: string | undefined, key: string): Company | nu
  * which of these steps have been submitted, so a refresh resumes in the right place: a greeting, a prompt and a list of questions would
  * overflow a 4 KB cookie and break resumption silently, and the row already holds them.
  */
-export const CONFIG_STEPS = ["greeting", "hours", "questions", "knowledge", "messages", "appointments"] as const;
+export const CONFIG_STEPS = ["hours", "questions", "knowledge", "messages", "appointments", "greeting"] as const;
 
 export type ConfigStep = (typeof CONFIG_STEPS)[number];
 

@@ -32,12 +32,12 @@ const STEPS: { step: SignupStep; title: string }[] = [
   { step: "company", title: "Tell us about your business" },
   { step: "industries", title: "Check eligibility" },
   // The receptionist's own settings, in the owner's words rather than the field names. Approved by Jeff, 2026-11-20.
-  { step: "greeting", title: "Your greeting" },
   { step: "hours", title: "When you’re open" },
   { step: "questions", title: "What it should ask" },
   { step: "knowledge", title: "What it should know" },
   { step: "messages", title: "After the call" },
   { step: "appointments", title: "Appointments" },
+  { step: "greeting", title: "Your greeting" },
   { step: "terms", title: "Terms" },
   { step: "plan", title: "Choose a plan" },
   { step: "payment_method", title: "Save a payment method" },

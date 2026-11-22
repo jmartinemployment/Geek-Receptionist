@@ -1,5 +1,11 @@
 # The /signup step order, as the code runs it — 2026-11-21 (updated: the eight industry questions now share one screen)
 
+**Current order, 2026-11-22 (the table below is the 2026-11-21 record and is out of date on these points).** Robot check, who, the
+business, eligibility (this now creates the business: there is no `industries` gate and no "Your business" screen), then the six
+setup steps in this order: When you're open, What it should ask, What it should know, After the call, Appointments, Your
+greeting (the greeting was first and is now last of the six); then the Terms, the plan, the payment method, the number, the login.
+The order lives in `CONFIG_STEPS` (`src/lib/signup/state.ts`) and `STEPS` (`src/app/signup/page.tsx`).
+
 **What this is for: the step order is written down in three places and two of them are wrong**, so anyone asking "what
 does signup do" gets a stale answer. `CLAUDE.md` still calls `/signup` "a five-step flow" and numbers
 `activate-subscription` as step 4; `README.md` is stale on `/` being a sign-in page. This is the order read off the code

@@ -33,6 +33,10 @@
 > - **Blocked today:** both routes need the owner's own sign-in token, and refuse a business that is not yet active (`McpConnectionService`, line 34).
 >   Connecting during signup needs a way to connect without a sign-in and that rule relaxed for a business awaiting payment.
 >
+> **Default consent is the use of AI** (greeting screen). The wording for it is not decided; the sentences now in `ReceptionistLanguages.cs` and
+> `ReceptionistDefaults.cs` are placeholders written by the assistant, not approved. What a caller is told about recording depends on what the client
+> answers on the Recording screen.
+>
 > **Order still to build (Jeff, 2026-11-22):** confirming that the receptionist can connect to what the business uses (calendar, drive,
 > CRM) comes **before** the Terms, not after: Stage 7 of this plan, connect-and-verify, which is not built. When it is, the Terms move
 > behind it, still ahead of the plan and the payment.

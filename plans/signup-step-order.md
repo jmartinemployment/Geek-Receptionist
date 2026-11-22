@@ -1,10 +1,9 @@
 # The /signup step order, as the code runs it — 2026-11-21 (updated: the eight industry questions now share one screen)
 
 **Current order, 2026-11-22 (the table below is the 2026-11-21 record and is out of date on these points).** Robot check, who, the
-business, eligibility (this now creates the business: there is no `industries` gate and no "Your business" screen), then eight setup
+business, eligibility (this now creates the business: there is no `industries` gate and no "Your business" screen), then nine setup
 steps in this order: Recording, Scheduling and Crew location tools (all three laid out only: they ask a yes or no and call nothing),
-When you're open, What it should ask, What it should know, After the call, Your greeting; the old Appointments step is still in the code
-and still shown; the working connect-and-prove version of Recording and Scheduling is on the branch `connect-and-prove`, not in
+When you're open, What it should ask, What it should know, After the call, Appointments, Your greeting; the working connect-and-prove version of Recording and Scheduling is on the branch `connect-and-prove`, not in
 production, until the workflow is defined and the functionality is proven; then the Terms, the plan, the payment method, the number, the login.
 The order lives in `CONFIG_STEPS` (`src/lib/signup/state.ts`) and `STEPS` (`src/app/signup/page.tsx`).
 

@@ -5,7 +5,7 @@ import { PRIVACY_URL, TERMS_PARTS, TERMS_STATEMENT, TERMS_URL } from "./declarat
 test("the statement is the exact words GeekAPI holds", () => {
   assert.equal(
     TERMS_STATEMENT,
-    "By continuing, I agree to the Terms of Service and the Privacy Policy of Geek @ Your Spot LLC, and that calls to this business may be answered and recorded by an AI receptionist that tells callers so.",
+    "By continuing, I agree to the Terms of Service and the Privacy Policy of Geek @ Your Spot LLC, and that calls to this business may be answered by an AI receptionist that tells callers so.",
   );
 });
 

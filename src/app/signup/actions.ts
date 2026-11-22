@@ -186,7 +186,7 @@ export async function eligibilityAction(_previous: SignupFormState, form: FormDa
 
 /**
  * The acceptance of the Terms (Jeff, 2026-11-22: a standard SaaS acceptance, and after the receptionist's setup, before the plan):
- * continuing is agreeing, to the Terms of Service and Privacy Policy of Geek @ Your Spot LLC and to calls being answered and recorded by
+ * continuing is agreeing, to the Terms of Service and Privacy Policy of Geek @ Your Spot LLC and to calls being answered by
  * an AI receptionist that tells callers so. There is no second answer, so there is nothing to read as a yes or a no. GeekAPI stores the
  * exact sentence (`TERMS_STATEMENT`) with when and from where, once and forever, refuses any other words, and refuses to start a
  * subscription for a business that has not accepted them, so this cookie's `termsAccepted` is a convenience and never the proof.

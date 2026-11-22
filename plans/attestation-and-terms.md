@@ -2,14 +2,22 @@
 
 > **2026-11-22 — the declaration is gone, and the Terms are accepted after the setup, before the plan (Jeff).** There is one sentence,
 > "By continuing, I agree to the Terms of Service and the Privacy Policy of Geek @ Your Spot LLC, and that calls to this business may be
-> answered and recorded by an AI receptionist that tells callers so", with the two documents linked (geekatyourspot.com's, for now) and
-> the left pane's "Agree and continue" as the acceptance. The business is created when the eligibility screen is answered (the person and
-> the business come from the first two screens' signed cookies); the acceptance is its own call, `POST /api/v1/onboarding/terms-acceptance`,
-> stored once and forever in `signup_terms_acceptances` (migration `0092`), and GeekAPI refuses to start a PayPal subscription for a
-> business that has not accepted. "Recorded" stays: recording is allowed, Retell records every call and keeps its copy about 10 minutes,
-> and ZDR decides where a recording is kept, not whether there is one. Still open: the linked documents say nothing about a subscription,
-> its billing or refunds, so Subscription Terms are still to be written (and reviewed by a lawyer). Everything below describing the
-> declaration, the sheet or the radios is superseded by this note.
+> answered by an AI receptionist that tells callers so", with the two documents linked (geekatyourspot.com's, for now) and the left pane's
+> "Agree and continue" as the acceptance. The business is created when the eligibility screen is answered (the person and the business
+> come from the first two screens' signed cookies); the acceptance is its own call, `POST /api/v1/onboarding/terms-acceptance`, stored
+> once and forever in `signup_terms_acceptances` (migration `0092`), and GeekAPI refuses to start a PayPal subscription for a business
+> that has not accepted.
+>
+> **The sentence does not say "recorded"** (Jeff, 2026-11-22: "Recorded WTF? The client has [not] said whether he wants recording"). Whether
+> a business's calls are recorded, and where, is that business's own setting. The caller's consent is separate and happens on every call,
+> by keypad (`GeekBackend/docs/Geek-Receptionist.md` section 5, "Consent before the AI is connected").
+>
+> **Order still to build (Jeff, 2026-11-22):** confirming that the receptionist can connect to what the business uses (calendar, drive,
+> CRM) comes **before** the Terms, not after: Stage 7 of this plan, connect-and-verify, which is not built. When it is, the Terms move
+> behind it, still ahead of the plan and the payment.
+>
+> Still open: the linked documents say nothing about a subscription, its billing or refunds, so Subscription Terms are still to be written
+> (and reviewed by a lawyer). Everything below describing the declaration, the sheet or the radios is superseded by this note.
 
 **What this is for: today the eight excluded-industry answers are a very well-kept record of a statement nobody is bound
 by.** The record itself is strong — `geek_voice.signup_industry_answers` holds the exact words shown, the answer, the

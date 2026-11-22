@@ -14,7 +14,7 @@ export const PRIVACY_URL = "https://geekatyourspot.com/privacy-policy";
 export const TERMS_PARTS = {
   before: "By continuing, I agree to the ",
   between: " and the ",
-  after: " of Geek @ Your Spot LLC, and that calls to this business may be answered and recorded by an AI receptionist that tells callers so.",
+  after: " of Geek @ Your Spot LLC, and that calls to this business may be answered by an AI receptionist that tells callers so.",
 } as const;
 
 export const TERMS_STATEMENT = `${TERMS_PARTS.before}Terms of Service${TERMS_PARTS.between}Privacy Policy${TERMS_PARTS.after}`;

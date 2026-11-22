@@ -571,7 +571,7 @@ production, and is deleted when the declaration is built into `/signup`.
   a tenant or a payment exists. The run would have to be bound to the tenant server-side (`KnowledgeRunId` is deliberately not a form
   field), and the signup form question is "should your receptionist answer from your website?" (`plans/signup-form-questions.md`, E).
   The person's own address, telephone and email are stored sealed with the declaration (migrations `0088`, `0089`); the business's
-  telephone and email are the tenant's contact details. "Lily" is the Retell voice name, used for now (Jeff, 2026-11-21). The answers are held in a signed cookie
+  telephone and email are the tenant's contact details. "Lily" was the name of the Retell voice (Retell was dropped 2026-11-18), used for now (Jeff, 2026-11-21). The answers are held in a signed cookie
   (`rp_who`, one day) and pre-fill the declaration. Nothing is confirmed; confirmation after payment is not built.
 - **Stage 4, Stage 7 and the confirmations of Stage 8:** not built. Stage 7 (pending login, connect before pay) has the Microsoft app registration as an
   external prerequisite.

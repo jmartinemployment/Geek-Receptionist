@@ -11,7 +11,7 @@ import { PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
 import {
   AppointmentsForm,
-  BusinessForm,
+  TermsForm,
   CompanyForm,
   EligibilityForm,
   GreetingForm,
@@ -31,7 +31,6 @@ const STEPS: { step: SignupStep; title: string }[] = [
   { step: "who", title: "Tell us who you are" },
   { step: "company", title: "Tell us about your business" },
   { step: "industries", title: "Check eligibility" },
-  { step: "business", title: "Your business" },
   // The receptionist's own settings, in the owner's words rather than the field names. Approved by Jeff, 2026-11-20.
   { step: "greeting", title: "Your greeting" },
   { step: "hours", title: "When you’re open" },
@@ -39,6 +38,7 @@ const STEPS: { step: SignupStep; title: string }[] = [
   { step: "knowledge", title: "What it should know" },
   { step: "messages", title: "After the call" },
   { step: "appointments", title: "Appointments" },
+  { step: "terms", title: "Terms" },
   { step: "plan", title: "Choose a plan" },
   { step: "payment_method", title: "Save a payment method" },
   { step: "number", title: "Your receptionist's number" },
@@ -96,7 +96,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
   const body = (s: string) => (
     <div className="w-full text-left">
       <section className="mb-4" aria-labelledby={`step-heading${s}`}>
-        <h2 id={`step-heading${s}`} className={step === "who" || step === "company" || step === "industries" || step === "business" ? "sr-only" : ui.h2}>
+        <h2 id={`step-heading${s}`} className={step === "who" || step === "company" || step === "industries" || step === "terms" ? "sr-only" : ui.h2}>
           {STEPS[index].title}
         </h2>
         {refusal ? (
@@ -110,11 +110,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "industries" && <EligibilityForm idSuffix={s} />}
 
-        {step === "business" && (
-          <BusinessForm
-            idSuffix={s}
-          />
-        )}
+        {step === "terms" && <TermsForm idSuffix={s} />}
 
         {step === "greeting" && <GreetingForm idSuffix={s} />}
         {step === "hours" && <HoursForm idSuffix={s} />}
@@ -169,8 +165,8 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         action={(suffix) =>
           // The four screens that are filled in have their Continue here, in the left pane, and it submits the form beside it. The phone
           // block has no left pane, so each form keeps its own button there, and this returns nothing for it.
-          step === "who" || step === "company" || step === "industries" || step === "business" ? (
-            suffix === "-lg" ? <SubmitFromLeft key={step} form={`signup-form${suffix}`} label={step === "business" ? "Agree and continue" : "Continue"} /> : null
+          step === "who" || step === "company" || step === "industries" || step === "terms" ? (
+            suffix === "-lg" ? <SubmitFromLeft key={step} form={`signup-form${suffix}`} label={step === "terms" ? "Agree and continue" : "Continue"} /> : null
           ) : (
             <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>
               Continue

@@ -6,24 +6,30 @@ import { CONFIG_STEPS, parseCompany, parseGates, parseSignup, parseWho, signComp
 const tenantId = "22222222-2222-2222-2222-222222222222";
 
 test("each step follows from what is already done", () => {
-  const all = new Set<Gate>(["captcha", "who", "company", "industries"]);
+  const all = new Set<Gate>(["captcha", "who", "company"]);
   assert.equal(stepOf(null, new Set()), "captcha");
-  assert.equal(stepOf(null, new Set<Gate>(["who", "company", "industries"])), "captcha");
+  assert.equal(stepOf(null, new Set<Gate>(["who", "company"])), "captcha");
   // Who the visitor is comes straight after the robot check, then their business, before any question about eligibility.
   assert.equal(stepOf(null, new Set<Gate>(["captcha"])), "who");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "company", "industries"])), "who");
+  assert.equal(stepOf(null, new Set<Gate>(["captcha", "company"])), "who");
   assert.equal(stepOf(null, new Set<Gate>(["captcha", "who"])), "company");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "industries"])), "company");
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "who", "company"])), "industries");
-  // The country question is on the eligibility screen, so it has no gate of its own to skip.
-  assert.equal(stepOf(null, new Set<Gate>(["captcha", "company", "industries"])), "who");
-  assert.equal(stepOf(null, all), "business");
+  // The country question and the eight sectors are one screen with no gate: answering them creates the business, and the signup state says so.
+  assert.equal(stepOf(null, all), "industries");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test" }, all), "greeting");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionId: "I-1", subscriptionApproved: false }, all), "greeting");
-  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", configDone: CONFIG_STEPS.slice(), subscriptionApproved: false }, new Set<Gate>()), "plan");
+  // The Terms come after the six setup steps and before the plan, and nothing is chosen until they are accepted.
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", configDone: CONFIG_STEPS.slice(), subscriptionApproved: false }, new Set<Gate>()), "terms");
+  assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", configDone: CONFIG_STEPS.slice(), termsAccepted: true, subscriptionApproved: false }, new Set<Gate>()), "plan");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true }, all), "payment_method");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1" }, all), "number");
   assert.equal(stepOf({ tenantId, contactEmail: "o@example.test", subscriptionApproved: true, vaultTokenId: "T1", phoneNumber: "+15615550100" }, all), "login");
+});
+
+test("termsAccepted survives the cookie and only a literal true counts", () => {
+  const read = (extra: object) => parseSignup(JSON.stringify({ tenantId, contactEmail: "o@example.test", ...extra }));
+  assert.equal(read({ termsAccepted: true })?.termsAccepted, true);
+  assert.equal(read({ termsAccepted: "yes" })?.termsAccepted, false);
+  assert.equal(read({})?.termsAccepted, false);
 });
 
 const person = { firstName: "Pat", middleInitial: "", lastName: "Rivera", address: "9 Ocean Blvd", city: "Delray Beach", state: "FL", zip: "33444", phone: "(561) 555-0199", email: "pat@example.test" };

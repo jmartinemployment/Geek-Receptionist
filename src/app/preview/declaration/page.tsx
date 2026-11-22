@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import {
   AppointmentsForm,
-  BusinessForm,
   EligibilityForm,
   GreetingForm,
   HoursForm,
@@ -11,6 +10,7 @@ import {
   NumberForm,
   CompanyForm,
   QuestionsForm,
+  TermsForm,
   WhoForm,
 } from "@/app/signup/signup-forms";
 import { PaymentMethodStep, PlanStep } from "@/app/signup/steps";
@@ -60,11 +60,6 @@ const before: Screen[] = [
     body: <CompanyForm idSuffix="-p0b" />,
   },
   { title: "Check eligibility", note: "The country question first, then eight questions about regulated sectors, each its own Yes or No, none pre-selected.", body: <EligibilityForm idSuffix="-p2" /> },
-  {
-    title: "Disclosure and Terms",
-    note: "Two agreements as radio buttons: the AI disclosure and the Terms. The person and the business are not asked again. The Terms are here, before anything is configured or paid for.",
-    body: <BusinessForm idSuffix="-p3" />,
-  },
   { title: "Your greeting", body: <GreetingForm idSuffix="-p4" /> },
   { title: "When you’re open", body: <HoursForm idSuffix="-p5" /> },
   { title: "What it should ask", body: <QuestionsForm idSuffix="-p6" /> },
@@ -79,6 +74,11 @@ const before: Screen[] = [
 ];
 
 const after: Screen[] = [
+  {
+    title: "Terms",
+    note: "After the six setup steps and before the plan: one paragraph with the two documents linked, and the acceptance is the left pane's Agree and continue.",
+    body: <TermsForm idSuffix="-p9" />,
+  },
   { title: "Choose a plan", body: <PlanStep /> },
   { title: "Save a payment method", body: <PaymentMethodStep tier="STANDARD" /> },
   { title: "Your receptionist’s number", body: <NumberForm idSuffix="-p13" /> },

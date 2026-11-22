@@ -10,7 +10,7 @@ import { PRIVACY_URL, TERMS_PARTS, TERMS_URL } from "@/lib/signup/declaration";
 import {
   activateAction,
   appointmentsAction,
-  businessAction,
+  termsAction,
   captchaAction,
   createLoginAction,
   eligibilityAction,
@@ -271,8 +271,8 @@ export function CompanyForm({ idSuffix }: { idSuffix: string }) {
  * answer to give. What is accepted is stored word for word (`TERMS_STATEMENT`), so the paragraph below is that statement with its
  * document names made into links, and the two are changed together.
  */
-export function BusinessForm({ idSuffix }: { idSuffix: string }) {
-  const [state, action, pending] = useActionState(businessAction, start());
+export function TermsForm({ idSuffix }: { idSuffix: string }) {
+  const [state, action, pending] = useActionState(termsAction, start());
 
   return (
     <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-4 text-left">

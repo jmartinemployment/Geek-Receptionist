@@ -3,7 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
-import { clearGates, clearSignup, passGate, readCompany, readGates, readSignup, readWho, withConfigStepDone, writeCompany, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
+import { clearGates, clearSignup, passGate, readCompany, readGates, readSignup, readWho, withConfigStepDone, withTermsAccepted, writeCompany, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
 import { isConsentMode } from "@/lib/receptionist/controls";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
@@ -127,7 +127,7 @@ export async function forgetRobotCheckAction(): Promise<void> {
  * The eligibility screen: is the business in the United States, then the eight excluded-industry questions, each its own yes or no
  * (Jeff, 2026-11-21: the country question moves onto this screen). Every one must be answered; none is taken as a no for being left
  * blank. A No to the country ends the signup at once, said in a dialog, and GeekAPI is not told: no answer about industries is kept for
- * a business that is not here. Otherwise all noes are remembered as one gate and the form goes on. A yes to any of them is the end of it: GeekAPI
+ * a business that is not here. Otherwise the business is created, waiting for payment, and the form goes on. A yes to any of them is the end of it: GeekAPI
  * is told at once, all eight answers as given, and keeps them forever; then the refusal of the first industry answered yes is said.
  * If GeekAPI could not store them the visitor is still stopped, and is told what failed.
  */
@@ -155,28 +155,12 @@ export async function eligibilityAction(_previous: SignupFormState, form: FormDa
     if (kept.status !== 200) return { error: refusalOf(kept.body, kept.status), fields };
     return { error: EXCLUDED_INDUSTRIES[refused].refusal, fields, refused };
   }
-  await passGate("industries");
-  redirect("/signup?start=1");
-}
-
-/**
- * The acceptance screen (Jeff, 2026-11-22: a standard SaaS acceptance, not a sheet of agreements): continuing is agreeing, to the Terms of
- * Service and Privacy Policy of Geek @ Your Spot LLC and to calls being answered by an AI receptionist that tells callers so. There is no
- * second answer, so there is nothing to read as a yes or a no. What is stored beside the person is the exact sentence they were shown
- * (`TERMS_STATEMENT`), which GeekAPI holds too and refuses any other of. The business becomes a tenant waiting for payment. The person
- * and the business are read from the signed cookies the first two screens wrote, never from this form, so nothing about either can be
- * changed here.
- */
-export async function businessAction(): Promise<SignupFormState> {
-  const fields: Record<string, string> = {};
-
-  const gates = await readGates();
-  if (!gates.has("captcha") || !gates.has("who") || !gates.has("company") || !gates.has("industries")) return { error: signupMessage("signup_expired"), fields };
+  // Every answer is a no. The person and the business, which the first two screens asked and signed into cookies, are sent now, and the
+  // business becomes a tenant waiting for payment. The Terms are not accepted yet: they come after the receptionist's setup, before the plan.
   const who = await readWho();
   const company = await readCompany();
   if (!who || !company) return { error: signupMessage("signup_expired"), fields };
 
-  const visitor = await headers();
   const answer = await postOnboarding("/api/v1/onboarding/validate-eligibility", {
     businessName: company.businessName,
     businessDescription: company.businessDescription,
@@ -184,7 +168,6 @@ export async function businessAction(): Promise<SignupFormState> {
     stateCode: company.businessState,
     contactEmail: company.businessEmail,
     contactPhone: company.businessPhone,
-    complianceAttested: true,
     industryAnswers: industryAnswers(new Set()),
     attestorName: [who.firstName, who.middleInitial, who.lastName].filter(Boolean).join(" "),
     businessAddress: `${company.businessAddress}, ${company.businessCity}, ${company.businessState} ${company.businessZip}`,
@@ -192,14 +175,31 @@ export async function businessAction(): Promise<SignupFormState> {
     declarantPhone: who.phone,
     declarantEmail: who.email,
     businessWebsite: company.businessWebsite,
-    termsStatement: TERMS_STATEMENT,
-    termsAgreed: true,
-  }, visitor);
+  }, await headers());
 
   const tenantId = answer.body?.tenantId;
   if (answer.status !== 200 || typeof tenantId !== "string") return { error: refusalOf(answer.body, answer.status), fields };
 
   await writeSignup({ tenantId, contactEmail: company.businessEmail });
+  redirect("/signup");
+}
+
+/**
+ * The acceptance of the Terms (Jeff, 2026-11-22: a standard SaaS acceptance, and after the receptionist's setup, before the plan):
+ * continuing is agreeing, to the Terms of Service and Privacy Policy of Geek @ Your Spot LLC and to calls being answered and recorded by
+ * an AI receptionist that tells callers so. There is no second answer, so there is nothing to read as a yes or a no. GeekAPI stores the
+ * exact sentence (`TERMS_STATEMENT`) with when and from where, once and forever, refuses any other words, and refuses to start a
+ * subscription for a business that has not accepted them, so this cookie's `termsAccepted` is a convenience and never the proof.
+ */
+export async function termsAction(): Promise<SignupFormState> {
+  const fields: Record<string, string> = {};
+  const state = await readSignup();
+  if (!state) return { error: signupMessage("signup_expired"), fields };
+
+  const answer = await postOnboarding("/api/v1/onboarding/terms-acceptance", { tenantId: state.tenantId, statement: TERMS_STATEMENT }, await headers());
+  if (answer.status !== 200) return { error: refusalOf(answer.body, answer.status), fields };
+
+  await writeSignup(withTermsAccepted(state));
   redirect("/signup");
 }
 

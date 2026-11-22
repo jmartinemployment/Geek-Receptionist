@@ -5,15 +5,15 @@ export const SIGNUP_COOKIE = "rp_signup";
 
 /**
  * The first questions of /signup the visitor has already got past, in the order they are asked: the robot check, who they are, their
- * business, then the country question and the eight excluded-industry questions, which share one screen and so one gate. The cookie is signed
- * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. The "industries" gate is a no to every
- * one of the eight questions: a yes to any of them never passes it. Country is only a bookmark, which GeekAPI decides again when
- * the business is submitted. The industry answers are sent to GeekAPI from this gate; it stores every one forever and refuses
- * an excluded industry and a missing answer.
+ * business. The country question and the eight excluded-industry questions share one screen, which creates the business when they are
+ * all answered, so they have no gate: the signup cookie is what says they were. The cookie is signed
+ * with the reCAPTCHA secret, so a visitor cannot write "captcha" into it and skip the check. The industry answers are sent to
+ * GeekAPI when the eligibility screen is submitted; it stores every one forever and refuses a yes, and the portal does not rely on that:
+ * a yes ends the signup on this side too.
  */
 export const GATES_COOKIE = "rp_gates";
 
-export const GATES = ["captcha", "who", "company", "industries"] as const;
+export const GATES = ["captcha", "who", "company"] as const;
 export type Gate = (typeof GATES)[number];
 
 const gateKey = (): string | null => {
@@ -142,6 +142,8 @@ export type SignupState = {
   tenantId: string;
   contactEmail: string;
   configDone?: ConfigStep[];
+  /** The Terms were accepted, which GeekAPI recorded and checks again before PayPal opens (Jeff, 2026-11-22). A fact, never an answer. */
+  termsAccepted?: boolean;
   tier?: string;
   subscriptionId?: string;
   subscriptionApproved?: boolean;
@@ -155,8 +157,8 @@ export type SignupStep =
   | "who"
   | "company"
   | "industries"
-  | "business"
   | ConfigStep
+  | "terms"
   | "plan"
   | "payment_method"
   | "number"
@@ -171,14 +173,15 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
     if (!gates.has("captcha")) return "captcha";
     if (!gates.has("who")) return "who";
     if (!gates.has("company")) return "company";
-    if (!gates.has("industries")) return "industries";
-    return "business";
+    return "industries";
   }
   // The receptionist questions, while nothing has been paid for. They are asked only here, and never after the subscription is
   // approved: GeekAPI refuses them once the business is active, so a visitor sent back to them then would have nowhere to go.
   if (!state.subscriptionApproved) {
     const done = state.configDone ?? [];
     for (const step of CONFIG_STEPS) if (!done.includes(step)) return step;
+    // The Terms come after the setup and before the plan: nothing is chosen or paid for until they are accepted.
+    if (!state.termsAccepted) return "terms";
     return "plan";
   }
   if (!state.vaultTokenId) return "payment_method";
@@ -190,6 +193,11 @@ export function stepOf(state: SignupState | null, gates: ReadonlySet<Gate>): Sig
 export function withConfigStepDone(state: SignupState, step: ConfigStep): SignupState {
   const done = state.configDone ?? [];
   return done.includes(step) ? state : { ...state, configDone: [...done, step] };
+}
+
+/** This signup once the Terms are accepted. */
+export function withTermsAccepted(state: SignupState): SignupState {
+  return { ...state, termsAccepted: true };
 }
 
 /** The cookie's state, or null when there is none or it is not what this app wrote: a cookie that does not read is a fresh start. */
@@ -211,6 +219,7 @@ export function parseSignup(raw: string | undefined): SignupState | null {
     configDone: Array.isArray(v.configDone) ? CONFIG_STEPS.filter((step) => (v.configDone as unknown[]).includes(step)) : undefined,
     tier: id("tier"),
     subscriptionId: id("subscriptionId"),
+    termsAccepted: v.termsAccepted === true,
     subscriptionApproved: v.subscriptionApproved === true,
     setupTokenId: id("setupTokenId"),
     vaultTokenId: id("vaultTokenId"),

@@ -1,12 +1,15 @@
 # Plan: finishing the attestation, and putting a contract behind it
 
-> **2026-11-22 — the declaration of authority is removed (Jeff: "I don't like" it; most SaaS signups have none).** What stays is the AI
-> disclosure and the Subscription Terms, as two Agree / Do not agree radios on one screen. The declarant's title and the declaration
-> statement are no longer asked, sent or stored (migration `0091` makes their columns optional rather than dropping them, because
-> `0087`–`0089` are applied in production and the table is kept forever). The person and the business come from the first two screens'
-> signed cookies, not from this form, and "What it does" moved to the second screen. The Terms wording is still the "subject to"
-> text and is **not settled**: Jeff has said it lacks the company's name and he does not like "subject to"; a draft is waiting on him.
-> Everything below describing the declaration is superseded by this note.
+> **2026-11-22 — the declaration is gone, and the Terms are accepted after the setup, before the plan (Jeff).** There is one sentence,
+> "By continuing, I agree to the Terms of Service and the Privacy Policy of Geek @ Your Spot LLC, and that calls to this business may be
+> answered and recorded by an AI receptionist that tells callers so", with the two documents linked (geekatyourspot.com's, for now) and
+> the left pane's "Agree and continue" as the acceptance. The business is created when the eligibility screen is answered (the person and
+> the business come from the first two screens' signed cookies); the acceptance is its own call, `POST /api/v1/onboarding/terms-acceptance`,
+> stored once and forever in `signup_terms_acceptances` (migration `0092`), and GeekAPI refuses to start a PayPal subscription for a
+> business that has not accepted. "Recorded" stays: recording is allowed, Retell records every call and keeps its copy about 10 minutes,
+> and ZDR decides where a recording is kept, not whether there is one. Still open: the linked documents say nothing about a subscription,
+> its billing or refunds, so Subscription Terms are still to be written (and reviewed by a lawyer). Everything below describing the
+> declaration, the sheet or the radios is superseded by this note.
 
 **What this is for: today the eight excluded-industry answers are a very well-kept record of a statement nobody is bound
 by.** The record itself is strong — `geek_voice.signup_industry_answers` holds the exact words shown, the answer, the

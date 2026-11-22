@@ -130,17 +130,3 @@ export function DriveConnectLayout({ state }: { state: DriveState }) {
       );
   }
 }
-
-/** Development only: a row of links to every state, so each can be looked at. */
-export function DriveStateSwitcher({ current }: { current: DriveState }) {
-  return (
-    <nav aria-label="Drive states, development only" className="flex flex-wrap gap-2 rounded border border-dashed border-[#9db0cf] p-2 text-sm">
-      <span className="text-[#9db0cf]">Drive state:</span>
-      {DRIVE_STATES.map((name) => (
-        <a key={name} href={`/signup?driveState=${name}`} className={name === current ? "font-bold text-white underline" : "text-[#9db0cf] underline"}>
-          {name}
-        </a>
-      ))}
-    </nav>
-  );
-}

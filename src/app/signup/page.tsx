@@ -9,7 +9,7 @@ import { startOverAction } from "./actions";
 import { SubmitFromLeft } from "@/components/submit-from-left";
 import { PaymentMethodStep, PlanStep } from "./steps";
 import { captchaSiteKey } from "@/lib/captcha";
-import { DriveStateSwitcher, isDriveState } from "./drive-connect-layout";
+import { isDriveState } from "./drive-connect-layout";
 import {
   TermsForm,
   CompanyForm,
@@ -119,12 +119,7 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "terms" && <TermsForm idSuffix={s} />}
 
-        {step === "recording" && (
-          <>
-            {process.env.NODE_ENV !== "production" ? <DriveStateSwitcher current={driveState ?? "explain"} /> : null}
-            <RecordingConnectionForm driveState={driveState} />
-          </>
-        )}
+        {step === "recording" && <RecordingConnectionForm driveState={driveState} />}
         {step === "schedule" && <ScheduleConnectionForm />}
         {step === "crew" && <CrewConnectionForm />}
         {step === "greeting" && <GreetingForm idSuffix={s} />}

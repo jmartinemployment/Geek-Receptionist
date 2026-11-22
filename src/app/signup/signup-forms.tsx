@@ -343,14 +343,14 @@ function Choice({
 }
 
 /**
- * Your greeting. Three answers about the first few seconds of a call: the sentence your receptionist opens with, whether a caller
- * presses a key before it speaks, and whether they are told the call may be recorded.
+ * Your greeting. Two answers about the first few seconds of a call: the sentence your receptionist opens with, and whether they are
+ * told the call may be recorded. The keypad before it speaks is on every call and is not asked.
  *
  * The greeting it already has is the one GeekAPI wrote from this business's name (`ReceptionistDefaults.GreetingTemplate`; the same
  * words live there, change both together). Leaving the box empty keeps it, and no greeting is sent at all.
  */
 export function GreetingForm({ idSuffix }: { idSuffix: string }) {
-  const [state, action, pending] = useActionState(greetingAction, start({ consentMode: "strict_keypress" }));
+  const [state, action, pending] = useActionState(greetingAction, start());
 
   return (
     <form action={action} className="flex flex-col gap-6">
@@ -374,27 +374,6 @@ export function GreetingForm({ idSuffix }: { idSuffix: string }) {
           className={textarea}
         />
       </fieldset>
-
-      <Choice
-        name="consentMode"
-        legend="What should a caller do before your receptionist speaks?"
-        help="Every call starts with one of these two. There is no third way and no off."
-        selected={state.fields.consentMode ?? "strict_keypress"}
-        options={[
-          {
-            value: "strict_keypress",
-            label: "Press a key to carry on",
-            detail:
-              "A caller hears that this line is answered by an AI assistant, and presses a key first. Some callers will not, and those calls end there — and a machine dialling you cannot press it, so you are not billed for the minute.",
-          },
-          {
-            value: "passive_disclosure",
-            label: "Carry straight on",
-            detail:
-              "A caller hears the same notice and your receptionist carries on. Nothing is asked of the caller, and nothing is turned away either: a machine dialling you reaches your receptionist, and that minute is billed to you.",
-          },
-        ]}
-      />
 
       <Choice
         name="recordingDisclosure"

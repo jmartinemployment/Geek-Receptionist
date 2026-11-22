@@ -4,7 +4,6 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/auth/same-origin";
 import { clearGates, clearSignup, passGate, readCompany, readGates, readSignup, readWho, withConfigStepDone, withTermsAccepted, writeCompany, writeSignup, writeWho, type ConfigStep } from "@/lib/signup/state";
-import { isConsentMode } from "@/lib/receptionist/controls";
 import { DAYS, alwaysOpenHours, businessHoursOf, noHours, type DayHours } from "@/lib/signup/hours";
 import { verifyCaptcha } from "@/lib/captcha";
 import { refusalOf, signupMessage } from "@/lib/signup/messages";
@@ -238,11 +237,8 @@ const lines = (form: FormData, name: string): string[] =>
 /** Your greeting: what a caller hears first, whether they press a key for it, and whether they are told about recording. */
 export async function greetingAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const greeting = text(form, "greeting");
-  const consentMode = text(form, "consentMode");
   const recording = text(form, "recordingDisclosure");
-  const fields = { greeting, consentMode, recordingDisclosure: recording };
-
-  if (!isConsentMode(consentMode)) return { error: "Choose what your callers hear before your receptionist speaks.", fields };
+  const fields = { greeting, recordingDisclosure: recording };
   // No default: whether callers are told a call may be recorded is the business's own answer (Jeff, 2026-11-22), never assumed for it.
   if (recording !== "yes" && recording !== "no") return { error: "Answer whether callers should hear that the call may be recorded.", fields };
 
@@ -251,7 +247,8 @@ export async function greetingAction(_previous: SignupFormState, form: FormData)
     {
       // Left blank is the other answer the question offers: keep the greeting this receptionist already has, which no field changes.
       ...(greeting.length > 0 ? { greetingMessage: greeting } : {}),
-      consentMode,
+      // Keypad consent is on every call and is not a question (decided 2026-11-18): nothing here lets a business choose another.
+      consentMode: "strict_keypress",
       recordingDisclosureEnabled: recording === "yes",
     },
     fields,

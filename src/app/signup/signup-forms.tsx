@@ -317,22 +317,26 @@ export function Choice({
   name,
   legend,
   help,
+  helpClass,
   selected,
+  onChange,
   options,
 }: {
   name: string;
   legend: string;
   help?: string;
+  helpClass?: string;
   selected: string;
+  onChange?: (value: string) => void;
   options: { value: string; label: string; detail?: string }[];
 }) {
   return (
     <fieldset className="flex min-w-0 flex-col gap-2">
       <legend className={`${label} mb-1`}>{legend}</legend>
-      {help ? <p className={hint}>{help}</p> : null}
+      {help ? <p className={helpClass ?? hint}>{help}</p> : null}
       {options.map((option) => (
         <label key={option.value} className="flex items-start gap-3">
-          <input type="radio" name={name} value={option.value} defaultChecked={selected === option.value} className="mt-1.5 size-4 accent-[#c83803]" />
+          <input type="radio" name={name} value={option.value} defaultChecked={selected === option.value} onChange={() => onChange?.(option.value)} className="mt-1.5 size-4 accent-[#c83803]" />
           <span>
             {option.label}
             {option.detail ? <span className={`${hint} block`}>{option.detail}</span> : null}
@@ -708,55 +712,87 @@ export function AppointmentsForm() {
   );
 }
 
+const YES_NO = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+];
+
+const connectButton = (text: string) => (
+  <button type="button" disabled className={`${ui.button} self-start`}>
+    {text}
+  </button>
+);
+
 /**
  * One connection question: a yes or no, and under it the Connect button the answer would lead to. Layout only: Connect does nothing yet
  * and the answer is not saved.
  */
-function ConnectionForm({ step, legend, help, connect, extra }: { step: "recording" | "schedule" | "crew"; legend: string; help?: string; connect: string; extra?: { legend: string } }) {
+function ConnectionForm({ step, legend, connect }: { step: "schedule" | "crew"; legend: string; connect: string }) {
   const [state, action, pending] = useActionState(connectionLayoutAction, start());
+  const [answer, setAnswer] = useState("");
 
   return (
     <form action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
       <input type="hidden" name="step" value={step} />
-      <Choice
-        name="answer"
-        legend={legend}
-        help={help}
-        selected=""
-        options={[
-          { value: "yes", label: "Yes" },
-          { value: "no", label: "No" },
-        ]}
-      />
-      {extra ? (
-        <Choice
-          name="extra"
-          legend={extra.legend}
-          selected=""
-          options={[
-            { value: "yes", label: "Yes" },
-            { value: "no", label: "No" },
-          ]}
-        />
-      ) : null}
-      <button type="button" disabled className={`${ui.button} self-start`}>
-        {connect}
-      </button>
+      <Choice name="answer" legend={legend} selected="" onChange={setAnswer} options={YES_NO} />
+      {answer === "yes" ? connectButton(connect) : null}
       <StepButton pending={pending} label="Continue" />
     </form>
   );
 }
 
+/**
+ * Recording. Do you want to record: if yes, is there a Google Drive to record to: if yes, Connect; if no, is there an Amazon S3 drive:
+ * if yes, its details, then Connect. A no to recording asks nothing more. Layout only: Connect does nothing yet and nothing is saved.
+ */
 export function RecordingConnectionForm() {
+  const [state, action, pending] = useActionState(connectionLayoutAction, start());
+  const [record, setRecord] = useState("");
+  const [drive, setDrive] = useState("");
+  const [s3, setS3] = useState("");
+
   return (
-    <ConnectionForm
-      step="recording"
-      legend="Do you want to record conversations?"
-      help="Note: Caller must consent at the beginning of call."
-      extra={{ legend: "Do you have a Google Drive or an Amazon S3 drive to record them to?" }}
-      connect="Connect"
-    />
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+      <input type="hidden" name="step" value="recording" />
+      <Choice
+        name="answer"
+        legend="Do you want to record conversations?"
+        help="Note: Caller must consent at the beginning of call."
+        helpClass="text-sm text-white"
+        selected=""
+        onChange={setRecord}
+        options={YES_NO}
+      />
+
+      {record === "yes" ? (
+        <Choice name="drive" legend="Do you have a Google Drive to record them to?" selected="" onChange={setDrive} options={YES_NO} />
+      ) : null}
+      {record === "yes" && drive === "yes" ? connectButton("Connect Google Drive") : null}
+
+      {record === "yes" && drive === "no" ? (
+        <Choice name="s3" legend="Do you have an Amazon S3 drive to record them to?" selected="" onChange={setS3} options={YES_NO} />
+      ) : null}
+      {record === "yes" && drive === "no" && s3 === "yes" ? (
+        <>
+          {[
+            ["bucket", "Bucket"],
+            ["region", "Region"],
+            ["accessKeyId", "Access key"],
+            ["secretAccessKey", "Secret"],
+          ].map(([name, text]) => (
+            <label key={name} className="flex flex-col gap-1">
+              <span className={label}>{text}</span>
+              <input name={name} disabled className={field} />
+            </label>
+          ))}
+          {connectButton("Connect Amazon S3")}
+        </>
+      ) : null}
+
+      <StepButton pending={pending} label="Continue" />
+    </form>
   );
 }
 

@@ -239,9 +239,12 @@ const lines = (form: FormData, name: string): string[] =>
 export async function greetingAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
   const greeting = text(form, "greeting");
   const consentMode = text(form, "consentMode");
-  const fields = { greeting, consentMode };
+  const recording = text(form, "recordingDisclosure");
+  const fields = { greeting, consentMode, recordingDisclosure: recording };
 
   if (!isConsentMode(consentMode)) return { error: "Choose what your callers hear before your receptionist speaks.", fields };
+  // No default: whether callers are told a call may be recorded is the business's own answer (Jeff, 2026-11-22), never assumed for it.
+  if (recording !== "yes" && recording !== "no") return { error: "Answer whether callers should hear that the call may be recorded.", fields };
 
   return saveConfigStep(
     "greeting",
@@ -249,7 +252,7 @@ export async function greetingAction(_previous: SignupFormState, form: FormData)
       // Left blank is the other answer the question offers: keep the greeting this receptionist already has, which no field changes.
       ...(greeting.length > 0 ? { greetingMessage: greeting } : {}),
       consentMode,
-      recordingDisclosureEnabled: text(form, "recordingDisclosure") === "yes",
+      recordingDisclosureEnabled: recording === "yes",
     },
     fields,
   );

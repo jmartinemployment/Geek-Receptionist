@@ -350,7 +350,7 @@ function Choice({
  * words live there, change both together). Leaving the box empty keeps it, and no greeting is sent at all.
  */
 export function GreetingForm({ idSuffix }: { idSuffix: string }) {
-  const [state, action, pending] = useActionState(greetingAction, start({ consentMode: "strict_keypress", recordingDisclosure: "yes" }));
+  const [state, action, pending] = useActionState(greetingAction, start({ consentMode: "strict_keypress" }));
 
   return (
     <form action={action} className="flex flex-col gap-6">
@@ -400,7 +400,7 @@ export function GreetingForm({ idSuffix }: { idSuffix: string }) {
         name="recordingDisclosure"
         legend="Should callers hear that the call may be recorded?"
         help="Some states require every party to a call to consent to it being recorded. This is a legal question for your business, not ours."
-        selected={state.fields.recordingDisclosure ?? "yes"}
+        selected={state.fields.recordingDisclosure ?? ""}
         options={[
           { value: "yes", label: "Yes, tell every caller" },
           { value: "no", label: "No" },

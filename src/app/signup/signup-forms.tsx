@@ -300,7 +300,9 @@ const textarea = `${field} min-h-24`;
 const hint = `${ui.muted} text-sm`;
 
 /** The submit button every receptionist step ends with, so none of them is louder or quieter than the next. */
-function StepButton({ pending, label = "Save and continue" }: { pending: boolean; label?: string }) {
+function StepButton({ pending, label = "Save and continue", idSuffix }: { pending: boolean; label?: string; idSuffix: string }) {
+  // The large block has its Continue in the left pane, which submits this form by its id; only the phone block keeps one here.
+  if (idSuffix === "-lg") return null;
   return (
     <button className={`${ui.button} mt-3`} type="submit" disabled={pending}>
       {pending ? "Saving…" : label}
@@ -358,7 +360,7 @@ export function GreetingForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(greetingAction, start());
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
 
       <fieldset className="flex min-w-0 flex-col gap-2">
@@ -380,7 +382,7 @@ export function GreetingForm({ idSuffix }: { idSuffix: string }) {
         />
       </fieldset>
 
-      <StepButton pending={pending} />
+      <StepButton pending={pending} idSuffix={idSuffix} />
     </form>
   );
 }
@@ -393,7 +395,7 @@ export function HoursForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(hoursAction, start({ hoursShape: "set", timezone: "America/New_York" }));
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
 
       <Choice
@@ -447,7 +449,7 @@ export function HoursForm({ idSuffix }: { idSuffix: string }) {
         ))}
       </fieldset>
 
-      <StepButton pending={pending} />
+      <StepButton pending={pending} idSuffix={idSuffix} />
     </form>
   );
 }
@@ -460,7 +462,7 @@ export function QuestionsForm({ idSuffix }: { idSuffix: string }) {
   const [state, action, pending] = useActionState(questionsAction, start());
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
 
       <fieldset className="flex min-w-0 flex-col gap-2">
@@ -500,7 +502,7 @@ export function QuestionsForm({ idSuffix }: { idSuffix: string }) {
         />
       </fieldset>
 
-      <StepButton pending={pending} />
+      <StepButton pending={pending} idSuffix={idSuffix} />
     </form>
   );
 }
@@ -515,7 +517,7 @@ export function KnowledgeForm({ idSuffix }: { idSuffix: string }) {
   const value = (name: string) => state.fields[name] ?? "";
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
 
       <p className={ui.muted}>
@@ -595,7 +597,7 @@ export function KnowledgeForm({ idSuffix }: { idSuffix: string }) {
         />
       </fieldset>
 
-      <StepButton pending={pending} />
+      <StepButton pending={pending} idSuffix={idSuffix} />
     </form>
   );
 }
@@ -608,7 +610,7 @@ export function MessagesForm({ email, idSuffix }: { email: string; idSuffix: str
   const [state, action, pending] = useActionState(messagesAction, start({ wantsEmail: "yes", destinationEmail: email }));
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
 
       <p className={ui.muted}>
@@ -655,7 +657,7 @@ export function MessagesForm({ email, idSuffix }: { email: string; idSuffix: str
         </label>
       </fieldset>
 
-      <StepButton pending={pending} />
+      <StepButton pending={pending} idSuffix={idSuffix} />
     </form>
   );
 }
@@ -675,17 +677,17 @@ const connectButton = (text: string) => (
  * One connection question: a yes or no, and under it the Connect button the answer would lead to. Layout only: Connect does nothing yet
  * and the answer is not saved.
  */
-function ConnectionForm({ step, legend, connect }: { step: "schedule" | "crew"; legend: string; connect: string }) {
+function ConnectionForm({ step, legend, connect, idSuffix }: { step: "schedule" | "crew"; legend: string; connect: string; idSuffix: string }) {
   const [state, action, pending] = useActionState(connectionLayoutAction, start());
   const [answer, setAnswer] = useState("");
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
       <input type="hidden" name="step" value={step} />
       <Choice name="answer" legend={legend} selected="" onChange={setAnswer} options={YES_NO} />
       {answer === "yes" ? connectButton(connect) : null}
-      <StepButton pending={pending} label="Continue" />
+      <StepButton pending={pending} label="Continue" idSuffix={idSuffix} />
     </form>
   );
 }
@@ -694,7 +696,7 @@ function ConnectionForm({ step, legend, connect }: { step: "schedule" | "crew"; 
  * Recording. Do you want to record: if yes, is there a Google Drive to record to: if yes, Connect; if no, is there an Amazon S3 drive:
  * if yes, its details, then Connect. A no to recording asks nothing more. Layout only: Connect does nothing yet and nothing is saved.
  */
-export function RecordingConnectionForm({ driveState }: { driveState: DriveState | null }) {
+export function RecordingConnectionForm({ driveState, idSuffix }: { driveState: DriveState | null; idSuffix: string }) {
   const [state, action, pending] = useActionState(connectionLayoutAction, start());
   // A state asked for in development opens the Drive question already answered, so the state can be looked at.
   const [record, setRecord] = useState(driveState ? "yes" : "");
@@ -702,7 +704,7 @@ export function RecordingConnectionForm({ driveState }: { driveState: DriveState
   const [s3, setS3] = useState("");
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
       <Refusal error={state.error} />
       <input type="hidden" name="step" value="recording" />
       <Choice
@@ -740,17 +742,17 @@ export function RecordingConnectionForm({ driveState }: { driveState: DriveState
         </>
       ) : null}
 
-      <StepButton pending={pending} label="Continue" />
+      <StepButton pending={pending} label="Continue" idSuffix={idSuffix} />
     </form>
   );
 }
 
-export function ScheduleConnectionForm() {
-  return <ConnectionForm step="schedule" legend="Do you want to schedule appointments?" connect="Connect your calendar" />;
+export function ScheduleConnectionForm({ idSuffix }: { idSuffix: string }) {
+  return <ConnectionForm step="schedule" legend="Do you want to schedule appointments?" connect="Connect your calendar" idSuffix={idSuffix} />;
 }
 
-export function CrewConnectionForm() {
-  return <ConnectionForm step="crew" legend="Do you have crew location tools?" connect="Connect" />;
+export function CrewConnectionForm({ idSuffix }: { idSuffix: string }) {
+  return <ConnectionForm step="crew" legend="Do you have crew location tools?" connect="Connect" idSuffix={idSuffix} />;
 }
 
 export function NumberForm({ idSuffix }: { idSuffix: string }) {

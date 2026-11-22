@@ -28,6 +28,9 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/** The steps whose form is submitted from the left pane. The rest (plan, payment, number, login) keep their own buttons. */
+const LEFT_CONTINUE: ReadonlySet<SignupStep> = new Set<SignupStep>(["who", "company", "industries", "recording", "schedule", "crew", "hours", "questions", "knowledge", "messages", "greeting", "terms"]);
+
 const STEPS: { step: SignupStep; title: string }[] = [
   { step: "who", title: "Tell us who you are" },
   { step: "company", title: "Tell us about your business" },
@@ -117,9 +120,9 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "terms" && <TermsForm idSuffix={s} />}
 
-        {step === "recording" && <RecordingConnectionForm driveState={driveState} />}
-        {step === "schedule" && <ScheduleConnectionForm />}
-        {step === "crew" && <CrewConnectionForm />}
+        {step === "recording" && <RecordingConnectionForm driveState={driveState} idSuffix={s} />}
+        {step === "schedule" && <ScheduleConnectionForm idSuffix={s} />}
+        {step === "crew" && <CrewConnectionForm idSuffix={s} />}
         {step === "greeting" && <GreetingForm idSuffix={s} />}
         {step === "hours" && <HoursForm idSuffix={s} />}
         {step === "questions" && <QuestionsForm idSuffix={s} />}
@@ -166,9 +169,9 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
         title={step === "who" ? "Hi, I am Lily" : step === "company" ? `Nice to meet you${who?.firstName ? `, ${who.firstName}` : ""}` : step === "industries" ? "Check Eligibility" : title}
         summary={step === "who" ? "What’s Your Name?" : step === "company" ? "Tell me about your business" : step === "industries" ? "Zero Data Retention (ZDR) prohibits offering our services to some industries." : summary}
         action={(suffix) =>
-          // The four screens that are filled in have their Continue here, in the left pane, and it submits the form beside it. The phone
+          // Every screen that is filled in has its Continue here, in the left pane, and it submits the form beside it. The phone
           // block has no left pane, so each form keeps its own button there, and this returns nothing for it.
-          step === "who" || step === "company" || step === "industries" || step === "terms" ? (
+          LEFT_CONTINUE.has(step) ? (
             suffix === "-lg" ? <SubmitFromLeft key={step} form={`signup-form${suffix}`} label={step === "terms" ? "Agree and continue" : "Continue"} /> : null
           ) : (
             <button type="button" disabled className={ui.button} style={{ cursor: "not-allowed" }}>

@@ -24,6 +24,12 @@
 >   only the call record (summary or transcript) and does not record audio. Someone has to record the call to hand it over: Twilio would hold the
 >   file until it is delivered to the owner's drive or bucket and then deleted. The delivery, the deletion and the wording of the ZDR claim are still to
 >   be designed. Connecting, and proving the connection works, is the same for scheduling.
+> - **Audio is feasible; read from Twilio's docs 2026-11-22, not built.** A recording starts on a call in progress (a POST to the call's
+>   Recordings subresource, or `<Start><Recording>`, dual-channel if wanted), with a RecordingStatusCallback that fires when the file is ready (and
+>   `absent` when it was silent). Our handler would then download the file, write it to the owner's Drive folder or bucket, and delete it from Twilio
+>   (deletion is final; metadata is kept 40 days and the file can take up to 30 days to leave all systems; stored files are kept until deleted). Twilio
+>   also offers external storage in which it keeps no copy, but how it is configured for a tenant's own bucket is not read yet. Not verified: that a
+>   ConversationRelay call can be recorded this way on our TwiML, the size and cost of the files, and how long the delivery takes.
 > - **Blocked today:** both routes need the owner's own sign-in token, and refuse a business that is not yet active (`McpConnectionService`, line 34).
 >   Connecting during signup needs a way to connect without a sign-in and that rule relaxed for a business awaiting payment.
 >

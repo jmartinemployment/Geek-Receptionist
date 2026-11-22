@@ -11,7 +11,12 @@ import { EXCLUDED_GROUPS, EXCLUDED_INDUSTRIES } from "@/lib/signup/excluded";
 import { PRIVACY_URL, TERMS_PARTS, TERMS_URL } from "@/lib/signup/declaration";
 import {
   activateAction,
-  connectionLayoutAction,
+  connectBucketAction,
+  connectGoogleAction,
+  crewLayoutAction,
+  proveConnectionAction,
+  recordingAction,
+  scheduleAction,
   termsAction,
   captchaAction,
   createLoginAction,
@@ -668,46 +673,46 @@ const YES_NO = [
   { value: "no", label: "No" },
 ];
 
-const connectButton = (text: string) => (
-  <button type="button" disabled className={`${ui.button} self-start`}>
-    {text}
-  </button>
-);
-
-/**
- * One connection question: a yes or no, and under it the Connect button the answer would lead to. Layout only: Connect does nothing yet
- * and the answer is not saved.
- */
-function ConnectionForm({ step, legend, connect, idSuffix }: { step: "schedule" | "crew"; legend: string; connect: string; idSuffix: string }) {
-  const [state, action, pending] = useActionState(connectionLayoutAction, start());
-  const [answer, setAnswer] = useState("");
-
+/** A button that runs its own action from inside the step's form, with the pending word shown while it runs. */
+function ActionButton({ action, pending, children, busy }: { action: (formData: FormData) => void; pending: boolean; children: React.ReactNode; busy: string }) {
   return (
-    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
-      <Refusal error={state.error} />
-      <input type="hidden" name="step" value={step} />
-      <Choice name="answer" legend={legend} selected="" onChange={setAnswer} options={YES_NO} />
-      {answer === "yes" ? connectButton(connect) : null}
-      <StepButton pending={pending} label="Continue" idSuffix={idSuffix} />
-    </form>
+    <button type="submit" formAction={action} disabled={pending} className={`${ui.button} self-start`}>
+      {pending ? busy : children}
+    </button>
+  );
+}
+
+/** What a connection that was shown to work says, with the button to show it again. */
+function Proof({ text, provider, action, pending }: { text: string; provider: string; action: (formData: FormData) => void; pending: boolean }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <input type="hidden" name="provider" value={provider} />
+      <p className="text-white" role="status">{text}</p>
+      <ActionButton action={action} pending={pending} busy="Testing…">Test it again</ActionButton>
+    </div>
   );
 }
 
 /**
- * Recording. Do you want to record: if yes, is there a Google Drive to record to: if yes, Connect; if no, is there an Amazon S3 drive:
- * if yes, its details, then Connect. A no to recording asks nothing more. Layout only: Connect does nothing yet and nothing is saved.
+ * Recording. Do you want to record: if yes, is there a Google Drive to record to: if yes, connect it; if no, is there an Amazon S3
+ * drive: if yes, its details, then connect. A connection is shown to work (a small file is written to it) before the screen moves on.
+ * A no to recording asks nothing more.
  */
-export function RecordingConnectionForm({ driveState, idSuffix }: { driveState: DriveState | null; idSuffix: string }) {
-  const [state, action, pending] = useActionState(connectionLayoutAction, start());
-  // A state asked for in development opens the Drive question already answered, so the state can be looked at.
-  const [record, setRecord] = useState(driveState ? "yes" : "");
-  const [drive, setDrive] = useState(driveState ? "yes" : "");
-  const [s3, setS3] = useState("");
+export function RecordingConnectionForm({ proved, driveState, idSuffix }: { proved: readonly string[]; driveState: DriveState | null; idSuffix: string }) {
+  const [state, action, pending] = useActionState(recordingAction, start());
+  const [googleState, connectGoogle, connecting] = useActionState(connectGoogleAction, start());
+  const [bucketState, connectBucket, saving] = useActionState(connectBucketAction, start());
+  const [proofState, prove, proving] = useActionState(proveConnectionAction, start());
+
+  const driveProved = proved.includes("google_drive");
+  const s3Proved = proved.includes("aws_s3");
+  const [record, setRecord] = useState(driveProved || s3Proved ? "yes" : "");
+  const [drive, setDrive] = useState(driveProved ? "yes" : s3Proved ? "no" : "");
+  const [s3, setS3] = useState(s3Proved ? "yes" : "");
 
   return (
     <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
-      <Refusal error={state.error} />
-      <input type="hidden" name="step" value="recording" />
+      <Refusal error={state.error ?? googleState.error ?? bucketState.error ?? proofState.error} />
       <Choice
         name="answer"
         legend="Do you want to record conversations?"
@@ -721,26 +726,40 @@ export function RecordingConnectionForm({ driveState, idSuffix }: { driveState: 
       {record === "yes" ? (
         <Choice name="drive" legend="Do you have a Google Drive to record them to?" selected={drive} onChange={setDrive} options={YES_NO} />
       ) : null}
-      {record === "yes" && drive === "yes" ? <DriveConnectLayout state={driveState ?? "explain"} /> : null}
+      {record === "yes" && drive === "yes" && driveState ? <DriveConnectLayout state={driveState} /> : null}
+      {record === "yes" && drive === "yes" && !driveState ? (
+        driveProved ? (
+          <Proof text="Connected. A test file was written to your Google Drive." provider="google_drive" action={prove} pending={proving} />
+        ) : (
+          <>
+            <input type="hidden" name="provider" value="google_drive" />
+            <ActionButton action={connectGoogle} pending={connecting} busy="Opening Google…">Connect Google Drive</ActionButton>
+          </>
+        )
+      ) : null}
 
       {record === "yes" && drive === "no" ? (
-        <Choice name="s3" legend="Do you have an Amazon S3 drive to record them to?" selected="" onChange={setS3} options={YES_NO} />
+        <Choice name="s3" legend="Do you have an Amazon S3 drive to record them to?" selected={s3} onChange={setS3} options={YES_NO} />
       ) : null}
       {record === "yes" && drive === "no" && s3 === "yes" ? (
-        <>
-          {[
-            ["bucket", "Bucket"],
-            ["region", "Region"],
-            ["accessKeyId", "Access key"],
-            ["secretAccessKey", "Secret"],
-          ].map(([name, text]) => (
-            <label key={name} className="flex flex-col gap-1">
-              <span className={label}>{text}</span>
-              <input name={name} disabled className={field} />
-            </label>
-          ))}
-          {connectButton("Connect Amazon S3")}
-        </>
+        s3Proved ? (
+          <Proof text="Connected. A test file was written to your Amazon S3 bucket." provider="aws_s3" action={prove} pending={proving} />
+        ) : (
+          <>
+            {[
+              ["bucket", "Bucket"],
+              ["region", "Region"],
+              ["accessKeyId", "Access key"],
+              ["secretAccessKey", "Secret"],
+            ].map(([name, text]) => (
+              <label key={name} className="flex flex-col gap-1">
+                <span className={label}>{text}</span>
+                <input name={name} type={name === "secretAccessKey" ? "password" : "text"} autoComplete="off" defaultValue={name === "secretAccessKey" ? "" : bucketState.fields[name] ?? ""} className={field} />
+              </label>
+            ))}
+            <ActionButton action={connectBucket} pending={saving} busy="Connecting…">Connect Amazon S3</ActionButton>
+          </>
+        )
       ) : null}
 
       <StepButton pending={pending} label="Continue" idSuffix={idSuffix} />
@@ -748,12 +767,51 @@ export function RecordingConnectionForm({ driveState, idSuffix }: { driveState: 
   );
 }
 
-export function ScheduleConnectionForm({ idSuffix }: { idSuffix: string }) {
-  return <ConnectionForm step="schedule" legend="Do you want to schedule appointments?" connect="Connect your calendar" idSuffix={idSuffix} />;
+/** Scheduling. A yes needs a calendar that was shown to work: Google Calendar is asked for its calendars before the screen moves on. */
+export function ScheduleConnectionForm({ proved, idSuffix }: { proved: readonly string[]; idSuffix: string }) {
+  const [state, action, pending] = useActionState(scheduleAction, start());
+  const [googleState, connectGoogle, connecting] = useActionState(connectGoogleAction, start());
+  const [proofState, prove, proving] = useActionState(proveConnectionAction, start());
+
+  const calendarProved = proved.includes("google_calendar");
+  const [answer, setAnswer] = useState(calendarProved ? "yes" : "");
+
+  return (
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error ?? googleState.error ?? proofState.error} />
+      <Choice name="answer" legend="Do you want to schedule appointments?" selected={answer} onChange={setAnswer} options={YES_NO} />
+      {answer === "yes" ? (
+        calendarProved ? (
+          <Proof text="Connected. Your calendar answered." provider="google_calendar" action={prove} pending={proving} />
+        ) : (
+          <>
+            <input type="hidden" name="provider" value="google_calendar" />
+            <ActionButton action={connectGoogle} pending={connecting} busy="Opening Google…">Connect your calendar</ActionButton>
+          </>
+        )
+      ) : null}
+      <StepButton pending={pending} label="Continue" idSuffix={idSuffix} />
+    </form>
+  );
 }
 
+/** Crew location tools. Laid out for review: the question is asked and the screen moves on, nothing is saved or connected. */
 export function CrewConnectionForm({ idSuffix }: { idSuffix: string }) {
-  return <ConnectionForm step="crew" legend="Do you have crew location tools?" connect="Connect" idSuffix={idSuffix} />;
+  const [state, action, pending] = useActionState(crewLayoutAction, start());
+  const [answer, setAnswer] = useState("");
+
+  return (
+    <form id={`signup-form${idSuffix}`} data-pending={pending} action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+      <Choice name="answer" legend="Do you have crew location tools?" selected="" onChange={setAnswer} options={YES_NO} />
+      {answer === "yes" ? (
+        <button type="button" disabled className={`${ui.button} self-start`}>
+          Connect
+        </button>
+      ) : null}
+      <StepButton pending={pending} label="Continue" idSuffix={idSuffix} />
+    </form>
+  );
 }
 
 export function NumberForm({ idSuffix }: { idSuffix: string }) {

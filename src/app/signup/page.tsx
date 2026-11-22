@@ -120,8 +120,8 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "terms" && <TermsForm idSuffix={s} />}
 
-        {step === "recording" && <RecordingConnectionForm driveState={driveState} idSuffix={s} />}
-        {step === "schedule" && <ScheduleConnectionForm idSuffix={s} />}
+        {step === "recording" && <RecordingConnectionForm proved={state?.proved ?? []} driveState={driveState} idSuffix={s} />}
+        {step === "schedule" && <ScheduleConnectionForm proved={state?.proved ?? []} idSuffix={s} />}
         {step === "crew" && <CrewConnectionForm idSuffix={s} />}
         {step === "greeting" && <GreetingForm idSuffix={s} />}
         {step === "hours" && <HoursForm idSuffix={s} />}

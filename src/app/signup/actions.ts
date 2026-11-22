@@ -227,6 +227,23 @@ async function saveConfigStep(
   redirect("/signup");
 }
 
+/**
+ * The three connection screens (recording, scheduling, crew location tools), laid out for review. They ask their question and move on:
+ * the answer is not saved and nothing is connected, because the backend behind them is not built. A screen is done only when the
+ * question was answered.
+ */
+export async function connectionLayoutAction(_previous: SignupFormState, form: FormData): Promise<SignupFormState> {
+  const step = text(form, "step");
+  const answer = text(form, "answer");
+  if (step !== "recording" && step !== "schedule" && step !== "crew") return { error: signupMessage("signup_expired"), fields: {} };
+  if (answer !== "yes" && answer !== "no") return { error: "Answer yes or no.", fields: {} };
+
+  const state = await readSignup();
+  if (!state) return { error: signupMessage("signup_expired"), fields: {} };
+  await writeSignup(withConfigStepDone(state, step));
+  redirect("/signup");
+}
+
 /** The lines of a textarea as a list, with the blank ones dropped. An empty list is the answer "none", which is a real answer. */
 const lines = (form: FormData, name: string): string[] =>
   text(form, name)

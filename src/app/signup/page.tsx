@@ -14,6 +14,9 @@ import {
   TermsForm,
   CompanyForm,
   EligibilityForm,
+  RecordingConnectionForm,
+  ScheduleConnectionForm,
+  CrewConnectionForm,
   GreetingForm,
   HoursForm,
   KnowledgeForm,
@@ -32,6 +35,9 @@ const STEPS: { step: SignupStep; title: string }[] = [
   { step: "company", title: "Tell us about your business" },
   { step: "industries", title: "Check eligibility" },
   // The receptionist's own settings, in the owner's words rather than the field names. Approved by Jeff, 2026-11-20.
+  { step: "recording", title: "Recording" },
+  { step: "schedule", title: "Scheduling" },
+  { step: "crew", title: "Crew location tools" },
   { step: "hours", title: "When you’re open" },
   { step: "questions", title: "What it should ask" },
   { step: "knowledge", title: "What it should know" },
@@ -112,6 +118,9 @@ export default async function Signup({ searchParams }: { searchParams: Promise<{
 
         {step === "terms" && <TermsForm idSuffix={s} />}
 
+        {step === "recording" && <RecordingConnectionForm />}
+        {step === "schedule" && <ScheduleConnectionForm />}
+        {step === "crew" && <CrewConnectionForm />}
         {step === "greeting" && <GreetingForm idSuffix={s} />}
         {step === "hours" && <HoursForm idSuffix={s} />}
         {step === "questions" && <QuestionsForm idSuffix={s} />}

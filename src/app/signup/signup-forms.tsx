@@ -10,6 +10,7 @@ import { PRIVACY_URL, TERMS_PARTS, TERMS_URL } from "@/lib/signup/declaration";
 import {
   activateAction,
   appointmentsAction,
+  connectionLayoutAction,
   termsAction,
   captchaAction,
   createLoginAction,
@@ -705,6 +706,64 @@ export function AppointmentsForm() {
       <StepButton pending={pending} />
     </form>
   );
+}
+
+/**
+ * One connection question: a yes or no, and under it the Connect button the answer would lead to. Layout only: Connect does nothing yet
+ * and the answer is not saved.
+ */
+function ConnectionForm({ step, legend, connect, extra }: { step: "recording" | "schedule" | "crew"; legend: string; connect: string; extra?: { legend: string } }) {
+  const [state, action, pending] = useActionState(connectionLayoutAction, start());
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      <Refusal error={state.error} />
+      <input type="hidden" name="step" value={step} />
+      <Choice
+        name="answer"
+        legend={legend}
+        selected=""
+        options={[
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+        ]}
+      />
+      {extra ? (
+        <Choice
+          name="extra"
+          legend={extra.legend}
+          selected=""
+          options={[
+            { value: "yes", label: "Yes" },
+            { value: "no", label: "No" },
+          ]}
+        />
+      ) : null}
+      <button type="button" disabled className={`${ui.button} self-start`}>
+        {connect}
+      </button>
+      <StepButton pending={pending} label="Continue" />
+    </form>
+  );
+}
+
+export function RecordingConnectionForm() {
+  return (
+    <ConnectionForm
+      step="recording"
+      legend="Do you need to record conversations?"
+      extra={{ legend: "Do you have a Google Drive or an Amazon S3 drive to record them to?" }}
+      connect="Connect"
+    />
+  );
+}
+
+export function ScheduleConnectionForm() {
+  return <ConnectionForm step="schedule" legend="Do you want to schedule appointments?" connect="Connect your calendar" />;
+}
+
+export function CrewConnectionForm() {
+  return <ConnectionForm step="crew" legend="Do you have crew location tools?" connect="Connect" />;
 }
 
 export function NumberForm({ idSuffix }: { idSuffix: string }) {

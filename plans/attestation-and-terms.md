@@ -8,7 +8,7 @@
 > once and forever in `signup_terms_acceptances` (migration `0092`), and GeekAPI refuses to start a PayPal subscription for a business
 > that has not accepted.
 >
-> **The sentence does not say "recorded"** (Jeff, 2026-11-22: "Recorded WTF? The client has [not] said whether he wants recording"). Whether
+> **The sentence does not say "recorded"** (decided 2026-11-22). Whether
 > a business's calls are recorded, and where, is that business's own setting. The caller's consent is separate and happens on every call,
 > by keypad (`GeekBackend/docs/Geek-Receptionist.md` section 5, "Consent before the AI is connected").
 >

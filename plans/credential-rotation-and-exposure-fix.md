@@ -42,7 +42,12 @@ Background: Railway disclosed on 2026-10-21 that variables were decrypted for a 
 - Repeatable infrastructure audit (ports, public database proxies, shared variables, SSH methods, key holders), since `/security-review` only reads git diffs.
 
 ## Phase 2
-- **Delete `REPO_URL`** (Jeff, 2026-11-23: "we will delete REPO_URL soon"). Today it is GeekAPI's private address for GeekRepository (`http://geek-repository.railway.internal:5050`, read in `GeekAPI/Program.cs`), so it can go only when GeekAPI stops calling GeekRepository over the network. How is not decided; the one candidate raised is folding GeekRepository into GeekAPI, which would also remove `REPO_API_KEY` and `GEEK_REPOSITORY_API_KEY`. Do not delete the variable first: GeekAPI would lose its database layer.
+- **GeekRepository answers only GeekAPI, by proof of identity, not by secrecy of its address** (Jeff, 2026-11-23: "GEEK-REPO WAS TO BE SECURE, ONLY ABLE TO ANSWER QUERIES FROM GEEK-API"; "NO HARDCODING"). Today GeekRepository checks a static `REPO_API_KEY` header (and `GEEK_REPOSITORY_API_KEY` on `/internal/v1/*`), so anything inside the Railway project that learns a key can query it, and `geek-mcp-gateway` shares that network. Design to approve before any code:
+  - GeekAPI holds a private signing key; GeekRepository holds only the matching public key, so a compromised GeekRepository cannot mint requests.
+  - Every GeekAPI request carries a short-lived signed token (audience `geek-repository`, issuer `geek-api`, expiry about 60 seconds, unique id). GeekRepository rejects anything unsigned, expired, replayed or for another audience, and fails closed if its public key is unset.
+  - `REPO_API_KEY` and `GEEK_REPOSITORY_API_KEY` are then deleted from GeekAPI and GeekRepository; the code comments already name this "JWT S2S" as the target.
+  - With this, knowing the address gives an attacker nothing. Whether the address stays a variable (`REPO_URL`, not a secret) or goes some other way is Jeff's call, and it is not hard-coded: a hard-coded address was built and reverted (`4c0eb338`, `fa89c64a`).
+  - Not built. Needs Jeff's approval of this design; rotation order: deploy GeekRepository accepting both the key and the token, switch GeekAPI to tokens, verify in logs, then remove the keys.
 
 ## Verification after each wave
 Deployment status is not health (a deploy can succeed and crash-loop). After every redeploy read the service's logs for a ready line and a successful call that uses the new key, and check the callers' logs.

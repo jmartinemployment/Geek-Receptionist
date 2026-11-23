@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3010",
-    "build": "next build ",
+    "build": "npm run check:public-env && next build",
     "start": "next start -p 3010",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test \"src/**/*.test.ts\""
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "check:public-env": "node --import tsx scripts/check-public-env.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

@@ -33,3 +33,13 @@ Background: Railway disclosed on 2026-10-21 that variables were decrypted for a 
 
 ## Verification after each wave
 Deployment status is not health (a deploy can succeed and crash-loop). After every redeploy read the service's logs for a ready line and a successful call that uses the new key, and check the callers' logs.
+
+## Added gaps (from Jeff's review notes, 2026-11-23)
+- **Revoke sessions and tokens:** rotating `CLIENT_SECRET_GEEKAPI`, `RECEPTIONIST_JWT_SIGNING_KEY` and the Google and Meta secrets does not invalidate tokens already issued. Purge refresh tokens in GeekOAuth Postgres and bump the key ids so tokens taken on 2026-10-21 stop working.
+- **Audit logs from 2026-10-20 to now:** Railway deployment and build logs, Vercel logs, and the VPS `/var/log/auth.log`, `authorized_keys` and outbound connections.
+- **Webhook signing secrets** (Wave 3): Twilio, PayPal, Meta, GitHub and Resend. A stolen webhook secret lets an attacker forge payment or message events against GeekAPI.
+- **Wave 4 re-encryption:** after dual-key decryption (old and new key) is deployed, run a batch job that re-encrypts every row to the new key, then delete the old key from Railway entirely.
+- **Git and build-log hygiene:** check git history, `plans/`, and test scripts for pre-incident keys, and that Railway and Vercel build logs do not echo variables.
+- **Vercel OIDC migration:** GeekAPI validates `iss` (team issuer), `aud`, pinned `owner_id`, `project_id` and `environment`, with minimal clock skew; remove `GEEK_BACKEND_API_KEY` from Vercel as soon as the OIDC path is verified so callers cannot fall back to the static key.
+- **SSH lockout:** keep a second session open and confirm key login before disabling passwords.
+- The Mongo and VPS steps are detailed in `plans/mongo-wireguard-runbook.md`.

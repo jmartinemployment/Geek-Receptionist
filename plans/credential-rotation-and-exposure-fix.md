@@ -26,6 +26,8 @@ Background: Railway disclosed on 2026-10-21 that variables were decrypted for a 
 5. **`/etc/cron` `@reboot /opt/start-mongodb.sh`** on the VPS starts a host `mongod` that is not installed; dead, remove it.
 
 ## Rotation waves
+Priority note (Jeff, 2026-11-23): the voice (receptionist) and Social applications are not in production. Their secrets (`VOICE_ENCRYPTION_KEY`, `GEEK_SOCIAL_ENCRYPTION_KEY`, the Meta and voice Twilio keys) still rotate, since they sat in Railway before the incident, but after the production paths: Content Creator, the crawler, GeekRepository and the shared `GEEK_BACKEND_API_KEY`.
+
 - **Wave 1, done:** the three internal Railway keys above.
 - **Wave 2, internal keys with a second holder, assistant can do once the second side is reachable:**
   - `GEEK_CRAWLER_RAG_API_KEY` (GeekAPI and the RAG API on the VPS): needs the VPS.

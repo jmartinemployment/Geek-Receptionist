@@ -43,3 +43,6 @@ Researched 2026-11-24 from official HighLevel help and developer pages plus thir
 - Whether a token-only integration can receive webhooks is unknown.
 - Whether other receptionist vendors lack a HighLevel connector rests on search results only.
 - No independent reviews of HighLevel's Voice AI quality were found; complaints come from vendors selling replacements.
+
+## Decision (Jeff, 2026-11-24)
+The $497-a-month plan, which white-label reselling and the Partner Network require, "kills my idea, for now". Not pursued: reselling HighLevel, the Partner Network, and a HighLevel connector (a client already on HighLevel has its own AI receptionist). Still free and open if wanted later: the affiliate referral (40% recurring, no plan needed, official terms not read).
